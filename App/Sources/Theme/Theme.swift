@@ -14,7 +14,8 @@ enum Palette {
     static let textSecondary = dynamic(dark: 0xA89B8C, light: 0x7A6B5B)
     static let danger = dynamic(dark: 0xE5746A, light: 0xB23A30)
     /// The space around a page in the reader. It is darker than the background, so that the page stands out.
-    static let readerBackground = dynamic(dark: 0x0F0C0A, light: 0xEDE5D6)
+    static let readerBackground = dynamic(dark: readerDark, light: readerLight)
+    static let readerDark: UInt32 = 0x0F0C0A, readerLight: UInt32 = 0xEDE5D6
 
     static func uiColor(dark: UInt32, light: UInt32) -> UIColor {
         UIColor { $0.userInterfaceStyle == .dark ? UIColor(hex: dark) : UIColor(hex: light) }
