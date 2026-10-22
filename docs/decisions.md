@@ -213,3 +213,13 @@ The choices:
 - A PDF that needs a password does not import.
 - Reason: a PDF keeps its own pages, so the app does not change them. Most
   PDFs are western documents and scans.
+
+## 2026-10-23: The square logo and a softer red
+
+- The app icon is the square logo of the owner, with no word. Its red is
+  softer: each red pixel loses 18 percent of its saturation and 10 percent
+  of its brightness. `assets/brand/render.swift` makes this change.
+- The accent of the app is the new red, `#E34659` in the dark form and
+  `#B8303F` on paper. This replaces the reds of "The logo of the owner".
+- Reason: the owner gave a square logo for the icon and asked for a softer
+  red.

@@ -12,7 +12,7 @@ _Your files and the sources of the community, in one warm app_
 </p>
 
 <p align="center">
-  <a href="https://github.com/Stiven-Gjekaj/Asabunko/releases/latest"><img src="https://img.shields.io/github/v/release/Stiven-Gjekaj/Asabunko?style=for-the-badge&color=FF5866&labelColor=17130F&label=Download" alt="Download the newest release"/></a>
+  <a href="https://github.com/Stiven-Gjekaj/Asabunko/releases/latest"><img src="https://img.shields.io/github/v/release/Stiven-Gjekaj/Asabunko?style=for-the-badge&color=E34659&labelColor=17130F&label=Download" alt="Download the newest release"/></a>
   <a href="https://ko-fi.com/stivengjekaj"><img src="https://img.shields.io/badge/Ko--fi-Support_this_project-17130F?style=for-the-badge&logo=ko-fi&logoColor=white" alt="Support this project on Ko-fi"/></a>
 </p>
 
