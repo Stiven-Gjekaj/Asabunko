@@ -10,8 +10,6 @@ release is out. The reason for each choice is in
 
 ## Next
 
-- 0.2.0: EPUB and text novels, with a reader for text, its font, its size,
-  and its colours.
 - 0.3.0: PDF.
 - 0.4.0: OPDS 1.2 and 2.0 servers, such as Komga, Kavita, and Calibre-web,
   with the streaming of pages.

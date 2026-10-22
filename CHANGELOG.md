@@ -11,6 +11,22 @@ the decisions.
 A tag such as `v0.1.0` builds the unsigned IPA and attaches it to a release on
 GitHub as `Asabunko.ipa`.
 
+## 0.2.0 (2026-10-23)
+
+- Adds novels. Import EPUB 2 and EPUB 3 books, TXT files, FB2 books, and HTML
+  pages from Files or with "Open in Asabunko".
+- The chapters come from the spine of an EPUB, with their titles from the
+  table of contents. A TXT file gets a chapter at each heading, such as
+  "Chapter 12" or "第十二章", and a long text with no headings gets parts.
+- A TXT file can be in UTF-8, UTF-16, Shift JIS, GB18030, or Windows-1252.
+- Read one chapter at a time, with a list of the chapters and buttons for the
+  next and the previous chapter. The place in each chapter stays.
+- Choose a serif font, a sans serif font, or Karla, and the size, the line
+  spacing, the margins, and justified text.
+- The scripts of a book do not run.
+- An EPUB with DRM does not import, and the app tells you why.
+- The new logo is the app icon, and its red is the accent of the app.
+
 ## 0.1.0 (2026-10-23)
 
 - The first release: the library and the comic reader.

@@ -163,3 +163,43 @@ The choices:
   "The look". The background, the paper, and the corners do not change.
 - Reason: the owner asked for the logo in the app and on GitHub. One red in
   the icon and in the app makes one brand.
+
+## 2026-10-23: The novels
+
+- An EPUB, a TXT, an FB2, and an HTML file become a novel: a folder with the
+  files of the chapters and `novel.json`, which lists the chapters with their
+  titles. One reader shows each of them.
+- An EPUB keeps all of its files in content/. Its chapters are the items of
+  its spine, with the titles of its nav or its NCX.
+- A TXT file gets a chapter at each line such as "Chapter 12", "Prologue",
+  or "第十二章", when it has two such lines or more. Else a long text gets
+  parts of about 60000 characters.
+- A TXT file that is not UTF-8 is read as Shift JIS when it gives kana, as
+  GB18030 when many of its bytes are above 0x7F, or as Windows-1252.
+- An EPUB with an encrypted chapter does not import. The app reads only books
+  with no DRM.
+- Reason: the web novels and the light novels of the owner come as EPUB and
+  TXT. FB2 is common for Russian books. One form of chapter lets the novels of
+  the web sources use the same reader later.
+
+## 2026-10-23: The reader of novels
+
+- A chapter shows in a web view, from the top to the bottom. The app keeps
+  the chapter and the place in it, from 0 to 1.
+- The scripts of the book do not run. The scripts of the app run in their own
+  world. They apply the style, give a viewport, keep the place, and report a
+  tap.
+- The style of the app goes over the style of the book: the colours of the
+  look, a serif font, a sans serif font, or Karla, the size, the line
+  spacing, the margins, and justified text.
+- A link to a chapter opens that chapter. A link to the web opens in Safari.
+- Reason: a scroll is the same on a phone and a tablet, and a chapter of a
+  web novel is one long page. A book can hold a script, which must not run
+  with the files of the app.
+
+## 2026-10-23: The form of the library before 1.0.0
+
+- The library stays in form 1 up to 1.0.0. A new field gets its first value
+  when an older file does not have it.
+- Reason: there is no backup before 1.0.0, so an older version of the app
+  never reads a newer file. 1.0.0 writes the form that the backup uses.

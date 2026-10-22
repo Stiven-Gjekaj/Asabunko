@@ -31,9 +31,9 @@ _Your files and the sources of the community, in one warm app_
 novels. "Asa" is the morning and "bunko" is a small paperback library in
 Japanese. The app has a warm dark look and a paper look.
 
-Version 0.1.0 reads the comic archives in your files. The next releases add
-EPUB and PDF, OPDS servers, and the source lists of LNReader, Aidoku,
-Paperback, and Suwayomi. See [TODO.md](TODO.md).
+It reads the comics and the novels in your files. The next releases add PDF,
+OPDS servers, and the source lists of LNReader, Aidoku, Paperback, and
+Suwayomi. See [TODO.md](TODO.md).
 
 Asabunko has no sources in it. Your books stay on your device.
 
@@ -42,6 +42,10 @@ Asabunko has no sources in it. Your books stay on your device.
 - Import CBZ, CBR, CB7, and CBT files, ZIP, RAR, 7z, and TAR archives, and
   folders of images from Files, or with "Open in Asabunko"
 - The title, the writer, and the direction come from ComicInfo.xml
+- Import EPUB, TXT, FB2, and HTML novels. The chapters and their titles come
+  from the book, or from the headings of a TXT file
+- Read a novel one chapter at a time, with your font, size, spacing, and
+  margins
 - Read from the right to the left, from the left to the right, or in one
   vertical column. Pinch or double tap to zoom
 - A tap at the edge turns the page. A tap in the middle shows the bars
