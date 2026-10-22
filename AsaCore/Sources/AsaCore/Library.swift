@@ -14,6 +14,8 @@ public enum ReadingMode: String, Codable, Sendable, CaseIterable {
 public enum BookFormat: String, Codable, Sendable {
     /// The pages are images: a CBZ, CBR, CB7, CBT, archive, or folder.
     case comic
+    /// The book is text in chapters: an EPUB, TXT, FB2, or HTML file.
+    case novel
 }
 
 /// One book in the library.
@@ -28,8 +30,10 @@ public struct Book: Codable, Sendable, Identifiable, Equatable {
     public var pageCount: Int
     public var added: Date
     public var lastRead: Date?
-    /// The page that the user reads now, from 0.
+    /// The page that the user reads now, from 0. In a novel, it is the chapter.
     public var page: Int
+    /// The part of the chapter of a novel that the user read, from 0 to 1.
+    public var position: Double
     public var finished: Bool
     /// The mode of this book. With nil, the book uses the mode of the library.
     public var mode: ReadingMode?
@@ -37,7 +41,7 @@ public struct Book: Codable, Sendable, Identifiable, Equatable {
     public init(
         id: UUID = UUID(), title: String, author: String? = nil, summary: String? = nil,
         format: BookFormat = .comic, fileName: String, pageCount: Int, added: Date = .now,
-        lastRead: Date? = nil, page: Int = 0, finished: Bool = false, mode: ReadingMode? = nil
+        lastRead: Date? = nil, page: Int = 0, position: Double = 0, finished: Bool = false, mode: ReadingMode? = nil
     ) {
         self.id = id
         self.title = title
@@ -49,15 +53,50 @@ public struct Book: Codable, Sendable, Identifiable, Equatable {
         self.added = added
         self.lastRead = lastRead
         self.page = page
+        self.position = position
         self.finished = finished
         self.mode = mode
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, title, author, summary, format, fileName, pageCount, added, lastRead, page, position, finished, mode
+    }
+
+    /// A field that an older version did not write gets its first value.
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(UUID.self, forKey: .id)
+        title = try c.decode(String.self, forKey: .title)
+        author = try c.decodeIfPresent(String.self, forKey: .author)
+        summary = try c.decodeIfPresent(String.self, forKey: .summary)
+        format = try c.decode(BookFormat.self, forKey: .format)
+        fileName = try c.decode(String.self, forKey: .fileName)
+        pageCount = try c.decode(Int.self, forKey: .pageCount)
+        added = try c.decode(Date.self, forKey: .added)
+        lastRead = try c.decodeIfPresent(Date.self, forKey: .lastRead)
+        page = try c.decode(Int.self, forKey: .page)
+        position = try c.decodeIfPresent(Double.self, forKey: .position) ?? 0
+        finished = try c.decode(Bool.self, forKey: .finished)
+        mode = try c.decodeIfPresent(ReadingMode.self, forKey: .mode)
     }
 
     /// The part of the book that the user read, from 0 to 1.
     public var progress: Double {
         if finished { return 1 }
+        if format == .novel {
+            guard pageCount > 0 else { return 0 }
+            return min((Double(min(max(page, 0), pageCount - 1)) + min(max(position, 0), 1)) / Double(pageCount), 1)
+        }
         guard pageCount > 1 else { return 0 }
         return Double(min(max(page, 0), pageCount - 1)) / Double(pageCount - 1)
+    }
+
+    /// Keeps the chapter and the place in it. The end of the last chapter marks the novel as finished.
+    public mutating func read(chapter: Int, position newPosition: Double, at date: Date = .now) {
+        page = min(max(chapter, 0), max(pageCount - 1, 0))
+        position = min(max(newPosition, 0), 1)
+        lastRead = date
+        if page == pageCount - 1 && position >= 0.98 { finished = true }
     }
 
     /// Keeps the page and the time. The last page marks the book as finished.
