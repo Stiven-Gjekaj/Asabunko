@@ -203,3 +203,13 @@ The choices:
   when an older file does not have it.
 - Reason: there is no backup before 1.0.0, so an older version of the app
   never reads a newer file. 1.0.0 writes the form that the backup uses.
+
+## 2026-10-23: The PDF
+
+- The import copies the PDF into the folder of the book as `book.pdf`. The
+  cover is its first page, drawn on white.
+- A PDF opens in the reader of pages, with PDFKit. The three modes are the
+  modes of the comics. The mode of a PDF is left to right at the start.
+- A PDF that needs a password does not import.
+- Reason: a PDF keeps its own pages, so the app does not change them. Most
+  PDFs are western documents and scans.

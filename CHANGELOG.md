@@ -11,6 +11,14 @@ the decisions.
 A tag such as `v0.1.0` builds the unsigned IPA and attaches it to a release on
 GitHub as `Asabunko.ipa`.
 
+## 0.3.0 (2026-10-23)
+
+- Adds PDF. Import a PDF from Files or with "Open in Asabunko". The title and
+  the author come from the PDF, and the cover from its first page.
+- Read a PDF page by page from the left or from the right, or in one
+  vertical column. Pinch to zoom. The page stays.
+- A PDF with a password does not import, and the app tells you why.
+
 ## 0.2.0 (2026-10-23)
 
 - Adds novels. Import EPUB 2 and EPUB 3 books, TXT files, FB2 books, and HTML
