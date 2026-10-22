@@ -17,7 +17,7 @@ public enum BookImporter {
     public static let novelExtensions: Set<String> = ["epub", "txt", "text", "fb2", "html", "htm", "xhtml"]
 
     public static var supportedExtensions: Set<String> {
-        ComicImporter.archiveExtensions.union(novelExtensions)
+        ComicImporter.archiveExtensions.union(novelExtensions).union(["pdf"])
     }
 
     public static func canImport(_ url: URL) -> Bool {
@@ -37,6 +37,9 @@ public enum BookImporter {
                 return novel(try TextImporter.importHTML(from: url, into: folder))
             case "fb2":
                 return novel(try FB2Importer.importBook(from: url, into: folder))
+            case "pdf":
+                let pdf = try PDFImporter.importBook(from: url, into: folder)
+                return ImportedBook(format: .pdf, title: pdf.title, author: pdf.author, summary: nil, pageCount: pdf.pageCount, mode: .leftToRight)
             default:
                 let comic = try ComicImporter.importComic(from: url, into: folder)
                 if let first = ComicImporter.pages(in: folder).first {

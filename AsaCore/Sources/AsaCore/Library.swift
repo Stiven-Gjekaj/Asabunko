@@ -16,6 +16,8 @@ public enum BookFormat: String, Codable, Sendable {
     case comic
     /// The book is text in chapters: an EPUB, TXT, FB2, or HTML file.
     case novel
+    /// The book is a PDF, which keeps its pages as they are.
+    case pdf
 }
 
 /// One book in the library.
