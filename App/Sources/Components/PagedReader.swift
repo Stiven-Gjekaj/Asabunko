@@ -6,7 +6,7 @@ enum TapZone { case left, middle, right }
 
 /// One page at a time, with a swipe or a tap at the edge. Each page zooms with a pinch or a double tap.
 struct PagedReader: UIViewControllerRepresentable {
-    let pages: [URL]
+    let pages: [PageSource]
     let rightToLeft: Bool
     @Binding var page: Int
     let onTap: (TapZone) -> Void
@@ -45,7 +45,8 @@ struct PagedReader: UIViewControllerRepresentable {
 
         func controller(at index: Int) -> PageController? {
             guard parent.pages.indices.contains(index) else { return nil }
-            return PageController(url: parent.pages[index], index: index) { [weak self] zone in
+            PageImages.shared.prefetch(Array(parent.pages[min(index + 1, parent.pages.count)..<min(index + 4, parent.pages.count)]))
+            return PageController(source: parent.pages[index], index: index) { [weak self] zone in
                 self?.parent.onTap(zone)
             }
         }
@@ -73,13 +74,13 @@ struct PagedReader: UIViewControllerRepresentable {
 /// One page in a scroll view that zooms.
 final class PageController: UIViewController, UIScrollViewDelegate {
     let index: Int
-    private let url: URL
+    private let source: PageSource
     private let onTap: (TapZone) -> Void
     private let scrollView = UIScrollView()
     private let imageView = UIImageView()
 
-    init(url: URL, index: Int, onTap: @escaping (TapZone) -> Void) {
-        self.url = url
+    init(source: PageSource, index: Int, onTap: @escaping (TapZone) -> Void) {
+        self.source = source
         self.index = index
         self.onTap = onTap
         super.init(nibName: nil, bundle: nil)
@@ -115,9 +116,9 @@ final class PageController: UIViewController, UIScrollViewDelegate {
         single.require(toFail: double)
         scrollView.addGestureRecognizer(single)
 
-        let url = url
+        let source = source
         Task { [weak self] in
-            let image = await PageImages.shared.image(url, maxPixels: PageImages.screenPixels)
+            let image = await PageImages.shared.image(source, maxPixels: PageImages.screenPixels)
             self?.imageView.image = image
         }
     }

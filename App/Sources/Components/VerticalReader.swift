@@ -2,7 +2,7 @@ import SwiftUI
 
 /// All pages in one column, as in a webtoon. The page at the top of the screen is the current page.
 struct VerticalReader: View {
-    let pages: [URL]
+    let pages: [PageSource]
     @Binding var page: Int
     let onTap: () -> Void
     @State private var visible: Int?
@@ -11,7 +11,7 @@ struct VerticalReader: View {
         ScrollView {
             LazyVStack(spacing: 0) {
                 ForEach(pages.indices, id: \.self) { index in
-                    VerticalPage(url: pages[index], index: index).id(index)
+                    VerticalPage(source: pages[index], index: index).id(index)
                 }
             }
             .scrollTargetLayout()
@@ -29,7 +29,7 @@ struct VerticalReader: View {
 }
 
 private struct VerticalPage: View {
-    let url: URL
+    let source: PageSource
     let index: Int
     @State private var image: UIImage?
 
@@ -43,7 +43,7 @@ private struct VerticalPage: View {
             }
         }
         .frame(maxWidth: .infinity)
-        .task(id: url) { image = await PageImages.shared.image(url, maxPixels: PageImages.screenPixels / 2) }
+        .task(id: source) { image = await PageImages.shared.image(source, maxPixels: PageImages.screenPixels / 2) }
         .accessibilityLabel("Page \(index + 1)")
     }
 }
