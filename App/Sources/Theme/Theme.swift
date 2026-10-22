@@ -8,7 +8,7 @@ enum Palette {
     static let surface = dynamic(dark: 0x211C17, light: 0xFBF7EE)
     static let surfaceHigh = dynamic(dark: 0x2C251F, light: 0xEFE6D6)
     static let outline = dynamic(dark: 0x3A3129, light: 0xE2D6C2)
-    static let accent = dynamic(dark: 0xFF5866, light: 0xC42F45)
+    static let accent = dynamic(dark: 0xE34659, light: 0xB8303F)
     static let onAccent = dynamic(dark: 0x1E0A0E, light: 0xFFF8EE)
     static let textPrimary = dynamic(dark: 0xF3EADF, light: 0x2B231C)
     static let textSecondary = dynamic(dark: 0xA89B8C, light: 0x7A6B5B)

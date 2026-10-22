@@ -28,7 +28,7 @@ struct TextStyle: Equatable {
     func css(dark: Bool) -> String {
         let background = dark ? "#17130F" : "#F6F0E4"
         let text = dark ? "#EDE3D6" : "#2B231C"
-        let link = dark ? "#FF5866" : "#C42F45"
+        let link = dark ? "#E34659" : "#B8303F"
         let font = switch family {
         case .serif: "'New York', ui-serif, 'Iowan Old Style', Georgia, serif"
         case .sans: "-apple-system, system-ui, sans-serif"

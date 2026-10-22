@@ -98,6 +98,7 @@ struct LibraryScreen: View {
                 .resizable()
                 .scaledToFit()
                 .frame(width: 120, height: 120)
+                .clipShape(RoundedRectangle(cornerRadius: 27, style: .continuous))
                 .accessibilityHidden(true)
             Text("Your shelf is empty")
                 .font(Karla.font(20, .bold))
