@@ -1,5 +1,5 @@
 <div align="center">
-  <a href="../README.md"><img src="../assets/brand/icon-full.svg" alt="Asabunko" height="44"></a>
+  <a href="../README.md"><img src="../assets/brand/icon-512.png" alt="Asabunko" height="44"></a>
 </div>
 
 # Decisions
@@ -150,3 +150,16 @@ The choices:
   number.
 - Reason: the same plan as Polytechnium. The files of the user come first,
   so the app is useful before it reads a source.
+
+## 2026-10-23: The logo of the owner
+
+- The owner gave the logo: a girl who reads a manga, with a red morning sun
+  behind her and the word "asabunko" under her.
+- The app icon is the mark with no word, on a dark ink background. The
+  empty shelf shows the mark.
+- The README shows the full logo as its banner.
+- The accent of the app is the red of the logo, `#FF5866` in the dark form
+  and `#C42F45` on paper. This replaces the apricot and the terracotta of
+  "The look". The background, the paper, and the corners do not change.
+- Reason: the owner asked for the logo in the app and on GitHub. One red in
+  the icon and in the app makes one brand.

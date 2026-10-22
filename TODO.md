@@ -1,5 +1,5 @@
 <div align="center">
-  <a href="README.md"><img src="assets/brand/icon-full.svg" alt="Asabunko" height="44"></a>
+  <a href="README.md"><img src="assets/brand/icon-512.png" alt="Asabunko" height="44"></a>
 </div>
 
 # Roadmap
