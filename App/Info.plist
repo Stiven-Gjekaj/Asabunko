@@ -24,7 +24,7 @@
 	<array>
 		<dict>
 			<key>CFBundleTypeName</key>
-			<string>Comic book</string>
+			<string>Book</string>
 			<key>CFBundleTypeRole</key>
 			<string>Viewer</string>
 			<key>LSHandlerRank</key>
@@ -37,8 +37,11 @@
 				<string>io.github.stivengjekaj.asabunko.cbt</string>
 				<string>io.github.stivengjekaj.asabunko.rar</string>
 				<string>io.github.stivengjekaj.asabunko.7z</string>
+				<string>io.github.stivengjekaj.asabunko.fb2</string>
 				<string>public.zip-archive</string>
 				<string>public.tar-archive</string>
+				<string>org.idpf.epub-container</string>
+				<string>public.plain-text</string>
 			</array>
 		</dict>
 	</array>
@@ -149,6 +152,24 @@
 				<key>public.filename-extension</key>
 				<array>
 					<string>7z</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>io.github.stivengjekaj.asabunko.fb2</string>
+			<key>UTTypeDescription</key>
+			<string>FictionBook</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+				<string>public.xml</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>fb2</string>
 				</array>
 			</dict>
 		</dict>

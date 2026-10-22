@@ -49,6 +49,10 @@ final class AppModel {
         ComicImporter.pages(in: folder(of: book))
     }
 
+    func novel(of book: Book) -> Novel? {
+        try? Novel.load(from: folder(of: book))
+    }
+
     func book(_ id: Book.ID) -> Book? {
         library.books.first { $0.id == id }
     }
@@ -84,24 +88,20 @@ final class AppModel {
         for (index, url) in urls.enumerated() {
             let id = UUID()
             let folder = booksFolder.appendingPathComponent(id.uuidString, isDirectory: true)
-            let result = await Task.detached(priority: .userInitiated) { () -> Result<ImportedComic, Error> in
+            let result = await Task.detached(priority: .userInitiated) { () -> Result<ImportedBook, Error> in
                 let access = url.startAccessingSecurityScopedResource()
                 defer { if access { url.stopAccessingSecurityScopedResource() } }
                 do {
-                    let comic = try ComicImporter.importComic(from: url, into: folder)
-                    if let first = ComicImporter.pages(in: folder).first {
-                        try? Thumbnail.make(from: first, to: folder.appendingPathComponent("cover.jpg"))
-                    }
-                    return .success(comic)
+                    return .success(try BookImporter.importBook(from: url, into: folder))
                 } catch {
                     return .failure(error)
                 }
             }.value
             switch result {
-            case let .success(comic):
+            case let .success(imported):
                 library.books.append(Book(
-                    id: id, title: comic.title, author: comic.info?.writer, summary: comic.info?.summary,
-                    fileName: url.lastPathComponent, pageCount: comic.pageCount, mode: comic.info?.readingMode
+                    id: id, title: imported.title, author: imported.author, summary: imported.summary,
+                    format: imported.format, fileName: url.lastPathComponent, pageCount: imported.pageCount, mode: imported.mode
                 ))
                 save()
             case let .failure(error):
@@ -118,6 +118,9 @@ final class AppModel {
         case ImportError.noPages: "The file has no images."
         case let ImportError.unsupported(ext): "Asabunko cannot read .\(ext) files yet."
         case ArchiveError.cannotOpen, ArchiveError.cannotRead: "The archive is damaged or locked with a password."
+        case EPUBImporter.Failure.encrypted: "The book has DRM. Asabunko reads only books with no DRM."
+        case EPUBImporter.Failure.noPackage: "The book is damaged. It has no package file."
+        case EPUBImporter.Failure.noChapters: "The book has no chapters."
         default: error.localizedDescription
         }
     }
