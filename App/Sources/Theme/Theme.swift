@@ -2,14 +2,14 @@ import SwiftUI
 import UIKit
 
 /// The palette of Asabunko. It comes from ZettaStream, with warm tones in place of black and white.
-/// Each colour has a dark form, warm charcoal, and a light form, paper.
+/// Each colour has a dark form, warm charcoal, and a light form, paper. The accent is the red of the logo.
 enum Palette {
     static let background = dynamic(dark: 0x17130F, light: 0xF6F0E4)
     static let surface = dynamic(dark: 0x211C17, light: 0xFBF7EE)
     static let surfaceHigh = dynamic(dark: 0x2C251F, light: 0xEFE6D6)
     static let outline = dynamic(dark: 0x3A3129, light: 0xE2D6C2)
-    static let accent = dynamic(dark: 0xE8A87C, light: 0xB8643A)
-    static let onAccent = dynamic(dark: 0x2A1A10, light: 0xFFF8EE)
+    static let accent = dynamic(dark: 0xFF5866, light: 0xC42F45)
+    static let onAccent = dynamic(dark: 0x1E0A0E, light: 0xFFF8EE)
     static let textPrimary = dynamic(dark: 0xF3EADF, light: 0x2B231C)
     static let textSecondary = dynamic(dark: 0xA89B8C, light: 0x7A6B5B)
     static let danger = dynamic(dark: 0xE5746A, light: 0xB23A30)

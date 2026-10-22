@@ -89,9 +89,11 @@ struct LibraryScreen: View {
 
     private var emptyShelf: some View {
         VStack(spacing: 16) {
-            Image(systemName: "books.vertical")
-                .font(.system(size: 44, weight: .light))
-                .foregroundStyle(Palette.accent)
+            Image("Mark")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 120, height: 120)
+                .accessibilityHidden(true)
             Text("Your shelf is empty")
                 .font(Karla.font(20, .bold))
             Text("Import a CBZ, CBR, CB7, or CBT file, or a folder of images, from Files.")
