@@ -109,21 +109,6 @@ public struct Book: Codable, Sendable, Identifiable, Equatable {
     }
 }
 
-/// An OPDS server, such as Komga, Kavita, or Calibre-web. The password is in the Keychain, not here.
-public struct CatalogServer: Codable, Sendable, Identifiable, Equatable {
-    public var id: UUID
-    public var name: String
-    public var url: URL
-    public var username: String?
-
-    public init(id: UUID = UUID(), name: String, url: URL, username: String? = nil) {
-        self.id = id
-        self.name = name
-        self.url = url
-        self.username = username
-    }
-}
-
 /// All data of the library, in one JSON file.
 public struct Library: Codable, Sendable, Equatable {
     /// The form of the data. A newer app can read an older form, but not the reverse.
@@ -132,16 +117,16 @@ public struct Library: Codable, Sendable, Equatable {
     public var form: Int
     public var books: [Book]
     public var defaultMode: ReadingMode
-    public var servers: [CatalogServer]
+    public var sources: [SourceLink]
 
-    public init(books: [Book] = [], defaultMode: ReadingMode = .rightToLeft, servers: [CatalogServer] = []) {
+    public init(books: [Book] = [], defaultMode: ReadingMode = .rightToLeft, sources: [SourceLink] = []) {
         self.form = Self.currentForm
         self.books = books
         self.defaultMode = defaultMode
-        self.servers = servers
+        self.sources = sources
     }
 
-    private enum CodingKeys: String, CodingKey { case form, books, defaultMode, servers }
+    private enum CodingKeys: String, CodingKey { case form, books, defaultMode, sources }
 
     /// A list that an older version did not write is empty.
     public init(from decoder: Decoder) throws {
@@ -149,7 +134,7 @@ public struct Library: Codable, Sendable, Equatable {
         form = try c.decode(Int.self, forKey: .form)
         books = try c.decode([Book].self, forKey: .books)
         defaultMode = try c.decode(ReadingMode.self, forKey: .defaultMode)
-        servers = try c.decodeIfPresent([CatalogServer].self, forKey: .servers) ?? []
+        sources = try c.decodeIfPresent([SourceLink].self, forKey: .sources) ?? []
     }
 
     /// The mode that the reader uses for a book.
