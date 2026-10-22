@@ -1,0 +1,22 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Test the core package
+        run: swift test --package-path AsaCore
+      # The IPA is a release build. The optimizer can change what the code does,
+      # so the tests also run in that configuration.
+      - name: Test the core package in a release build
+        run: swift test -c release --package-path AsaCore
+      - name: Build the IPA
+        run: ./scripts/build-ipa.sh
