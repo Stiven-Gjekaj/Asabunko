@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="58%" r="55%">
+      <stop offset="0" stop-color="#3B2A1D"/>
+      <stop offset="1" stop-color="#17130F"/>
+    </radialGradient>
+    <linearGradient id="sun" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F7C995"/>
+      <stop offset="1" stop-color="#E08E5C"/>
+    </linearGradient>
+    <linearGradient id="page" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FBF7EE"/>
+      <stop offset="1" stop-color="#E6D9C3"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="228" fill="url(#glow)"/>
+  <clipPath id="sky"><rect width="1024" height="600"/></clipPath>
+  <g transform="translate(0 -40)">
+  <circle cx="512" cy="560" r="196" clip-path="url(#sky)" fill="url(#sun)"/>
+  <path d="M500 612 Q372 548 226 580 L226 790 Q372 760 500 822 Z" fill="url(#page)"/>
+  <path d="M524 612 Q652 548 798 580 L798 790 Q652 760 524 822 Z" fill="url(#page)"/>
+  <g stroke="#D6C6AC" stroke-width="12" stroke-linecap="round" fill="none">
+    <path d="M276 640 Q370 622 456 652"/>
+    <path d="M276 690 Q370 672 456 702"/>
+    <path d="M568 652 Q654 622 748 640"/>
+    <path d="M568 702 Q654 672 748 690"/>
+  </g>
+  </g>
+</svg>
