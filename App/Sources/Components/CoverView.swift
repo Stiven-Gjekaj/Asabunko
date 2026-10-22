@@ -16,8 +16,9 @@ struct CoverView: View {
                     Image(uiImage: image).resizable().scaledToFill()
                 } else {
                     Text(title)
-                        .font(Karla.font(13, .bold))
+                        .font(Karla.font(12, .bold))
                         .multilineTextAlignment(.center)
+                        .minimumScaleFactor(0.6)
                         .foregroundStyle(Palette.textSecondary)
                         .padding(10)
                 }

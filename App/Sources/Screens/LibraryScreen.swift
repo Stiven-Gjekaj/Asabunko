@@ -43,7 +43,12 @@ struct LibraryScreen: View {
                 Task { await app.importItems(urls) }
             }
             .sheet(isPresented: $settings) { SettingsScreen() }
-            .fullScreenCover(item: $reading) { book in ReaderScreen(bookID: book.id) }
+            .fullScreenCover(item: $reading) { book in
+                switch book.format {
+                case .comic: ReaderScreen(bookID: book.id)
+                case .novel: NovelReaderScreen(bookID: book.id)
+                }
+            }
             .confirmationDialog(
                 "Delete \(deleting?.title ?? "")?",
                 isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }),
@@ -96,7 +101,7 @@ struct LibraryScreen: View {
                 .accessibilityHidden(true)
             Text("Your shelf is empty")
                 .font(Karla.font(20, .bold))
-            Text("Import a CBZ, CBR, CB7, or CBT file, or a folder of images, from Files.")
+            Text("Import an EPUB, a comic archive such as CBZ or CBR, a TXT or FB2 file, or a folder of images, from Files.")
                 .font(Karla.font(15))
                 .foregroundStyle(Palette.textSecondary)
                 .multilineTextAlignment(.center)
@@ -189,7 +194,7 @@ private struct ContinueCard: View {
                 Text(book.title)
                     .font(Karla.font(15, .bold))
                     .lineLimit(3)
-                Text("Page \(book.page + 1) of \(book.pageCount)")
+                Text(book.format == .novel ? "Chapter \(book.page + 1) of \(book.pageCount)" : "Page \(book.page + 1) of \(book.pageCount)")
                     .font(Karla.font(13))
                     .foregroundStyle(Palette.textSecondary)
                 Spacer(minLength: 0)
