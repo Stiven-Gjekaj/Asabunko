@@ -50,4 +50,20 @@ import Testing
         try Data(#"{"form": 99, "books": [], "defaultMode": "vertical"}"#.utf8).write(to: url)
         #expect(throws: LibraryError.newerForm(99)) { try LibraryStore.load(from: url) }
     }
+
+    @Test func readsALibraryOfAnOlderVersionWithNoServers() throws {
+        let url = try temporaryFolder().appendingPathComponent("library.json")
+        try Data(#"{"form": 1, "books": [], "defaultMode": "vertical"}"#.utf8).write(to: url)
+        let library = try LibraryStore.load(from: url)
+        #expect(library.servers.isEmpty)
+        #expect(library.defaultMode == .vertical)
+    }
+
+    @Test func keepsTheServersButNotTheirPasswords() throws {
+        let url = try temporaryFolder().appendingPathComponent("library.json")
+        let server = CatalogServer(name: "Komga", url: URL(string: "https://komga.local/opds/v1.2/catalog")!, username: "asa")
+        try LibraryStore.save(Library(servers: [server]), to: url)
+        #expect(try LibraryStore.load(from: url).servers == [server])
+        #expect(!(try String(contentsOf: url, encoding: .utf8)).contains("password"))
+    }
 }
