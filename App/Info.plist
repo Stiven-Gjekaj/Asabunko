@@ -41,6 +41,7 @@
 				<string>public.zip-archive</string>
 				<string>public.tar-archive</string>
 				<string>org.idpf.epub-container</string>
+				<string>com.adobe.pdf</string>
 				<string>public.plain-text</string>
 			</array>
 		</dict>

@@ -45,7 +45,7 @@ struct LibraryScreen: View {
             .sheet(isPresented: $settings) { SettingsScreen() }
             .fullScreenCover(item: $reading) { book in
                 switch book.format {
-                case .comic: ReaderScreen(bookID: book.id)
+                case .comic, .pdf: ReaderScreen(bookID: book.id)
                 case .novel: NovelReaderScreen(bookID: book.id)
                 }
             }
@@ -101,7 +101,7 @@ struct LibraryScreen: View {
                 .accessibilityHidden(true)
             Text("Your shelf is empty")
                 .font(Karla.font(20, .bold))
-            Text("Import an EPUB, a comic archive such as CBZ or CBR, a TXT or FB2 file, or a folder of images, from Files.")
+            Text("Import an EPUB, a PDF, a comic archive such as CBZ or CBR, a TXT or FB2 file, or a folder of images, from Files.")
                 .font(Karla.font(15))
                 .foregroundStyle(Palette.textSecondary)
                 .multilineTextAlignment(.center)

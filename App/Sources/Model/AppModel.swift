@@ -121,6 +121,9 @@ final class AppModel {
         case EPUBImporter.Failure.encrypted: "The book has DRM. Asabunko reads only books with no DRM."
         case EPUBImporter.Failure.noPackage: "The book is damaged. It has no package file."
         case EPUBImporter.Failure.noChapters: "The book has no chapters."
+        case PDFImporter.Failure.locked: "The PDF needs a password. Remove the password, then import it again."
+        case PDFImporter.Failure.notPDF: "The file is not a PDF."
+        case PDFImporter.Failure.noPages: "The PDF has no pages."
         default: error.localizedDescription
         }
     }

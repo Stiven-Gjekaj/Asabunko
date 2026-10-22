@@ -1,12 +1,14 @@
 import AsaCore
+import PDFKit
 import SwiftUI
 
-/// Reads one comic. A tap in the middle shows or hides the bars. A tap at an edge turns the page.
+/// Reads one comic or one PDF. A tap in the middle shows or hides the bars. A tap at an edge turns the page.
 struct ReaderScreen: View {
     let bookID: Book.ID
     @Environment(AppModel.self) private var app
     @Environment(\.dismiss) private var dismiss
     @State private var pages: [URL] = []
+    @State private var pdf: PDFDocument?
     @State private var page = 0
     @State private var bars = true
 
@@ -16,7 +18,10 @@ struct ReaderScreen: View {
     var body: some View {
         ZStack {
             Palette.readerBackground.ignoresSafeArea()
-            if pages.isEmpty {
+            if let pdf {
+                PDFReader(document: pdf, mode: pdfMode, page: $page) { withAnimation(.easeOut(duration: 0.2)) { bars.toggle() } }
+                    .ignoresSafeArea()
+            } else if pages.isEmpty {
                 ProgressView()
             } else {
                 switch mode {
@@ -35,11 +40,27 @@ struct ReaderScreen: View {
         .asaScreen()
         .task {
             guard let book else { return }
-            pages = app.pages(of: book)
-            page = min(book.page, max(pages.count - 1, 0))
+            if book.format == .pdf {
+                let document = PDFDocument(url: app.folder(of: book).appendingPathComponent(PDFImporter.fileName))
+                pdf = document
+                page = min(book.page, max((document?.pageCount ?? 1) - 1, 0))
+            } else {
+                pages = app.pages(of: book)
+                page = min(book.page, max(pages.count - 1, 0))
+            }
         }
         .onChange(of: page) { _, page in
             app.update(bookID) { $0.read(page: page) }
+        }
+    }
+
+    private var count: Int { pdf?.pageCount ?? pages.count }
+
+    private var pdfMode: PDFReader.ReadingModeKind {
+        switch mode {
+        case .leftToRight: .leftToRight
+        case .rightToLeft: .rightToLeft
+        case .vertical: .vertical
         }
     }
 
@@ -76,17 +97,17 @@ struct ReaderScreen: View {
             Spacer()
 
             VStack(spacing: 8) {
-                if pages.count > 1 {
+                if count > 1 {
                     Slider(
                         value: Binding(get: { Double(page) }, set: { page = Int($0.rounded()) }),
-                        in: 0...Double(pages.count - 1), step: 1
+                        in: 0...Double(count - 1), step: 1
                     )
                     // In a manga the first page is at the right.
                     .environment(\.layoutDirection, mode == .rightToLeft ? .rightToLeft : .leftToRight)
                     .accessibilityLabel("Page")
-                    .accessibilityValue("\(page + 1) of \(pages.count)")
+                    .accessibilityValue("\(page + 1) of \(count)")
                 }
-                Text("\(page + 1) of \(pages.count)")
+                Text("\(page + 1) of \(count)")
                     .font(Karla.font(13, .medium))
                     .foregroundStyle(Palette.textSecondary)
                     .monospacedDigit()
