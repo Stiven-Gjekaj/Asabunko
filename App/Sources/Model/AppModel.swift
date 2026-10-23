@@ -25,6 +25,7 @@ final class AppModel {
     /// True when the library file did not load. Then no save writes over it, until the user
     /// restores a backup or starts a new library.
     private(set) var libraryLocked = false
+    private var saveTask: Task<Void, Never>?
 
     init(root: URL = AppModel.defaultRoot) {
         self.root = root
@@ -282,8 +283,26 @@ final class AppModel {
 
     // MARK: Store
 
+    /// Writes the library a short time after the last change, off the main thread. A page turn changes
+    /// the library, so many changes become one write.
     private func save() {
         guard !libraryLocked else { return }
+        saveTask?.cancel()
+        let snapshot = library
+        let file = libraryFile
+        saveTask = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(400))
+            guard !Task.isCancelled else { return }
+            let result = await Task.detached(priority: .utility) { Result { try LibraryStore.save(snapshot, to: file) } }.value
+            if case let .failure(error) = result { self?.fault = "The library was not saved: \(error.localizedDescription)" }
+        }
+    }
+
+    /// Writes the library now, such as when the app goes to the background.
+    func flush() {
+        guard !libraryLocked, let task = saveTask else { return }
+        task.cancel()
+        saveTask = nil
         do {
             try LibraryStore.save(library, to: libraryFile)
         } catch {

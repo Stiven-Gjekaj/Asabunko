@@ -243,7 +243,8 @@ public enum LibraryStore {
     private static var encoder: JSONEncoder {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        // The app writes the file after each page, so the file has no spaces. A large library writes faster.
+        encoder.outputFormatting = [.sortedKeys]
         return encoder
     }
 
