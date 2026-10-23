@@ -22,15 +22,32 @@ final class AppModel {
     private var libraryFile: URL { root.appendingPathComponent("library.json") }
     private var booksFolder: URL { root.appendingPathComponent("Books", isDirectory: true) }
 
+    /// True when the library file did not load. Then no save writes over it, until the user
+    /// restores a backup or starts a new library.
+    private(set) var libraryLocked = false
+
     init(root: URL = AppModel.defaultRoot) {
         self.root = root
         do {
             library = try LibraryStore.load(from: libraryFile)
         } catch LibraryError.newerForm {
-            fault = "A newer version of Asabunko wrote this library. Update the app to open it."
+            libraryLocked = true
+            fault = "A newer version of Asabunko wrote this library. Update the app to open it. Asabunko does not change the file."
         } catch {
-            fault = "The library file cannot be read."
+            libraryLocked = true
+            let copy = try? LibraryStore.keepBroken(libraryFile)
+            fault = "The library file cannot be read. Asabunko does not change it" + (copy.map { ", and keeps a copy as \($0.lastPathComponent)" } ?? "")
+                + ". Restore a backup, or start a new library in Settings."
         }
+    }
+
+    func unlockLibrary() { libraryLocked = false }
+
+    /// Starts an empty library in place of a file that did not load. The copy of the old file stays.
+    func startNewLibrary() {
+        libraryLocked = false
+        library = Library()
+        save()
     }
 
     /// The folder of the library. A UI test gives an empty folder in ASABUNKO_ROOT.
@@ -266,6 +283,7 @@ final class AppModel {
     // MARK: Store
 
     private func save() {
+        guard !libraryLocked else { return }
         do {
             try LibraryStore.save(library, to: libraryFile)
         } catch {

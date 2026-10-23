@@ -38,6 +38,8 @@ extension AppModel {
             try? manager.createDirectory(at: folder.appendingPathComponent("chapters"), withIntermediateDirectories: true)
             if !manager.fileExists(atPath: folder.appendingPathComponent(Novel.fileName).path) { try? novel.save(to: folder) }
         }
+        // A restore is the way out of a library file that did not load.
+        unlockLibrary()
         changeLibrary { $0 = plan.library }
         for installed in plan.library.installed {
             guard let link = plan.library.sources.first(where: { $0.id == installed.list }), link.kind != .suwayomi else { continue }

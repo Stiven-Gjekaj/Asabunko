@@ -11,10 +11,20 @@ struct SettingsScreen: View {
     @State private var restoring = false
     @State private var pending: Backup?
     @State private var message: String?
+    @State private var startingOver = false
 
     var body: some View {
         NavigationStack {
             Form {
+                if app.libraryLocked {
+                    Section {
+                        Button("Start a new library", role: .destructive) { startingOver = true }
+                    } header: {
+                        Text("The library did not load")
+                    } footer: {
+                        Text("Asabunko does not save while the library file cannot be read, so the file stays as it is. Restore a backup below, or start a new, empty library. A copy of the old file stays next to it.")
+                    }
+                }
                 Section {
                     NavigationLink { SourcesHomeScreen() } label: {
                         LabeledContent {
@@ -120,6 +130,11 @@ struct SettingsScreen: View {
                 }
             } message: {
                 Text("The backup takes the place of your library and your sources. Your online books come back, and their chapters download again.")
+            }
+            .confirmationDialog("Start a new library?", isPresented: $startingOver, titleVisibility: .visible) {
+                Button("Start a new library", role: .destructive) { app.startNewLibrary() }
+            } message: {
+                Text("The new library is empty. The copy of the old file stays.")
             }
             .alert("Backup", isPresented: Binding(get: { message != nil }, set: { if !$0 { message = nil } })) {
                 Button("OK") { message = nil }

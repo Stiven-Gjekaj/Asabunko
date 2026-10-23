@@ -222,6 +222,17 @@ public enum LibraryStore {
         return try decoder.decode(Library.self, from: data)
     }
 
+    /// Copies a library file that the app cannot read next to it, as library.broken-<date>.json,
+    /// so that no save can write over it. It gives the URL of the copy.
+    @discardableResult
+    public static func keepBroken(_ url: URL, at date: Date = .now) throws -> URL {
+        let stamp = date.formatted(.iso8601.year().month().day().time(includingFractionalSeconds: false)).replacingOccurrences(of: ":", with: "-")
+        let copy = url.deletingLastPathComponent().appendingPathComponent("library.broken-\(stamp).json")
+        if FileManager.default.fileExists(atPath: copy.path) { try FileManager.default.removeItem(at: copy) }
+        try FileManager.default.copyItem(at: url, to: copy)
+        return copy
+    }
+
     public static func save(_ library: Library, to url: URL) throws {
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         try encoder.encode(library).write(to: url, options: .atomic)

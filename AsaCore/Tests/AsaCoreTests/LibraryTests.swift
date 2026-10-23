@@ -24,6 +24,15 @@ import Testing
         #expect(library.continueReading.map(\.title) == ["New", "Old"])
     }
 
+    @Test func keepsACopyOfALibraryThatTheAppCannotRead() throws {
+        let url = try temporaryFolder().appendingPathComponent("library.json")
+        try Data(#"{"form":1,"books":[{"id":"bad"}]}"#.utf8).write(to: url)
+        #expect(throws: (any Error).self) { try LibraryStore.load(from: url) }
+        let copy = try LibraryStore.keepBroken(url, at: Date(timeIntervalSince1970: 1_800_000_000))
+        #expect(copy.lastPathComponent.hasPrefix("library.broken-2027-01-15"))
+        #expect(try Data(contentsOf: copy) == Data(contentsOf: url))
+    }
+
     @Test func theReadListHoldsOnlyListedBooksTheNewestFirst() {
         let old = Book(title: "Old", fileName: "o", pageCount: 1, added: Date(timeIntervalSince1970: 100))
         let new = Book(title: "New", fileName: "n", pageCount: 1, added: Date(timeIntervalSince1970: 200))
