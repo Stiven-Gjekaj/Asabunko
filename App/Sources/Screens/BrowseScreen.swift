@@ -14,10 +14,11 @@ struct BrowseScreen: View {
                             Text("No sources yet").font(Karla.font(18, .bold))
                             Text("Asabunko comes with no sources. Paste the URLs of your catalogs and source lists, one on each line.")
                                 .font(Karla.font(15)).foregroundStyle(Palette.textSecondary)
-                            NavigationLink("Add sources") { SourcesScreen() }
-                                .buttonStyle(PillButtonStyle())
                         }
                         .padding(.vertical, 8)
+                        NavigationLink { SourcesScreen() } label: {
+                            Label("Add sources", systemImage: "plus.circle").foregroundStyle(Palette.accent)
+                        }
                     }
                 }
                 if !app.library.installed.isEmpty {
@@ -49,7 +50,8 @@ struct BrowseScreen: View {
             .navigationTitle("Browse")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    NavigationLink { SourcesScreen() } label: { Text("Sources").font(Karla.font(16, .bold)) }
+                    NavigationLink { SourcesScreen() } label: { Image(systemName: "list.bullet.rectangle") }
+                        .accessibilityLabel("Sources")
                 }
             }
         }
