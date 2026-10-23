@@ -8,7 +8,8 @@
     "cheerio": "1.0.0",
     "core-js": "3.41.0",
     "dayjs": "1.11.13",
-    "htmlparser2": "9.1.0"
+    "htmlparser2": "9.1.0",
+    "protobufjs": "7.4.0"
   },
   "devDependencies": {
     "esbuild": "0.25.0"

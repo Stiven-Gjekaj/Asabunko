@@ -8,6 +8,7 @@ import { Parser } from 'htmlparser2';
 import dayjs from 'dayjs';
 import { gcm } from '@noble/ciphers/aes';
 import { utf8ToBytes, bytesToUtf8 } from '@noble/ciphers/utils';
+import { parse } from 'protobufjs';
 
 globalThis.__libraries = {
   cheerio: { load },
@@ -15,4 +16,5 @@ globalThis.__libraries = {
   dayjs,
   aes: { gcm },
   utils: { utf8ToBytes, bytesToUtf8 },
+  protobuf: { parse },
 };

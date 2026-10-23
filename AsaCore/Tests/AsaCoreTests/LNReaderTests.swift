@@ -111,6 +111,33 @@ private let site: [String: (Int, String, String)] = [
         #expect(cover.absoluteString.contains("coverNotAvailable"))
     }
 
+    @Test func callsAGRPCSourceWithProtobuf() async throws {
+        let code = """
+        const { fetchProto } = require('@libs/fetch');
+        const proto = 'syntax = "proto3"; message Ask { int32 id = 1; } message Reply { string name = 1; int64 count = 2; }';
+        exports.default = { id: 'p', name: 'P', site: 'https://p.test/', version: '1',
+          async popularNovels() {
+            const reply = await fetchProto({ proto, requestType: 'Ask', responseType: 'Reply', requestData: { id: 7 } }, 'https://p.test/api.Ask');
+            return [{ name: reply.name + ' ' + reply.count, path: 'n/1' }];
+          },
+          async searchNovels() { return []; }, async parseNovel(path) { return { path, name: 'N', chapters: [] }; }, async parseChapter() { return ''; } };
+        """
+        let seen = SeenRequests()
+        let fetcher: Fetcher = { request in
+            seen.add(request)
+            // Reply { name: "Tide", count: 300 } in a gRPC frame.
+            let message: [UInt8] = [0x0A, 0x04] + Array("Tide".utf8) + [0x10, 0xAC, 0x02]
+            let body = Data([0, 0, 0, 0, UInt8(message.count)] + message)
+            return (body, HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: ["Content-Type": "application/grpc-web+proto"])!)
+        }
+        let info = SourceInfo(id: "p", name: "P", language: "English", version: "1", icon: nil, code: URL(string: "https://x.test/p.js")!, novels: true)
+        let source = try await LNReaderPlugin(info: info, code: code, fetcher: fetcher)
+        #expect(try await source.popular(page: 1).items.first?.title == "Tide 300")
+        let request = try #require(seen.all.first)
+        #expect(request.httpMethod == "POST")
+        #expect(request.httpBody.map([UInt8].init) == [0, 0, 0, 0, 2, 0x08, 0x07], "The request is Ask { id: 7 } in a frame.")
+    }
+
     @Test func refusesAFileThatIsNotAPlugin() async throws {
         let info = SourceInfo(id: "x", name: "X", language: "", version: "1", icon: nil, code: URL(string: "https://x.test/x.js")!, novels: true)
         await #expect(throws: JSRuntimeError.script("The file is not an LNReader plugin.")) {

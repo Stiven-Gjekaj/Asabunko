@@ -46,7 +46,25 @@
       return btoa(text);
     } catch (e) { return ''; }
   };
-  const fetchProto = async () => { throw new Error('This source needs protobuf, which Asabunko does not have.'); };
+  // A gRPC-web call, as fetchProto of LNReader: the request goes in a frame of 5 bytes and the
+  // protobuf message, and the answer comes back in the same kind of frame.
+  const fetchProto = async (protoInit, url, init) => {
+    const root = lib.protobuf.parse(protoInit.proto).root;
+    const Request = root.lookupType(protoInit.requestType);
+    const problem = Request.verify(protoInit.requestData);
+    if (problem) throw new Error('Invalid proto request: ' + problem);
+    const body = Request.encode(Request.create(protoInit.requestData)).finish();
+    const frame = new Uint8Array(5 + body.length);
+    frame[1] = (body.length >>> 24) & 0xff; frame[2] = (body.length >>> 16) & 0xff;
+    frame[3] = (body.length >>> 8) & 0xff; frame[4] = body.length & 0xff;
+    frame.set(body, 5);
+    const res = await fetch(url, withDefaults({ method: 'POST', ...(init || {}), body: frame }));
+    const payload = new Uint8Array(await res.arrayBuffer());
+    if (payload.length < 5) throw new Error('The proto answer is empty.');
+    const length = ((payload[1] << 24) | (payload[2] << 16) | (payload[3] << 8) | payload[4]) >>> 0;
+    const Response = root.lookupType(protoInit.responseType);
+    return Response.toObject(Response.decode(payload.slice(5, 5 + length)), { longs: String, enums: String, bytes: String });
+  };
 
   const isUrlAbsolute = (url) => {
     if (!url) return false;
