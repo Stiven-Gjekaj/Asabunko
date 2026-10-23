@@ -81,6 +81,7 @@ struct PageReader: View {
             if bars { chrome.transition(.opacity) }
         }
         .statusBarHidden(!bars)
+        .readerAwake()
         .persistentSystemOverlays(bars ? .automatic : .hidden)
         .asaScreen()
     }

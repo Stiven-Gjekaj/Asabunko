@@ -12,6 +12,7 @@ struct SettingsScreen: View {
     @State private var pending: Backup?
     @State private var message: String?
     @State private var startingOver = false
+    @AppStorage(ReaderSettings.keepAwakeKey) private var keepAwake = true
 
     var body: some View {
         NavigationStack {
@@ -45,10 +46,11 @@ struct SettingsScreen: View {
                     Picker("Reading mode", selection: Binding(get: { app.library.defaultMode }, set: { app.setDefaultMode($0) })) {
                         ForEach(ReadingMode.allCases, id: \.self) { Text($0.name).tag($0) }
                     }
+                    Toggle("Keep the screen on", isOn: $keepAwake)
                 } header: {
                     Text("Reader")
                 } footer: {
-                    Text("A book uses this mode until you choose a mode for it in the reader. A comic with \"YesAndRightToLeft\" in its ComicInfo.xml opens from the right to the left.")
+                    Text("A book uses this mode until you choose a mode for it in the reader. A comic with \"YesAndRightToLeft\" in its ComicInfo.xml opens from the right to the left. With \"Keep the screen on\", the screen does not go dark while a book is open.")
                 }
                 Section {
                     Button("Save a backup") {
