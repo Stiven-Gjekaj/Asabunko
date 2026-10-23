@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
-"""A small OPDS 1.2 server for the UI test of the catalogs.
+"""A small server for the UI tests of the sources.
 
-It asks for the user "asa" with the password "morning". It serves a catalog,
-an OpenSearch search, one comic as a CBZ, and the pages of the comic one at a
-time with the Page Streaming Extension. It makes each file in memory.
+Under /opds/, it asks for the user "asa" with the password "morning". It
+serves a catalog, an OpenSearch search, one comic as a CBZ, and the pages of
+the comic one at a time with the Page Streaming Extension.
+
+Under /lnreader/, it serves a list of LNReader plugins with one plugin, and
+under /site/ the web site that the plugin reads.
+
+It makes each file in memory.
 
 Usage: python3 scripts/test-server.py [port]
 """
@@ -71,14 +76,59 @@ SEARCH = """<?xml version="1.0"?><OpenSearchDescription xmlns="http://a9.com/-/s
 <Url type="application/atom+xml;profile=opds-catalog" template="/opds/find?q={searchTerms}"/></OpenSearchDescription>"""
 
 
+PLUGIN = r"""
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+var fetch_1 = require("@libs/fetch");
+var cheerio_1 = require("cheerio");
+var Quiet = (function () {
+  function Quiet() { this.id = "quiet"; this.name = "Quiet Novels"; this.site = "SITE"; this.version = "1.0.0"; }
+  Quiet.prototype.popularNovels = async function (page, options) {
+    var $ = (0, cheerio_1.load)(await (0, fetch_1.fetchText)(this.site + "list?page=" + page));
+    return $(".novel a").map(function (i, el) { return { name: $(el).text(), path: $(el).attr("href"), cover: $(el).attr("data-cover") }; }).get();
+  };
+  Quiet.prototype.searchNovels = async function (term, page) { return this.popularNovels(page, {}); };
+  Quiet.prototype.parseNovel = async function (path) {
+    var $ = (0, cheerio_1.load)(await (0, fetch_1.fetchText)(this.site + path));
+    return { path: path, name: $("h1").text(), author: $(".author").text(), summary: $(".summary").text(),
+      chapters: $(".chapter a").map(function (i, el) { return { name: $(el).text(), path: $(el).attr("href") }; }).get() };
+  };
+  Quiet.prototype.parseChapter = async function (path) {
+    return (0, cheerio_1.load)(await (0, fetch_1.fetchText)(this.site + path))("#content").html();
+  };
+  return Quiet;
+}());
+exports.default = new Quiet();
+"""
+
+SITE = {
+    "list": '<div class="novel"><a href="novel/dawn" data-cover="/pages/1">Dawn Tea</a></div>',
+    "novel/dawn": '<h1>Dawn Tea</h1><span class="author">Mina</span><p class="summary">A shop opens at dawn.</p>'
+                  '<ul><li class="chapter"><a href="novel/dawn/1">First Cup</a></li><li class="chapter"><a href="novel/dawn/2">Second Cup</a></li></ul>',
+    "novel/dawn/1": '<div id="content"><p>The kettle sang in the small shop.</p></div>',
+    "novel/dawn/2": '<div id="content"><p>Rain came in the afternoon.</p></div>',
+}
+
+
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
+        path = self.path.split("?")[0]
+        host = self.headers.get("Host")
+        if path == "/lnreader/plugins.min.json":
+            index = f'[{{"id":"quiet","name":"Quiet Novels","site":"http://{host}/site/","lang":"English","version":"1.0.0",' \
+                    f'"url":"http://{host}/lnreader/quiet[test].js","iconUrl":"http://{host}/pages/2"}}]'
+            return self.reply(index.encode(), "application/json")
+        if path in ("/lnreader/quiet[test].js", "/lnreader/quiet%5Btest%5D.js"):
+            return self.reply(PLUGIN.replace("SITE", f"http://{host}/site/").encode(), "application/javascript")
+        if path.startswith("/site/") and path[len("/site/"):] in SITE:
+            return self.reply(SITE[path[len("/site/"):]].encode(), "text/html; charset=utf-8")
+        if path.startswith("/pages/"):
+            return self.reply(page(int(path.rsplit("/", 1)[1])), "image/png")
         if self.headers.get("Authorization") != AUTH:
             self.send_response(401)
             self.send_header("WWW-Authenticate", 'Basic realm="test"')
             self.end_headers()
             return
-        path = self.path.split("?")[0]
         if path == "/opds/catalog":
             self.reply(CATALOG.encode(), ATOM)
         elif path == "/opds/all":
@@ -91,8 +141,6 @@ class Handler(BaseHTTPRequestHandler):
             self.reply(books("Results").encode(), ATOM)
         elif path == "/files/sunrise.cbz":
             self.reply(cbz(), "application/vnd.comicbook+zip")
-        elif path.startswith("/pages/"):
-            self.reply(page(int(path.rsplit("/", 1)[1])), "image/png")
         else:
             self.send_response(404)
             self.end_headers()
