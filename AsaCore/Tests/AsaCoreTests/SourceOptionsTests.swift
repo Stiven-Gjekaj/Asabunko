@@ -22,6 +22,28 @@ import Testing
         #expect(list[3].kind == .multi([.init(label: "Manga", value: "ja"), .init(label: "Manhwa", value: "ko")], excludable: true))
     }
 
+    @Test func readsTheDynamicFiltersOfASource() {
+        // The example of the ABI notes: Select { id: "g", options: ["x"] }, in a list of one filter.
+        let select: [UInt8] = [0x01, 0x01, 0x67, 0x00, 0x00, 0x06, 0x73, 0x65, 0x6C, 0x65, 0x63, 0x74, 0x01, 0x00, 0x01, 0x00, 0x01, 0x01, 0x78, 0x00, 0x00]
+        var w = PostcardWriter()
+        w.unsigned(3)
+        for byte in select { w.u8(byte) }
+        // A sort with a default, and a note, which does not show.
+        w.option("order") { $0.string($1) }; w.option("Order") { $0.string($1) }; w.option(nil as Bool?) { $0.bool($1) }
+        w.string("sort"); w.option(true) { $0.bool($1) }
+        w.list(["New", "Top"]) { $0.string($1) }
+        w.option(1) { w, index in w.signed(index); w.bool(true) }
+        w.option("n") { $0.string($1) }; w.option(nil as String?) { $0.string($1) }; w.option(nil as Bool?) { $0.bool($1) }
+        w.string("note"); w.string("One genre only.")
+        let list = AidokuOptions.filters(postcard: w.data)
+        #expect(list.map(\.id) == ["g", "order"])
+        #expect(list[0].kind == .select([.init(label: "x", value: "x")]))
+        #expect(list[0].initial == .select("x"))
+        #expect(list[1].kind == .sort([.init(label: "New", value: "New"), .init(label: "Top", value: "Top")], canAscend: true))
+        #expect(list[1].initial == .sort(index: 1, ascending: true))
+        #expect(AidokuOptions.filters(postcard: Data([0x01, 0x00, 0x00, 0x00, 0x03, 0x62, 0x61, 0x64])).isEmpty, "An unknown type gives no filters.")
+    }
+
     @Test func encodesTheFilterValuesInPostcard() {
         let list = AidokuOptions.filters(filters)
         let data = AidokuOptions.encode(["sort": .sort(index: 2, ascending: false), "Type": .multi(included: ["ko"], excluded: [])], filters: list)

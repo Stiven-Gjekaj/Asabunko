@@ -165,7 +165,13 @@ public final class AidokuSource: OnlineSource, @unchecked Sendable {
         }
         self.listings = listings
         self.baseURL = (package.manifest.info.urls?.first ?? package.manifest.info.url).flatMap { URL(string: $0) }
-        filterList = AidokuOptions.filters(package.filters)
+        // The static filters of filters.json come first, and the filters of get_filters after them.
+        var filters = AidokuOptions.filters(package.filters)
+        if host.exports.contains("get_filters"), let dynamic = try? host.queue.sync(execute: { try host.call("get_filters", []) }) {
+            let known = Set(filters.map(\.id))
+            filters += AidokuOptions.filters(postcard: dynamic).filter { !known.contains($0.id) }
+        }
+        filterList = filters
         settingList = AidokuOptions.settings(package.settings)
     }
 

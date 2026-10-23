@@ -57,6 +57,60 @@ public enum AidokuOptions {
         return list.compactMap(filter)
     }
 
+    /// The filters that `get_filters` gives, as postcard `Vec<Filter>`. Each filter turns into the same
+    /// dictionary as an item of filters.json, so one function makes the options of both.
+    public static func filters(postcard data: Data) -> [SourceOption] {
+        var r = PostcardReader(data)
+        guard let items = try? r.list({ try readFilter(&$0) }) else { return [] }
+        return items.compactMap(filter)
+    }
+
+    /// One `Filter` of aidoku-rs: the common fields, then the fields of its type.
+    static func readFilter(_ r: inout PostcardReader) throws -> [String: Any] {
+        var item: [String: Any] = [:]
+        func strings(_ r: inout PostcardReader) throws -> [String] { try r.list { try $0.string() } }
+        item["id"] = try r.option { try $0.string() }
+        item["title"] = try r.option { try $0.string() }
+        item["hideFromHeader"] = try r.option { try $0.bool() }
+        let type = try r.string()
+        item["type"] = type
+        switch type {
+        case "text":
+            item["placeholder"] = try r.option { try $0.string() }
+        case "sort":
+            item["canAscend"] = try r.option { try $0.bool() }
+            item["options"] = try strings(&r)
+            if let start = try r.option({ r -> [String: Any] in ["index": Int(try r.signed()), "ascending": try r.bool()] }) { item["default"] = start }
+        case "check":
+            item["name"] = try r.option { try $0.string() }
+            item["canExclude"] = try r.option { try $0.bool() }
+            item["default"] = try r.option { try $0.bool() }
+        case "select":
+            item["isGenre"] = try r.option { try $0.bool() }
+            item["usesTagStyle"] = try r.option { try $0.bool() }
+            item["options"] = try strings(&r)
+            item["ids"] = try r.option { try strings(&$0) }
+            item["default"] = try r.option { try $0.string() }
+        case "multi-select":
+            item["isGenre"] = try r.option { try $0.bool() }
+            item["canExclude"] = try r.option { try $0.bool() }
+            item["usesTagStyle"] = try r.option { try $0.bool() }
+            item["options"] = try strings(&r)
+            item["ids"] = try r.option { try strings(&$0) }
+            item["defaultIncluded"] = try r.option { try strings(&$0) }
+            item["defaultExcluded"] = try r.option { try strings(&$0) }
+        case "note":
+            item["text"] = try r.string()
+        case "range":
+            item["min"] = try r.option { try $0.f32() }
+            item["max"] = try r.option { try $0.f32() }
+            item["decimal"] = try r.option { try $0.bool() }
+        default:
+            throw PostcardError.badTag(0)
+        }
+        return item
+    }
+
     private static func filter(_ item: [String: Any]) -> SourceOption? {
         guard let type = item["type"] as? String else { return nil }
         let title = (item["title"] as? String) ?? (item["name"] as? String) ?? type.capitalized
