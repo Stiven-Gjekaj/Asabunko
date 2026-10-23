@@ -72,7 +72,7 @@ private func fakeSource() throws -> Data {
     }
 
     /// Runs real sources of Aidoku Community from the web. It runs only with ASABUNKO_LIVE=1.
-    @Test(.enabled(if: ProcessInfo.processInfo.environment["ASABUNKO_LIVE"] == "1"), arguments: ["en.guya", "en.mangabat"])
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["ASABUNKO_LIVE"] == "1"), arguments: ["en.guya", "en.mangabat", "multi.mangaplus"])
     func readsARealSource(id: String) async throws {
         let session: Fetcher = { request in
             var request = request
@@ -94,6 +94,12 @@ private func fakeSource() throws -> Data {
         #expect(!details.chapters.isEmpty)
         guard case let .pages(pages) = try await source.content(of: details.chapters.last!, in: details.series) else { Issue.record("no pages"); return }
         #expect(!pages.isEmpty)
+        // MANGA Plus encrypts its pages. The source decrypts each one on the device with the canvas module.
+        if id == "multi.mangaplus", let first = pages.first?.url {
+            #expect(first.isFileURL, "The host gives the drawn page as a file.")
+            let bytes = [UInt8](try Data(contentsOf: first).prefix(3))
+            #expect(bytes == [0xFF, 0xD8, 0xFF], "The decrypted page is a JPEG.")
+        }
         let found = try await source.search(String(popular.items[0].title.prefix(6)), page: 1)
         print("LIVE", id, popular.items.count, "series;", details.series.title, details.chapters.count, "chapters,", pages.count, "pages; search", found.items.count, "; first page", pages.first?.url?.absoluteString.prefix(80) ?? "")
     }

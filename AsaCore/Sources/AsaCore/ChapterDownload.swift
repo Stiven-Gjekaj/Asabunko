@@ -53,6 +53,12 @@ public enum ChapterDownload {
                 var attempt = 0
                 while true {
                     do {
+                        // A page that the source drew on the device is a file already.
+                        if let url = request.url, url.isFileURL {
+                            data = try Data(contentsOf: url)
+                            mime = "image/png"
+                            break
+                        }
                         let (body, response) = try await fetcher(request)
                         guard (200..<300).contains(response.statusCode), !body.isEmpty else { throw URLError(.badServerResponse) }
                         data = body

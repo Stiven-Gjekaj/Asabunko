@@ -24,6 +24,17 @@ import Testing
         #expect(!ChapterDownload.isDownloaded(chapter, in: book))
     }
 
+    @Test func copiesAPageThatTheSourceDrewOnTheDevice() async throws {
+        let book = try temporaryFolder()
+        let drawn = try temporaryFolder().appendingPathComponent("page.png")
+        try Data("drawn".utf8).write(to: drawn)
+        let fetcher: Fetcher = { _ in throw URLError(.notConnectedToInternet) }
+        try await ChapterDownload.download([URLRequest(url: drawn)], chapter: chapter, in: book, fetcher: fetcher) { _, _ in }
+        let pages = ChapterDownload.pages(of: chapter, in: book)
+        #expect(pages.map(\.lastPathComponent) == ["0001.png"])
+        #expect(try Data(contentsOf: pages[0]) == Data("drawn".utf8))
+    }
+
     @Test func keepsNoHalfChapterWhenAPageFails() async throws {
         let book = try temporaryFolder()
         let requests = (1...3).map { URLRequest(url: URL(string: "https://x.test/p/\($0)")!) }
