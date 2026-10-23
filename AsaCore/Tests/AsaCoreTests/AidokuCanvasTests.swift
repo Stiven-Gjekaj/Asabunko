@@ -4,7 +4,7 @@ import Testing
 import WAT
 @testable import AsaCore
 
-/// A module in WAT that uses the canvas imports as a source of aidoku-rs does.
+/// A module in WAT that uses the canvas and the js imports as a source of aidoku-rs does.
 private func drawingSource() throws -> Data {
     Data(try wat2wasm(#"""
     (module
@@ -69,6 +69,18 @@ private func redBlue() -> CGImage {
         #expect(pixels(image) == [[0, 0, 255], [255, 0, 0]], "The blue pixel is on the left now.")
         let png = try #require(AidokuImages.png(image))
         #expect(AidokuImages.decode(png).map(pixels) == [[0, 0, 255], [255, 0, 0]])
+    }
+
+    @Test func runsAScriptAndAPromiseInJavaScriptCore() throws {
+        let host = try host()
+        let texts = try host.queue.sync { () -> [String] in
+            try ["script", "promise"].map { name in
+                let rid = AidokuHost.i32(try host.invoke(name, [])[0])
+                guard case let .bytes(data)? = host.item(rid) else { return "no result \(rid)" }
+                return String(decoding: data, as: UTF8.self)
+            }
+        }
+        #expect(texts == ["2-4-6", "42"])
     }
 
     @Test func readsAPathOfTheCanvasModule() throws {
