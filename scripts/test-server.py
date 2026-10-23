@@ -283,6 +283,8 @@ def suwayomi(query):
     return None
 
 
+# The number of downloads of the Aidoku package, for the test of the source list.
+DOWNLOADS = {"aix": 0}
 OFFLINE = {"on": False}
 
 
@@ -347,10 +349,15 @@ class Handler(BaseHTTPRequestHandler):
             return self.reply(page(int(path.rsplit("/", 1)[1])), "image/png")
         if path == "/aidoku/index.min.json":
             index = {"name": "Test list", "sources": [{"id": "en.test", "name": "Test Aidoku", "version": 1, "iconURL": "../pages/3",
-                                                        "downloadURL": "sources/en.test-v1.aix", "languages": ["en"], "contentRating": 0}]}
+                                                        "downloadURL": "sources/en.test-v1.aix", "languages": ["en"], "contentRating": 0},
+                                                       {"id": "ja.test", "name": "Japanese Test", "version": 1, "iconURL": "../pages/3",
+                                                        "downloadURL": "sources/en.test-v1.aix", "languages": ["ja"], "contentRating": 0}]}
             return self.reply(json.dumps(index).encode(), "application/json")
         if path == "/aidoku/sources/en.test-v1.aix":
+            DOWNLOADS["aix"] += 1
             return self.reply(aidoku_package(host), "application/zip")
+        if path == "/aidoku/downloads":
+            return self.reply(str(DOWNLOADS["aix"]).encode(), "text/plain")
         if path == "/lnreader/plugins.min.json":
             index = f'[{{"id":"quiet","name":"Quiet Novels","site":"http://{host}/site/","lang":"English","version":"1.0.0",' \
                     f'"url":"http://{host}/lnreader/quiet[test].js","iconUrl":"http://{host}/pages/2"}}]'

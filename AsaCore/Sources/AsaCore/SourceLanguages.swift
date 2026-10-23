@@ -21,6 +21,15 @@ public enum SourceLanguages {
         sources.filter { (adult || !$0.adult) && matches($0.language, preferred: preferred) }
     }
 
+    /// The changes to the sources of one list after a save of the source list. The app installs the English
+    /// sources that are not on the device yet, and removes the installed sources that left the list. The other
+    /// installed sources stay as they are, so a save does not download them again.
+    public static func sync(_ available: [SourceInfo], installed: Set<String>, adult: Bool) -> (install: [SourceInfo], remove: Set<String>) {
+        let install = pick(available, preferred: ["en"], adult: adult).filter { !installed.contains($0.id) }
+        let remove = installed.subtracting(available.map(\.id))
+        return (install, remove)
+    }
+
     /// "en" from "en-US" or "en_GB".
     private static func code(of language: String) -> String {
         String(language.lowercased().split(whereSeparator: { $0 == "-" || $0 == "_" }).first ?? "")

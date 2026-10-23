@@ -17,6 +17,8 @@ final class AppModel {
     let discover = DiscoverFeed()
     /// The install of the sources of new lines: the sources that installed, of all of them.
     private(set) var sourceSetup: (done: Int, total: Int)?
+    /// The update of the sources after the last save of the source list.
+    @ObservationIgnored private var setUpTask: Task<Void, Never>?
 
     private let root: URL
     private var libraryFile: URL { root.appendingPathComponent("library.json") }
@@ -184,17 +186,23 @@ final class AppModel {
         let kept = Set(lines.map(\.link.id))
         for old in library.sources where !kept.contains(old.id) { Keychain.setPassword(nil, for: old.id) }
         for line in lines where line.password != nil { Keychain.setPassword(line.password, for: line.link.id) }
-        let added = lines.map(\.link).filter { link in !library.sources.contains { $0.id == link.id } }
         library.sources = lines.map(\.link)
         // The sources of a line that the user removed go too.
         for installed in library.installed where !kept.contains(installed.list) { uninstall(installed) }
         save()
-        if !added.isEmpty { Task { await setUp(added) } }
+        // Each save brings each list up to date. A save waits for the save before it, so a source does not install two times.
+        let links = library.sources
+        let previous = setUpTask
+        setUpTask = Task {
+            await previous?.value
+            await setUp(links)
+        }
         return library.sources
     }
 
-    /// Finds the kind of each new line and installs the sources of each list, with no question.
-    /// Only the sources in the languages of the device go in. The user removes a source in Settings.
+    /// Finds the kind of each line and brings the sources of each list up to date, with no question.
+    /// The English sources that are not on the device go in, and the sources that left a list go out.
+    /// The other sources stay as they are.
     func setUp(_ links: [SourceLink]) async {
         var failed: [String] = []
         for var link in links {
@@ -215,8 +223,10 @@ final class AppModel {
                 continue
             }
             let adult = UserDefaults.standard.bool(forKey: "browse.adult")
-            let picked = SourceLanguages.pick(infos, preferred: Locale.preferredLanguages, adult: adult).filter { !isInstalled($0, from: link) }
-            await installAll(picked, from: link)
+            let mine = library.installed.filter { $0.list == link.id }
+            let plan = SourceLanguages.sync(infos, installed: Set(mine.map(\.info.id)), adult: adult)
+            for installed in mine where plan.remove.contains(installed.info.id) { uninstall(installed) }
+            await installAll(plan.install, from: link)
         }
         // A book of a line that the user removed and added again finds its source.
         changeLibrary { $0.relinkOrphans() }
