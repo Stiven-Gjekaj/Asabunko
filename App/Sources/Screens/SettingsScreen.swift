@@ -102,7 +102,8 @@ struct SettingsScreen: View {
             .fileExporter(
                 isPresented: Binding(get: { exporting != nil }, set: { if !$0 { exporting = nil } }),
                 document: exporting, contentType: .json,
-                defaultFilename: "Asabunko " + Date.now.formatted(.iso8601.year().month().day())
+                // The time is in the name, so a new backup does not take the place of an older one.
+                defaultFilename: "Asabunko " + Self.stamp.string(from: .now)
             ) { _ in exporting = nil }
             .fileImporter(isPresented: $restoring, allowedContentTypes: [.json]) { result in
                 guard case let .success(url) = result else { return }
@@ -151,6 +152,14 @@ struct SettingsScreen: View {
             }
         }
     }
+
+    /// The date and the local time of a backup, with 24 hours, such as "2026-10-23 15-04-09".
+    static let stamp: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd HH-mm-ss"
+        return formatter
+    }()
 
     /// The text of the SIL Open Font License, from the file next to the font.
     static var fontLicense: String {
