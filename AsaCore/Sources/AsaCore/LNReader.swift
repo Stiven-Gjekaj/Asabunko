@@ -140,11 +140,6 @@ public final class LNReaderPlugin: OnlineSource, @unchecked Sendable {
         .html(try await runtime.invoke(String.self, "(path) => plugin.parseChapter(path)", [chapter.id]))
     }
 
-    /// The full URL of a path of the site, for a link in the browser.
-    public func webURL(of path: String, novel: Bool) async -> URL? {
-        (try? await runtime.invoke(String.self, "(path, isNovel) => __resolve(path, isNovel)", [path, novel])).flatMap { URL(lenient: $0) }
-    }
-
     public func imageRequest(_ url: URL) -> URLRequest {
         var request = URLRequest(url: url)
         for (key, value) in imageHeaders { request.setValue(value, forHTTPHeaderField: key) }

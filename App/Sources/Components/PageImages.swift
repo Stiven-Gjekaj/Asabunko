@@ -174,13 +174,6 @@ final class PageImages: @unchecked Sendable {
         return page.preparingForDisplay() ?? page
     }
 
-    /// Removes the pages from the network. The caches folder of iOS can also remove them.
-    func clearDownloads() {
-        try? FileManager.default.removeItem(at: folder)
-        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        cache.removeAllObjects()
-    }
-
     /// The long side of the screen in pixels, two times for the zoom.
     @MainActor static var screenPixels: CGFloat {
         let screen = UIScreen.main

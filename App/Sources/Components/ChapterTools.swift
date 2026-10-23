@@ -142,14 +142,14 @@ final class ChapterWebView: WKWebView {
         synthesizer.delegate = self
     }
 
-    func start(_ sentences: [String], from first: Int = 0, language: String? = nil) {
+    func start(_ sentences: [String], language: String? = nil) {
         stop()
         self.sentences = sentences
         self.language = language
         count = sentences.count
-        guard sentences.indices.contains(first) else { onEnd?(); return }
+        guard !sentences.isEmpty else { onEnd?(); return }
         speaking = true
-        speak(first)
+        speak(0)
     }
 
     func stop() {

@@ -144,12 +144,4 @@
         value: saved === undefined ? settings[key].value : saved, options: choices(settings[key].options) };
     });
   };
-
-  // A path of the site as a full URL.
-  globalThis.__resolve = function (path, isNovel) {
-    const plugin = globalThis.plugin;
-    if (plugin.resolveUrl) return plugin.resolveUrl(path, isNovel);
-    if (isUrlAbsolute(path)) return path;
-    return new URL(path, plugin.site).href;
-  };
 })();
