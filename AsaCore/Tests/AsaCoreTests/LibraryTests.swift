@@ -106,4 +106,29 @@ import Testing
         #expect(library.sources.isEmpty)
         #expect(library.defaultMode == .vertical)
     }
+
+    @Test func keepsTheNewChaptersOfTheChecksNewestFirst() throws {
+        let book = Book(title: "Tide", fileName: "t", pageCount: 3)
+        var library = Library(books: [book])
+        let early = Date(timeIntervalSince1970: 1_000), late = Date(timeIntervalSince1970: 2_000)
+        library.record([(1, "Two"), (2, "Three")], of: book.id, at: early)
+        library.record([(2, "Three"), (3, "Four")], of: book.id, at: late)
+        #expect(library.updates.map(\.chapter) == [3, 2, 1], "A chapter that is in the list does not come two times.")
+        #expect(library.updates.first?.found == late)
+        library.record((10..<(10 + Library.updateLimit)).map { ($0, nil) }, of: book.id)
+        #expect(library.updates.count == Library.updateLimit)
+        // A book that left the library does not show its updates.
+        library.books = []
+        #expect(library.shownUpdates.isEmpty)
+        // The updates and the switch of the downloads stay in the file.
+        var saved = Library(books: [Book(title: "Sea", fileName: "s", pageCount: 1, autoDownload: true)])
+        saved.record([(0, "One")], of: saved.books[0].id)
+        let read = try JSONDecoder().decode(Library.self, from: try JSONEncoder().encode(saved))
+        #expect(read.updates == saved.updates)
+        #expect(read.books[0].autoDownload)
+        // A file of an older version has no updates and no switch.
+        let old = try JSONDecoder().decode(Library.self, from: Data(#"{"form":1,"books":[{"id":"6F9619FF-8B86-D011-B42D-00C04FC964FF","title":"Old","format":"comic","fileName":"o","pageCount":1,"added":0,"page":0,"finished":false}],"defaultMode":"rightToLeft"}"#.utf8))
+        #expect(old.updates.isEmpty)
+        #expect(old.books[0].autoDownload == false)
+    }
 }

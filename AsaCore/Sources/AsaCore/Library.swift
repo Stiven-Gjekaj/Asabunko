@@ -73,12 +73,14 @@ public struct Book: Codable, Sendable, Identifiable, Equatable {
     public var origin: BookOrigin?
     /// True when the book is in the read list. A series that the user only opened is not.
     public var listed: Bool
+    /// True when each new chapter that a check finds downloads with no question.
+    public var autoDownload: Bool
 
     public init(
         id: UUID = UUID(), title: String, author: String? = nil, summary: String? = nil,
         format: BookFormat = .comic, fileName: String, pageCount: Int, added: Date = .now,
         lastRead: Date? = nil, page: Int = 0, position: Double = 0, finished: Bool = false, mode: ReadingMode? = nil,
-        origin: BookOrigin? = nil, listed: Bool = true
+        origin: BookOrigin? = nil, listed: Bool = true, autoDownload: Bool = false
     ) {
         self.id = id
         self.title = title
@@ -95,10 +97,11 @@ public struct Book: Codable, Sendable, Identifiable, Equatable {
         self.mode = mode
         self.origin = origin
         self.listed = listed
+        self.autoDownload = autoDownload
     }
 
     private enum CodingKeys: String, CodingKey {
-        case id, title, author, summary, format, fileName, pageCount, added, lastRead, page, position, finished, mode, origin, listed
+        case id, title, author, summary, format, fileName, pageCount, added, lastRead, page, position, finished, mode, origin, listed, autoDownload
     }
 
     /// A field that an older version did not write gets its first value.
@@ -120,6 +123,7 @@ public struct Book: Codable, Sendable, Identifiable, Equatable {
         origin = try c.decodeIfPresent(BookOrigin.self, forKey: .origin)
         // Before the read list, the user added each book on purpose.
         listed = try c.decodeIfPresent(Bool.self, forKey: .listed) ?? true
+        autoDownload = try c.decodeIfPresent(Bool.self, forKey: .autoDownload) ?? false
     }
 
     /// The part of the book that the user read, from 0 to 1.
@@ -163,6 +167,20 @@ public enum ReadListOrder: String, CaseIterable, Sendable {
     }
 }
 
+/// A new chapter that a check found.
+public struct ChapterUpdate: Codable, Sendable, Equatable, Identifiable {
+    public var id: UUID
+    public var book: UUID
+    /// The index of the chapter in the book, from 0.
+    public var chapter: Int
+    public var title: String?
+    public var found: Date
+
+    public init(id: UUID = UUID(), book: UUID, chapter: Int, title: String?, found: Date) {
+        self.id = id; self.book = book; self.chapter = chapter; self.title = title; self.found = found
+    }
+}
+
 /// All data of the library, in one JSON file.
 public struct Library: Codable, Sendable, Equatable {
     /// The form of the data. A newer app can read an older form, but not the reverse.
@@ -173,6 +191,10 @@ public struct Library: Codable, Sendable, Equatable {
     public var defaultMode: ReadingMode
     public var sources: [SourceLink]
     public var installed: [InstalledSource]
+    /// The new chapters that the checks found, the newest first.
+    public var updates: [ChapterUpdate]
+    /// The list of updates keeps at most this number of chapters.
+    public static let updateLimit = 300
 
     public init(books: [Book] = [], defaultMode: ReadingMode = .rightToLeft, sources: [SourceLink] = []) {
         self.form = Self.currentForm
@@ -180,9 +202,10 @@ public struct Library: Codable, Sendable, Equatable {
         self.defaultMode = defaultMode
         self.sources = sources
         self.installed = []
+        self.updates = []
     }
 
-    private enum CodingKeys: String, CodingKey { case form, books, defaultMode, sources, installed }
+    private enum CodingKeys: String, CodingKey { case form, books, defaultMode, sources, installed, updates }
 
     /// A list that an older version did not write is empty.
     public init(from decoder: Decoder) throws {
@@ -192,6 +215,22 @@ public struct Library: Codable, Sendable, Equatable {
         defaultMode = try c.decode(ReadingMode.self, forKey: .defaultMode)
         sources = try c.decodeIfPresent([SourceLink].self, forKey: .sources) ?? []
         installed = try c.decodeIfPresent([InstalledSource].self, forKey: .installed) ?? []
+        updates = try c.decodeIfPresent([ChapterUpdate].self, forKey: .updates) ?? []
+    }
+
+    /// Keeps the new chapters of a book at the top of the updates. A chapter that is in the list already does not come two times.
+    public mutating func record(_ chapters: [(index: Int, title: String?)], of book: UUID, at date: Date = .now) {
+        let known = Set(updates.filter { $0.book == book }.map(\.chapter))
+        // The last chapter comes first, as in the list of the source.
+        let new = chapters.filter { !known.contains($0.index) }.sorted { $0.index > $1.index }
+            .map { ChapterUpdate(book: book, chapter: $0.index, title: $0.title, found: date) }
+        updates = Array((new + updates).prefix(Self.updateLimit))
+    }
+
+    /// The updates of the books that are in the library, the newest first.
+    public var shownUpdates: [ChapterUpdate] {
+        let ids = Set(books.map(\.id))
+        return updates.filter { ids.contains($0.book) }
     }
 
     /// The mode that the reader uses for a book.
