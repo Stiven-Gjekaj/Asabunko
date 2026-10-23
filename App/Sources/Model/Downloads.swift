@@ -95,6 +95,11 @@ extension AppModel {
 
     func isDownloaded(_ id: Book.ID, index: Int) -> Bool {
         guard let (book, chapter, folder) = chapterAndFolder(id, index) else { return false }
+        return Self.isDownloaded(chapter, of: book, in: folder)
+    }
+
+    /// One check of the disk for one chapter: the file of a chapter of a novel, or the pages of a comic chapter.
+    nonisolated static func isDownloaded(_ chapter: Novel.Chapter, of book: Book, in folder: URL) -> Bool {
         if book.format == .novel { return FileManager.default.fileExists(atPath: folder.appendingPathComponent(chapter.path).path) }
         return ChapterDownload.isDownloaded(chapter, in: folder)
     }
@@ -118,40 +123,44 @@ extension AppModel {
 
     /// Removes the downloaded pages of each chapter of a book.
     func removeDownloads(_ id: Book.ID) {
-        guard let book = book(id), let novel = novel(of: book) else { return }
-        for chapter in novel.chapters {
-            if book.format == .novel {
-                try? FileManager.default.removeItem(at: folder(of: book).appendingPathComponent(chapter.path))
-            } else {
-                ChapterDownload.remove(chapter, in: folder(of: book))
-            }
-        }
-        downloads.touch()
+        removeDownloads(id, before: .max)
     }
 
     /// Removes the downloads of the chapters before `end`, which are the chapters that the user read.
     func removeDownloads(_ id: Book.ID, before end: Int) {
         guard let book = book(id), let novel = novel(of: book) else { return }
+        let folder = folder(of: book)
         for (index, chapter) in novel.chapters.enumerated() where index < end {
             if book.format == .novel {
-                try? FileManager.default.removeItem(at: folder(of: book).appendingPathComponent(chapter.path))
+                try? FileManager.default.removeItem(at: folder.appendingPathComponent(chapter.path))
             } else {
-                ChapterDownload.remove(chapter, in: folder(of: book))
+                ChapterDownload.remove(chapter, in: folder)
             }
         }
         downloads.touch()
     }
 
-    /// The number of chapters of a book that downloaded.
+    /// The number of chapters of a book that downloaded. The book and its folder come one time, not once for each chapter.
     func downloadedCount(_ id: Book.ID) -> Int {
-        guard let novel = book(id).flatMap(novel(of:)) else { return 0 }
-        return novel.chapters.indices.filter { isDownloaded(id, index: $0) }.count
+        guard let book = book(id), let novel = novel(of: book) else { return 0 }
+        let folder = folder(of: book)
+        return novel.chapters.count { Self.isDownloaded($0, of: book, in: folder) }
+    }
+
+    /// True when a chapter of the book is on the device. It stops at the first one, so a menu can ask it in each redraw.
+    func hasDownloads(_ id: Book.ID) -> Bool {
+        guard let book = book(id), book.origin != nil, let novel = novel(of: book) else { return false }
+        let folder = folder(of: book)
+        return novel.chapters.contains { Self.isDownloaded($0, of: book, in: folder) }
     }
 
     /// Downloads each chapter of a book from `start` that is not on the device.
     func downloadChapters(_ id: Book.ID, from start: Int = 0) {
         guard let novel = book(id).flatMap(novel(of:)) else { return }
-        let jobs = novel.chapters.indices.filter { $0 >= start && !isDownloaded(id, index: $0) }.map { Downloads.Job(book: id, chapter: $0) }
+        guard let book = book(id) else { return }
+        let folder = folder(of: book)
+        let jobs = novel.chapters.indices.filter { $0 >= start && !Self.isDownloaded(novel.chapters[$0], of: book, in: folder) }
+            .map { Downloads.Job(book: id, chapter: $0) }
         downloads.enqueue(jobs, app: self)
     }
 }

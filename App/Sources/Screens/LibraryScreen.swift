@@ -304,7 +304,7 @@ struct LibraryScreen: View {
         }
         if book.origin != nil {
             Button { app.downloadChapters(book.id) } label: { Label("Download all chapters", systemImage: "arrow.down.circle") }
-            if app.downloadedCount(book.id) > 0 {
+            if app.hasDownloads(book.id) {
                 Button { app.downloads.cancel(book.id); app.removeDownloads(book.id) } label: { Label("Remove downloads", systemImage: "xmark.bin") }
             }
         }
@@ -442,7 +442,7 @@ enum LibraryFilter: String, CaseIterable, Hashable {
         switch self {
         case .unread: !book.finished
         // A book from a file is on the device. An online book needs a downloaded chapter.
-        case .downloaded: book.origin == nil || app.downloadedCount(book.id) > 0
+        case .downloaded: book.origin == nil || app.hasDownloads(book.id)
         case .comics: book.format != .novel
         case .novels: book.format == .novel
         }

@@ -6,6 +6,7 @@ import SwiftUI
 struct StorageScreen: View {
     @Environment(AppModel.self) private var app
     @State private var sizes: [Book.ID: Int64] = [:]
+    @State private var counts: [Book.ID: Int] = [:]
     @State private var clearing = false
 
     var body: some View {
@@ -24,12 +25,12 @@ struct StorageScreen: View {
                             Spacer()
                             Text(format(sizes[book.id] ?? 0)).foregroundStyle(Palette.textSecondary)
                         }
-                        Text("\(app.downloadedCount(book.id)) chapters on the device").font(Karla.font(13)).foregroundStyle(Palette.textSecondary)
+                        Text("\(counts[book.id] ?? 0) chapters on the device").font(Karla.font(13)).foregroundStyle(Palette.textSecondary)
                         HStack(spacing: 16) {
                             if book.page > 0 {
-                                Button("Remove the read chapters") { app.removeDownloads(book.id, before: book.page); measure() }
+                                Button("Remove the read chapters") { app.removeDownloads(book.id, before: book.page) }
                             }
-                            Button("Remove all", role: .destructive) { app.downloads.cancel(book.id); app.removeDownloads(book.id); measure() }
+                            Button("Remove all", role: .destructive) { app.downloads.cancel(book.id); app.removeDownloads(book.id) }
                         }
                         .font(Karla.font(14, .bold))
                         .buttonStyle(.borderless)
@@ -43,14 +44,14 @@ struct StorageScreen: View {
         .asaScreen()
         .navigationTitle("Storage")
         .navigationBarTitleDisplayMode(.inline)
-        .task { measure() }
+        // A removal changes the downloads, so the screen measures again.
+        .task(id: app.downloads.changes) { measure() }
         .confirmationDialog("Remove all downloads?", isPresented: $clearing, titleVisibility: .visible) {
             Button("Remove all", role: .destructive) {
                 for book in books {
                     app.downloads.cancel(book.id)
                     app.removeDownloads(book.id)
                 }
-                measure()
             }
         } message: {
             Text("The books stay in your library. Their chapters download again when you read them.")
@@ -65,12 +66,24 @@ struct StorageScreen: View {
         app.library.books.filter { sizes[$0.id] != nil }.sorted { (sizes[$0.id] ?? 0) > (sizes[$1.id] ?? 0) }
     }
 
+    /// Counts the chapters on the device and the size of each book, away from the main thread.
     private func measure() {
-        var found: [Book.ID: Int64] = [:]
-        for book in app.library.books where book.origin != nil && app.downloadedCount(book.id) > 0 {
-            found[book.id] = FolderSize.bytes(of: app.folder(of: book).appendingPathComponent("chapters"))
+        let online = app.library.books.compactMap { book -> (Book, [Novel.Chapter], URL)? in
+            guard book.origin != nil, let novel = app.novel(of: book) else { return nil }
+            return (book, novel.chapters, app.folder(of: book))
         }
-        sizes = found
+        Task {
+            let found = await Task.detached(priority: .userInitiated) {
+                var found: [Book.ID: (count: Int, bytes: Int64)] = [:]
+                for (book, chapters, folder) in online {
+                    let count = chapters.count { AppModel.isDownloaded($0, of: book, in: folder) }
+                    if count > 0 { found[book.id] = (count, FolderSize.bytes(of: folder.appendingPathComponent("chapters"))) }
+                }
+                return found
+            }.value
+            counts = found.mapValues(\.count)
+            sizes = found.mapValues(\.bytes)
+        }
     }
 
     private func format(_ bytes: Int64) -> String { ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file) }

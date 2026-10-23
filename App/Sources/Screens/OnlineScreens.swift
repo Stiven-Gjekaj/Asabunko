@@ -703,7 +703,7 @@ struct OnlineSeriesScreen: View {
     private func toggleList(_ details: OnlineDetails) async {
         if let book, book.listed {
             // A book with no place and no downloads leaves the library. Downloads stay with the book.
-            if book.lastRead == nil && app.downloadedCount(book.id) == 0 { app.delete(book) } else { app.update(book.id) { $0.listed = false } }
+            if book.lastRead == nil && !app.hasDownloads(book.id) { app.delete(book) } else { app.update(book.id) { $0.listed = false } }
         } else {
             await add(details, listed: true)
         }
