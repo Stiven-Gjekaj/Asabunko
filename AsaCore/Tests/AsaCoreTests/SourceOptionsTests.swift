@@ -33,6 +33,14 @@ import Testing
         #expect(data == expected)
     }
 
+    @Test func aCheckGoesOnlyWhenTheUserChangedIt() {
+        let check = AidokuOptions.filters(Data(#"[{"type": "check", "id": "done", "name": "Completed"}]"#.utf8))
+        #expect(AidokuOptions.encode([:], filters: check) == Data([0x00]))
+        var expected = Data([0x01, 0x02, 0x04]) + Data("done".utf8)
+        expected.append(0x02)
+        #expect(AidokuOptions.encode(["done": .toggle(true)], filters: check) == expected)
+    }
+
     @Test func settingsKeepTheirValuesInTheFormOfTheDefaults() throws {
         let json = Data("""
         [{"type": "group", "items": [

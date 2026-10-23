@@ -95,6 +95,9 @@ public enum AidokuOptions {
         for filter in filters {
             let value = values[filter.id] ?? filter.initial
             if case let .text(text) = value, text.isEmpty { continue }
+            // The meaning of a check with the value 0 is not clear, and a source can read it as "exclude".
+            // So a check goes only when the user changed it, as the Aidoku app does.
+            if case .toggle = value, value == filter.initial { continue }
             items.append((filter, value))
         }
         var w = PostcardWriter()
