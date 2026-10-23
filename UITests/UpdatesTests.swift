@@ -47,9 +47,12 @@ final class UpdatesTests: XCTestCase {
         app.tabBars.buttons["Settings"].tap()
         let checks = app.switches["Check in the background"]
         XCTAssertTrue(checks.waitForExistence(timeout: 5))
-        checks.switches.firstMatch.tap()
-        let allow = XCUIApplication(bundleIdentifier: "com.apple.springboard").buttons["Allow"]
-        if allow.waitForExistence(timeout: 10) { allow.tap() }
+        // The settings of the simulator stay after a test, so an older run can leave the checks on.
+        if checks.value as? String != "1" {
+            checks.switches.firstMatch.tap()
+            let allow = XCUIApplication(bundleIdentifier: "com.apple.springboard").buttons["Allow"]
+            if allow.waitForExistence(timeout: 10) { allow.tap() }
+        }
         XCTAssertEqual(checks.value as? String, "1")
 
         // The source gets a new chapter. The app starts again and runs the check of the background.

@@ -76,6 +76,12 @@ final class LibraryToolsTests: XCTestCase {
 
     func testKeepsAHistoryExceptInPrivateReading() throws {
         XCTAssertTrue(app.staticTexts["Your shelf is empty"].waitForExistence(timeout: 10))
+        // The settings of the simulator stay after a test, so an older run can leave the private reading on.
+        app.tabBars.buttons["Settings"].tap()
+        let quiet = app.switches["Private reading"]
+        app.reveal(quiet)
+        if quiet.value as? String == "1" { quiet.switches.firstMatch.tap() }
+        app.tabBars.buttons["Library"].tap()
         try importBook("Harbor Lights")
         try importBook("Mountain Tea")
         app.button(containing: "Harbor Lights").tap()
@@ -85,7 +91,6 @@ final class LibraryToolsTests: XCTestCase {
         XCTAssertTrue(history.waitForExistence(timeout: 5), "The Library shows the history.")
 
         app.tabBars.buttons["Settings"].tap()
-        let quiet = app.switches["Private reading"]
         app.reveal(quiet)
         quiet.switches.firstMatch.tap()
         app.tabBars.buttons["Library"].tap()
@@ -97,6 +102,10 @@ final class LibraryToolsTests: XCTestCase {
         XCTAssertTrue(app.button(containing: "Harbor Lights").waitForExistence(timeout: 5))
         XCTAssertFalse(app.button(containing: "Mountain Tea").exists, "A book of the private reading is not in the history.")
         shot("2 History")
+        // The next test starts with the private reading off.
+        app.tabBars.buttons["Settings"].tap()
+        app.reveal(quiet)
+        quiet.switches.firstMatch.tap()
     }
 
     func testMovesABookAndRemovesItsDownloads() throws {
