@@ -122,7 +122,16 @@ struct FilterSheet: View {
     let applied: [String: OptionValue]
     let onApply: ([String: OptionValue]) -> Void
     @Environment(\.dismiss) private var dismiss
-    @State private var values: [String: OptionValue] = [:]
+    @State private var values: [String: OptionValue]
+
+    init(options: [SourceOption], applied: [String: OptionValue], onApply: @escaping ([String: OptionValue]) -> Void) {
+        self.options = options
+        self.applied = applied
+        self.onApply = onApply
+        // The values come from the applied filters one time. The sheet appears again when a list of choices closes,
+        // and a copy at each appearance lost the choices of that list.
+        _values = State(initialValue: applied)
+    }
 
     var body: some View {
         NavigationStack {
@@ -146,7 +155,6 @@ struct FilterSheet: View {
                     }
                 }
             }
-            .onAppear { values = applied }
         }
     }
 }
