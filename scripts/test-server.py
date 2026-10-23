@@ -130,7 +130,34 @@ exports.default = new Quiet();
 
 PAPERBACK = r"""
 var source = (function (e) {
+  // A settings form with a switch, and a link to a form of choices that the user must save.
+  class StyleForm {
+    constructor() { this.requiresExplicitSubmission = true; this.style = Application.getState('style') ?? 'plain'; }
+    getSections() {
+      return [{ type: 'listSection', id: 'styles', header: 'Title style', items: ['plain', 'stars'].map((style) => {
+        this['__closure_selector-' + style] = () => { this.style = style; };
+        return { type: 'labelRow', id: style, title: style === 'plain' ? 'Plain' : 'Stars', isHidden: false,
+                 value: this.style === style ? { symbol: 'checkmark', style: 'success' } : undefined, onSelect: Application.Selector(this, '__closure_selector-' + style) };
+      }) }];
+    }
+    async formDidSubmit() { Application.setState(this.style, 'style'); }
+  }
+  class SettingsForm {
+    getSections() {
+      return [{ type: 'listSection', id: 'look', header: 'Look', items: [
+        { type: 'toggleRow', id: 'loud', title: 'Capital letters', isHidden: false, value: Application.getState('loud') ?? false, onValueChange: Application.Selector(this, 'setLoud') },
+        { type: 'navigationRow', id: 'style', title: 'Title style', isHidden: false, value: Application.getState('style') ?? 'plain', form: new StyleForm() },
+      ] }];
+    }
+    async setLoud(value) { Application.setState(value, 'loud'); }
+  }
+  // The settings change the titles of the list.
+  function titled(title) {
+    const loud = Application.getState('loud') ? title.toUpperCase() : title;
+    return Application.getState('style') === 'stars' ? '\u2605 ' + loud : loud;
+  }
   class Quiet {
+    async getSettingsForm() { return new SettingsForm(); }
     async initialise() {
       Application.registerInterceptor('referer', Application.Selector(this, 'interceptRequest'), Application.Selector(this, 'interceptResponse'));
     }
@@ -140,7 +167,7 @@ var source = (function (e) {
     async getDiscoverSectionItems(section, metadata) {
       const [, data] = await Application.scheduleRequest({ url: 'BASE/paperback/api/popular', method: 'GET' });
       const list = JSON.parse(Application.arrayBufferToUTF8String(data));
-      return { items: list.map((t) => ({ type: 'simpleCarouselItem', mangaId: t.id, title: t.title, imageUrl: 'BASE/paperback/page/1' })), metadata: undefined };
+      return { items: list.map((t) => ({ type: 'simpleCarouselItem', mangaId: t.id, title: titled(t.title), imageUrl: 'BASE/paperback/page/1' })), metadata: undefined };
     }
     async getSearchResults(query) { return { items: [], metadata: undefined }; }
     async getMangaDetails(mangaId) {

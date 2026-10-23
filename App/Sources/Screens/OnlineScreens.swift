@@ -122,6 +122,7 @@ struct OnlineSourceScreen: View {
     @State private var applied: [String: OptionValue] = [:]
     @State private var showFilters = false
     @State private var hasSettings = false
+    @State private var settingsForm = false
     @State private var generation = 0
 
     enum Listing: String, CaseIterable { case popular = "Popular", latest = "Latest" }
@@ -182,7 +183,13 @@ struct OnlineSourceScreen: View {
             }
             if hasSettings, let source {
                 ToolbarItem(placement: .topBarTrailing) {
-                    NavigationLink { SourceSettingsScreen(source: source, name: installed.info.name) } label: { Image(systemName: "gearshape") }
+                    NavigationLink {
+                        if settingsForm {
+                            SourceFormScreen(source: source, title: installed.info.name)
+                        } else {
+                            SourceSettingsScreen(source: source, name: installed.info.name)
+                        }
+                    } label: { Image(systemName: "gearshape") }
                         .accessibilityLabel("Source settings")
                 }
             }
@@ -199,7 +206,9 @@ struct OnlineSourceScreen: View {
                 let loaded = try await app.load(installed)
                 source = loaded
                 filters = await loaded.filterOptions()
-                hasSettings = !(await loaded.settingOptions()).isEmpty
+                settingsForm = await loaded.hasSettingsForm()
+                let options = await loaded.settingOptions()
+                hasSettings = settingsForm || !options.isEmpty
                 await loadPage(1)
             } catch {
                 fault = error.localizedDescription
