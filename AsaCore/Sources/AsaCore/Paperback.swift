@@ -145,6 +145,7 @@ public final class PaperbackExtension: OnlineSource, @unchecked Sendable {
                 values[id] = marks
             case let .toggle(on): values[id] = on
             case let .sort(index, _): values[id] = index
+            case let .range(from, to): values[id] = ["from": from ?? NSNull(), "to": to ?? NSNull()] as [String: Any]
             }
         }
         let json = String(decoding: try JSONSerialization.data(withJSONObject: values), as: UTF8.self)

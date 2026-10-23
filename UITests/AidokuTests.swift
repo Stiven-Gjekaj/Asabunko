@@ -37,6 +37,27 @@ final class AidokuTests: XCTestCase {
         app.buttons["Close"].tap()
     }
 
+    func testFiltersTheSourceWithARange() throws {
+        app.saveSourceLine(server + "/aidoku/index.min.json")
+        app.waitForInstalled(1)
+        app.button(containing: "Test Aidoku").tap()
+        XCTAssertTrue(app.button(containing: "Aidoku Sunrise").waitForExistence(timeout: 10))
+        app.buttons["Filters"].tap()
+        let from = app.textFields["Year, from"]
+        XCTAssertTrue(from.waitForExistence(timeout: 5), "The range filter of filters.json shows as two fields.")
+        XCTAssertEqual(from.placeholderValue, "1990")
+        from.tap()
+        from.typeText("2001")
+        app.textFields["Year, to"].tap()
+        app.textFields["Year, to"].typeText("2005")
+        shot("4 Range filter")
+        app.buttons["Apply"].tap()
+        XCTAssertEqual(app.buttons["Filters"].value as? String, "On")
+        XCTAssertTrue(app.button(containing: "Aidoku Sunrise").waitForExistence(timeout: 10), "The search with the range gives the list of the source.")
+        app.buttons["Filters"].tap()
+        XCTAssertEqual(app.textFields["Year, from"].value as? String, "2001", "The sheet keeps the applied range.")
+    }
+
     private func shot(_ name: String) {
         let attachment = XCTAttachment(screenshot: app.screenshot())
         attachment.name = name

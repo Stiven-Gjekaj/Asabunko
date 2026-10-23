@@ -63,6 +63,26 @@ import Testing
         #expect(AidokuOptions.encode(["done": .toggle(true)], filters: check) == expected)
     }
 
+    @Test func readsAndEncodesARangeFilter() {
+        let json = AidokuOptions.filters(Data(#"[{"type": "range", "id": "year", "title": "Year", "min": 1990, "max": 2030}]"#.utf8))
+        #expect(json.map(\.kind) == [.range(min: 1990, max: 2030, decimal: false)])
+        // The same filter from get_filters, with decimal numbers.
+        var w = PostcardWriter()
+        w.unsigned(1)
+        w.option("score") { $0.string($1) }; w.option("Score") { $0.string($1) }; w.option(nil as Bool?) { $0.bool($1) }
+        w.string("range"); w.option(Float(0)) { $0.f32($1) }; w.option(nil as Float?) { $0.f32($1) }; w.option(true) { $0.bool($1) }
+        let dynamic = AidokuOptions.filters(postcard: w.data)
+        #expect(dynamic.map(\.kind) == [.range(min: 0, max: nil, decimal: true)])
+        #expect(dynamic.first?.initial == .range(from: nil, to: nil))
+
+        // A range with no bound does not go. A missing bound is None.
+        #expect(AidokuOptions.encode([:], filters: json) == Data([0x00]))
+        let head = Data([0x01, 0x05, 0x04]) + Data("year".utf8)
+        #expect(AidokuOptions.encode(["year": .range(from: 2.5, to: nil)], filters: json) == head + Data([0x01, 0x00, 0x00, 0x20, 0x40, 0x00]))
+        #expect(AidokuOptions.encode(["year": .range(from: nil, to: 2020)], filters: json) == head + Data([0x00, 0x01, 0x00, 0x80, 0xFC, 0x44]))
+        #expect(AidokuOptions.encode(["year": .range(from: 2.5, to: 2020)], filters: json) == head + Data([0x01, 0x00, 0x00, 0x20, 0x40, 0x01, 0x00, 0x80, 0xFC, 0x44]))
+    }
+
     @Test func settingsKeepTheirValuesInTheFormOfTheDefaults() throws {
         let json = Data("""
         [{"type": "group", "items": [

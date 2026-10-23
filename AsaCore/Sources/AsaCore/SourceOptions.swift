@@ -11,6 +11,8 @@ public struct SourceOption: Sendable, Equatable, Identifiable {
         case multi([Choice], excludable: Bool)
         /// The order of the list, with an ascending switch when `canAscend` is true.
         case sort([Choice], canAscend: Bool)
+        /// Two numbers, from and to. Each bound is optional.
+        case range(min: Double?, max: Double?, decimal: Bool)
     }
 
     public struct Choice: Sendable, Equatable, Hashable {
@@ -47,6 +49,7 @@ public enum OptionValue: Sendable, Codable, Equatable, Hashable {
     case select(String)
     case multi(included: [String], excluded: [String])
     case sort(index: Int, ascending: Bool)
+    case range(from: Double?, to: Double?)
 }
 
 /// The filters and the settings of an Aidoku package: filters.json and settings.json.
@@ -138,6 +141,10 @@ public enum AidokuOptions {
             return SourceOption(id: id, title: title, kind: .multi(choices, excludable: item["canExclude"] as? Bool ?? false),
                                 initial: .multi(included: item["defaultIncluded"] as? [String] ?? [], excluded: item["defaultExcluded"] as? [String] ?? []),
                                 raw: type)
+        case "range":
+            func number(_ key: String) -> Double? { (item[key] as? NSNumber)?.doubleValue }
+            return SourceOption(id: id, title: title, kind: .range(min: number("min"), max: number("max"), decimal: item["decimal"] as? Bool ?? false),
+                                initial: .range(from: nil, to: nil), raw: type)
         default:
             return nil
         }
@@ -149,6 +156,7 @@ public enum AidokuOptions {
         for filter in filters {
             let value = values[filter.id] ?? filter.initial
             if case let .text(text) = value, text.isEmpty { continue }
+            if case .range(nil, nil) = value { continue }
             // The meaning of a check with the value 0 is not clear, and a source can read it as "exclude".
             // So a check goes only when the user changed it, as the Aidoku app does.
             if case .toggle = value, value == filter.initial { continue }
@@ -170,6 +178,10 @@ public enum AidokuOptions {
                 w.unsigned(4); w.string(filter.id)
                 w.list(included) { $0.string($1) }
                 w.list(excluded) { $0.string($1) }
+            case let .range(from, to):
+                w.unsigned(5); w.string(filter.id)
+                w.option(from.map(Float.init)) { $0.f32($1) }
+                w.option(to.map(Float.init)) { $0.f32($1) }
             }
         }
         return w.data
@@ -222,6 +234,7 @@ public enum AidokuOptions {
         case let .text(text): w.string(text)
         case let .multi(included, _): w.list(included) { $0.string($1) }
         case let .sort(index, _): w.signed(index)
+        case let .range(from, _): w.f32(Float(from ?? 0))
         }
         return w.data
     }
@@ -235,7 +248,7 @@ public enum AidokuOptions {
         case .select: return (try? r.string()).map(OptionValue.select)
         case .text: return (try? r.string()).map(OptionValue.text)
         case .multi: return (try? r.list { try $0.string() }).map { .multi(included: $0, excluded: []) }
-        case .sort: return nil
+        case .sort, .range: return nil
         }
     }
 }

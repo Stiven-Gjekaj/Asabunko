@@ -195,6 +195,7 @@ public final class LNReaderPlugin: OnlineSource, @unchecked Sendable {
         case let .select(choice): choice
         case let .multi(included, excluded): raw == "XCheckbox" ? ["include": included, "exclude": excluded] as [String: Any] : included
         case let .sort(index, _): index
+        case let .range(from, to): ["from": from ?? NSNull(), "to": to ?? NSNull()] as [String: Any]
         }
     }
 

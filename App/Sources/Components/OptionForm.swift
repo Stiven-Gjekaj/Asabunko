@@ -30,6 +30,14 @@ struct OptionRow: View {
                     if case let .sort(index, _) = value { value = .sort(index: index, ascending: new) }
                 }))
             }
+        case let .range(min, max, decimal):
+            LabeledContent(option.title) {
+                HStack {
+                    bound(from: true, min: min, max: max, decimal: decimal)
+                    Text("to").foregroundStyle(Palette.textSecondary).accessibilityHidden(true)
+                    bound(from: false, min: min, max: max, decimal: decimal)
+                }
+            }
         case let .multi(choices, excludable):
             NavigationLink {
                 MultiChoiceList(title: option.title, choices: choices, excludable: excludable, value: $value)
@@ -37,6 +45,16 @@ struct OptionRow: View {
                 LabeledContent(option.title, value: summary(choices))
             }
         }
+    }
+
+    /// One number of a range. An empty field has no bound.
+    private func bound(from: Bool, min: Double?, max: Double?, decimal: Bool) -> some View {
+        let range: (Double?, Double?) = if case let .range(low, high) = value { (low, high) } else { (nil, nil) }
+        let hint = (from ? min : max).map { decimal ? String($0) : String(Int($0)) } ?? (from ? "From" : "To")
+        // LabeledContent puts the title of the filter before the name of each field.
+        return RangeBound(label: from ? "from" : "to", hint: hint, decimal: decimal, number: Binding(
+            get: { from ? range.0 : range.1 },
+            set: { value = from ? .range(from: $0, to: range.1) : .range(from: range.0, to: $0) }))
     }
 
     private var ascending: Bool { if case let .sort(_, up) = value { up } else { false } }
@@ -163,4 +181,32 @@ struct SourceSettingsScreen: View {
             loaded = true
         }
     }
+}
+
+/// A number field that keeps the text of the user, such as "2.", while the user types.
+private struct RangeBound: View {
+    let label: String
+    let hint: String
+    let decimal: Bool
+    @Binding var number: Double?
+    @State private var text = ""
+
+    var body: some View {
+        TextField(label, text: $text, prompt: Text(hint))
+            .keyboardType(decimal ? .decimalPad : .numberPad)
+            .multilineTextAlignment(.trailing)
+            .frame(width: 64)
+            .accessibilityLabel(label)
+            .onAppear { text = number.map(Self.format) ?? "" }
+            .onChange(of: text) { _, new in
+                let parsed = Double(new.replacingOccurrences(of: ",", with: "."))
+                if parsed != number { number = parsed }
+            }
+            .onChange(of: number) { _, new in
+                // A reset of the filters clears the field.
+                if new == nil { text = "" }
+            }
+    }
+
+    private static func format(_ value: Double) -> String { value == value.rounded() ? String(Int(value)) : String(value) }
 }

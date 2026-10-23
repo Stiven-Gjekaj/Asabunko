@@ -71,6 +71,29 @@ private func fakeSource() throws -> Data {
         #expect(AidokuSource.html(fromMarkdown: "# One\n\nThe **sun** came *up* & <set>.") == "<h2>One</h2>\n<p>The <b>sun</b> came <i>up</i> &amp; &lt;set&gt;.</p>")
     }
 
+    /// Searches real sources of Aidoku Community with a range filter. It runs only with ASABUNKO_LIVE=1.
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["ASABUNKO_LIVE"] == "1"), arguments: ["multi.mangafire"])
+    func searchesARealSourceWithARange(id: String) async throws {
+        let session: Fetcher = { request in
+            let (data, response) = try await URLSession.shared.data(for: request)
+            return (data, response as! HTTPURLResponse)
+        }
+        let listURL = URL(string: "https://aidoku-community.github.io/sources/index.min.json")!
+        let list = try AidokuIndex.parse(try await session(URLRequest(url: listURL)).0, url: listURL)
+        let info = try #require(list.first { $0.id == id })
+        let file = try temporaryFolder().appendingPathComponent("\(id).aix")
+        try await session(URLRequest(url: info.code)).0.write(to: file)
+        let source = try AidokuSource(info: info, package: file, settings: nil, fetcher: session)
+        let filters = await source.filterOptions()
+        let range = try #require(filters.first { if case .range = $0.kind { true } else { false } }, "The source has a range filter.")
+        let page = try await source.browse(page: 1, query: "", filters: [range.id: .range(from: 2015, to: 2024)])
+        print("LIVE range", id, range.title, range.kind, "items", page.items.count, page.items.prefix(3).map(\.title))
+        #expect(!page.items.isEmpty, "The search with a range gives titles.")
+        let old = try await source.browse(page: 1, query: "", filters: [range.id: .range(from: 1990, to: 1995)])
+        print("LIVE range", id, "1990 to 1995:", old.items.prefix(3).map(\.title))
+        #expect(old.items.map(\.id) != page.items.map(\.id), "The source reads the range.")
+    }
+
     /// Reads the dynamic filters of real sources of Aidoku Community. It runs only with ASABUNKO_LIVE=1.
     @Test(.enabled(if: ProcessInfo.processInfo.environment["ASABUNKO_LIVE"] == "1"), arguments: ["multi.kagane"])
     func readsTheDynamicFiltersOfARealSource(id: String) async throws {

@@ -261,6 +261,7 @@ def aidoku_package(host):
         archive.writestr("Payload/main.wasm", aidoku_wasm(host))
         archive.writestr("Payload/source.json", json.dumps({"info": {"id": "en.test", "name": "Test Aidoku", "version": 1,
                                                                     "url": f"http://{host}", "languages": ["en"]}}))
+        archive.writestr("Payload/filters.json", json.dumps([{"type": "range", "id": "year", "title": "Year", "min": 1990, "max": 2030}]))
     return buffer.getvalue()
 
 
