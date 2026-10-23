@@ -20,3 +20,5 @@ DerivedData/
 
 # Local tool state
 .claude/
+
+node_modules/
