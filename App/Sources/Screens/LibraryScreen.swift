@@ -164,10 +164,10 @@ struct LibraryScreen: View {
     /// "Asa" is the morning in Japanese, so the app says hello at each time of the day.
     static func greeting(at date: Date) -> String {
         switch Calendar.current.component(.hour, from: date) {
-        case 5..<12: "Good morning"
-        case 12..<18: "Good afternoon"
-        case 18..<23: "Good evening"
-        default: "A quiet night for reading"
+        case 5..<12: String(localized: "Good morning")
+        case 12..<18: String(localized: "Good afternoon")
+        case 18..<23: String(localized: "Good evening")
+        default: String(localized: "A quiet night for reading")
         }
     }
 

@@ -10,6 +10,7 @@ final class JapaneseTests: XCTestCase {
         app.launchArguments += ["-AppleLanguages", "(ja)", "-AppleLocale", "ja_JP"]
         app.launch()
         XCTAssertTrue(app.staticTexts["ライブラリ"].waitForExistence(timeout: 10), "The Library has its Japanese title.")
+        XCTAssertTrue(app.staticTexts["本棚は空です"].exists, "The empty shelf is in Japanese.")
         for tab in ["発見", "検索", "設定", "ライブラリ"] {
             XCTAssertTrue(app.tabBars.buttons[tab].exists, "The tab \(tab) is in Japanese.")
         }

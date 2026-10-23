@@ -49,8 +49,9 @@ struct CoverFan: View {
 /// The art and a message of an empty screen.
 struct EmptyArt<Actions: View>: View {
     let covers: [URLRequest]
-    let title: String
-    let text: String
+    /// The keys of the String Catalog, so that the text has the language of the device.
+    let title: LocalizedStringKey
+    let text: LocalizedStringKey
     @ViewBuilder var actions: () -> Actions
 
     var body: some View {
@@ -73,7 +74,7 @@ struct EmptyArt<Actions: View>: View {
 }
 
 extension EmptyArt where Actions == EmptyView {
-    init(covers: [URLRequest], title: String, text: String) {
+    init(covers: [URLRequest], title: LocalizedStringKey, text: LocalizedStringKey) {
         self.init(covers: covers, title: title, text: text) { EmptyView() }
     }
 }

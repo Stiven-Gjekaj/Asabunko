@@ -163,6 +163,16 @@
         }
       }
     },
+    "A quiet night for reading": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "静かな読書の夜"
+          }
+        }
+      }
+    },
     "About": {
       "localizations": {
         "ja": {
@@ -199,6 +209,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "カテゴリを追加"
+          }
+        }
+      }
+    },
+    "Add a source list in Settings, Sources. Asabunko installs its sources, and their popular titles show here.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "設定の「ソース」でソースリストを追加してください。Asabunko がそのソースをインストールし、人気の作品がここに表示されます。"
           }
         }
       }
@@ -290,6 +310,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "昇順"
+          }
+        }
+      }
+    },
+    "Asking your sources": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ソースに問い合わせ中"
           }
         }
       }
@@ -714,6 +744,26 @@
         }
       }
     },
+    "Find a manga or a novel": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "漫画や小説を探す"
+          }
+        }
+      }
+    },
+    "Find a title in Discover or Search, and bookmark it. Or import an EPUB, a PDF, a comic archive such as CBZ or CBR, a TXT, FB2, MOBI, or AZW3 file, or a folder of images, from Files.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "発見か検索で作品を探して、しおりを付けてください。または「ファイル」から EPUB、PDF、CBZ や CBR などの漫画アーカイブ、TXT、FB2、MOBI、AZW3 のファイル、画像のフォルダを読み込んでください。"
+          }
+        }
+      }
+    },
     "Find the titles": {
       "localizations": {
         "ja": {
@@ -750,6 +800,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "フォント"
+          }
+        }
+      }
+    },
+    "Good afternoon": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "こんにちは"
+          }
+        }
+      }
+    },
+    "Good evening": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "こんばんは"
+          }
+        }
+      }
+    },
+    "Good morning": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "おはようございます"
           }
         }
       }
@@ -1244,6 +1324,36 @@
         }
       }
     },
+    "No source answered": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "どのソースも応答しませんでした"
+          }
+        }
+      }
+    },
+    "No source found \"%@\".": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「%@」はどのソースにも見つかりませんでした。"
+          }
+        }
+      }
+    },
+    "No sources yet": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ソースがまだありません"
+          }
+        }
+      }
+    },
     "No updates": {
       "localizations": {
         "ja": {
@@ -1264,12 +1374,32 @@
         }
       }
     },
+    "Nothing found": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "見つかりませんでした"
+          }
+        }
+      }
+    },
     "Nothing here": {
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
             "value": "何もありません"
+          }
+        }
+      }
+    },
+    "Nothing to discover yet": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "まだ発見するものがありません"
           }
         }
       }
@@ -1460,6 +1590,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "進み具合"
+          }
+        }
+      }
+    },
+    "Pull down to ask again.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下に引いてもう一度問い合わせてください。"
           }
         }
       }
@@ -1700,6 +1840,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "検索"
+          }
+        }
+      }
+    },
+    "Search asks your installed sources. Add a source list in Settings, Sources, and Asabunko installs its sources.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "検索はインストールしたソースに問い合わせます。設定の「ソース」でソースリストを追加すると、Asabunko がそのソースをインストールします。"
           }
         }
       }
@@ -2024,6 +2174,16 @@
         }
       }
     },
+    "Tap the bookmark on the page of a title to keep it here. A book that you import goes here too.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "作品のページでしおりをタップすると、ここに保存されます。読み込んだ本もここに入ります。"
+          }
+        }
+      }
+    },
     "Taps at the edges": {
       "localizations": {
         "ja": {
@@ -2194,6 +2354,16 @@
         }
       }
     },
+    "The popular titles of each source come in a moment.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "各ソースの人気の作品がまもなく表示されます。"
+          }
+        }
+      }
+    },
     "The source did not answer": {
       "localizations": {
         "ja": {
@@ -2354,6 +2524,16 @@
         }
       }
     },
+    "Type a title and press Search. Asabunko asks your %lld sources at the same time.": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "タイトルを入力して検索を押してください。Asabunko は %lld 件のソースに同時に問い合わせます。"
+          }
+        }
+      }
+    },
     "Unknown source": {
       "localizations": {
         "ja": {
@@ -2470,6 +2650,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "ライブラリ"
+          }
+        }
+      }
+    },
+    "Your read list is empty": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "読書リストは空です"
+          }
+        }
+      }
+    },
+    "Your shelf is empty": {
+      "localizations": {
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本棚は空です"
           }
         }
       }
