@@ -139,10 +139,14 @@ extension AppModel {
     // MARK: Online books
 
     /// Adds a series or a novel of a source to the library, with its chapters and its cover.
+    /// With `listed` false, the book only keeps the place of the user. It is not in the read list.
     @discardableResult
-    func add(_ details: OnlineDetails, from installed: InstalledSource) async throws -> Book {
+    func add(_ details: OnlineDetails, from installed: InstalledSource, listed: Bool) async throws -> Book {
         let origin = BookOrigin(list: installed.list, source: installed.info.id, series: details.series.id)
-        if let book = library.book(from: origin) { return book }
+        if let book = library.book(from: origin) {
+            if listed && !book.listed { update(book.id) { $0.listed = true } }
+            return self.book(book.id) ?? book
+        }
         let source = try await load(installed)
         let id = UUID()
         let folder = folder(of: Book(id: id, title: "", fileName: "", pageCount: 0))
@@ -160,7 +164,7 @@ extension AppModel {
         let book = Book(
             id: id, title: details.series.title, author: details.author, summary: details.summary,
             format: (details.isNovel ?? installed.info.novels) ? .novel : .series, fileName: installed.info.name,
-            pageCount: novel.chapters.count, origin: origin
+            pageCount: novel.chapters.count, origin: origin, listed: listed
         )
         changeLibrary { $0.books.append(book) }
         return book
@@ -199,5 +203,44 @@ extension AppModel {
         try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
         try Data(page.utf8).write(to: file, options: .atomic)
         return file
+    }
+}
+
+// MARK: Search in all sources
+
+extension AppModel {
+    /// Searches some sources at the same time. `found` gets the first results of each source when it answers.
+    func search(_ query: String, in sources: [InstalledSource], limit: Int = 12, found: @MainActor (String, [OnlineSeries]) -> Void) async {
+        await withTaskGroup(of: (String, [OnlineSeries]).self) { group in
+            func ask(_ installed: InstalledSource) -> @MainActor @Sendable () async -> (String, [OnlineSeries]) {
+                {
+                    guard let source = try? await self.load(installed),
+                          let page = try? await source.search(query, page: 1)
+                    else { return (installed.id, []) }
+                    return (installed.id, Array(page.items.prefix(limit)))
+                }
+            }
+            for (index, installed) in sources.enumerated() {
+                // Six sources answer at the same time.
+                if index >= 6, let (id, items) = await group.next() {
+                    if Task.isCancelled { group.cancelAll(); return }
+                    found(id, items)
+                }
+                group.addTask(operation: ask(installed))
+            }
+            for await (id, items) in group {
+                if Task.isCancelled { group.cancelAll(); return }
+                found(id, items)
+            }
+        }
+    }
+
+    /// The results of each source, in one list for each source.
+    func search(_ query: String, in sources: [InstalledSource], limit: Int) async -> [[SearchHit]] {
+        var all: [[SearchHit]] = []
+        await search(query, in: sources, limit: limit) { id, items in
+            all.append(items.map { SearchHit(source: id, series: $0) })
+        }
+        return all
     }
 }

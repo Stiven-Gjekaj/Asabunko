@@ -194,20 +194,48 @@ struct OnlineSourceScreen: View {
     }
 }
 
-/// A series or a novel of a source: its facts, its chapters, and a button to add it to the library.
+/// A series or a novel: its facts, its chapters, and a button to add it to the read list.
+/// The title can be in many sources. The page asks each one and shows the source with the most chapters.
+/// The user can choose another source in the Source menu.
 struct OnlineSeriesScreen: View {
-    let installed: InstalledSource
-    let series: OnlineSeries
     @Environment(AppModel.self) private var app
-    @State private var source: OnlineSource?
-    @State private var details: OnlineDetails?
-    @State private var fault: String?
+    @State private var hits: [SearchHit]
+    /// True when the page looks for the same title in the other sources.
+    private let findOthers: Bool
+    @State private var chosen: SearchHit
+    /// True after the user chooses a source. Then a late answer does not change the source.
+    @State private var userChose = false
+    @State private var answers: [String: OnlineDetails] = [:]
+    @State private var faults: [String: String] = [:]
+    @State private var comparing = false
     @State private var adding = false
     @State private var reading: Book?
     @State private var newestFirst = false
 
+    /// One series of one source. The page also looks for the title in the other sources.
+    init(installed: InstalledSource, series: OnlineSeries) {
+        let hit = SearchHit(source: installed.id, series: series)
+        _hits = State(initialValue: [hit])
+        _chosen = State(initialValue: hit)
+        findOthers = true
+    }
+
+    /// The same title in some sources, from a search.
+    init(hits: [SearchHit]) {
+        _hits = State(initialValue: hits)
+        _chosen = State(initialValue: hits[0])
+        findOthers = false
+    }
+
+    private var installed: InstalledSource? { app.library.installed.first { $0.id == chosen.source } }
+    private var series: OnlineSeries { chosen.series }
+    private var details: OnlineDetails? { answers[chosen.source] }
+    private var fault: String? { faults[chosen.source] }
+    @State private var source: OnlineSource?
+
     private var book: Book? {
-        app.library.book(from: BookOrigin(list: installed.list, source: installed.info.id, series: series.id))
+        guard let installed else { return nil }
+        return app.library.book(from: BookOrigin(list: installed.list, source: installed.info.id, series: series.id))
     }
 
     var body: some View {
@@ -220,14 +248,28 @@ struct OnlineSeriesScreen: View {
                         Text(details?.series.title ?? series.title).font(Karla.font(20, .bold))
                         if let author = details?.author { Text(author).font(Karla.font(15)).foregroundStyle(Palette.textSecondary) }
                         if let status = details?.status { Text(status).font(Karla.font(13)).foregroundStyle(Palette.textSecondary) }
-                        Text(installed.info.name).font(Karla.font(13)).foregroundStyle(Palette.accent)
+                        sourceMenu
                     }
                 }
                 .listRowBackground(Color.clear)
                 if let details {
                     HStack(spacing: 10) {
+                        Button(book?.lastRead == nil ? "Start reading" : "Continue") {
+                            Task {
+                                if let book { reading = book } else { await open(chapter: 0, details: details) }
+                            }
+                        }
+                        .buttonStyle(PillButtonStyle())
+                        .disabled(details.chapters.isEmpty)
+                        Button {
+                            Task { await toggleList(details) }
+                        } label: {
+                            Image(systemName: book?.listed == true ? "bookmark.fill" : "bookmark")
+                                .font(.system(size: 22)).frame(width: 44, height: 44)
+                        }
+                        .disabled(adding)
+                        .accessibilityLabel(book?.listed == true ? "Remove from the read list" : "Add to the read list")
                         if let book {
-                            Button(book.lastRead == nil ? "Start reading" : "Continue") { reading = book }.buttonStyle(PillButtonStyle())
                             Menu {
                                 Button { app.downloadChapters(book.id) } label: { Label("Download all chapters", systemImage: "arrow.down.circle") }
                                 Button { app.downloadChapters(book.id, from: book.page) } label: { Label("Download from this chapter", systemImage: "arrow.down.to.line") }
@@ -236,11 +278,9 @@ struct OnlineSeriesScreen: View {
                                 Image(systemName: "arrow.down.circle").font(.system(size: 22)).frame(width: 44, height: 44)
                             }
                             .accessibilityLabel("Downloads")
-                        } else {
-                            Button(adding ? "Adding" : "Add to library") { Task { await add(details, open: false) } }
-                                .buttonStyle(PillButtonStyle()).disabled(adding)
                         }
                     }
+                    .buttonStyle(.borderless)
                     .listRowBackground(Color.clear)
                     if let summary = details.summary {
                         Text(summary).font(Karla.font(15)).listRowBackground(Color.clear)
@@ -253,30 +293,14 @@ struct OnlineSeriesScreen: View {
             if let fault {
                 ContentUnavailableView("The source did not answer", systemImage: "wifi.exclamationmark", description: Text(fault))
             } else if let details {
-                Section {
-                    ForEach(newestFirst ? Array(details.chapters.enumerated().reversed()) : Array(details.chapters.enumerated()), id: \.element.id) { index, chapter in
-                        Button { Task { await open(chapter: index, details: details) } } label: {
-                            HStack {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(chapter.title).font(Karla.font(15, isCurrent(index) ? .bold : .regular))
-                                    if let date = chapter.date { Text(date).font(Karla.font(12)).foregroundStyle(Palette.textSecondary) }
-                                }
-                                Spacer()
-                                if isCurrent(index) { Image(systemName: "bookmark.fill").foregroundStyle(Palette.accent) }
-                                downloadMark(index)
-                            }
-                        }
-                        .listRowBackground(Palette.surface)
-                    }
-                } header: {
-                    HStack {
-                        Text(details.chapters.count == 1 ? "1 chapter" : "\(details.chapters.count) chapters")
-                        Spacer()
-                        Button(newestFirst ? "Oldest first" : "Newest first") { newestFirst.toggle() }.font(Karla.font(13, .bold))
-                    }
-                }
+                chapterList(details)
             } else {
-                ProgressView().frame(maxWidth: .infinity).listRowBackground(Color.clear)
+                VStack(spacing: 8) {
+                    ProgressView()
+                    if hits.count > 1 { Text("Comparing \(hits.count) sources").font(Karla.font(13)).foregroundStyle(Palette.textSecondary) }
+                }
+                .frame(maxWidth: .infinity)
+                .listRowBackground(Color.clear)
             }
         }
         .asaForm()
@@ -284,12 +308,81 @@ struct OnlineSeriesScreen: View {
         .navigationBarTitleDisplayMode(.inline)
         .task { await load() }
         .refreshable { await load() }
+        .task(id: chosen) { await prepare() }
         .fullScreenCover(item: $reading) { book in
             switch book.format {
             case .novel: NovelReaderScreen(bookID: book.id)
             default: SeriesReaderScreen(bookID: book.id)
             }
         }
+    }
+
+    private func chapterList(_ details: OnlineDetails) -> some View {
+        Section {
+            ForEach(newestFirst ? Array(details.chapters.indices.reversed()) : Array(details.chapters.indices), id: \.self) { index in
+                chapterRow(index, details).listRowBackground(Palette.surface)
+            }
+        } header: {
+            HStack {
+                Text(details.chapters.count == 1 ? "1 chapter" : "\(details.chapters.count) chapters")
+                Spacer()
+                Button(newestFirst ? "Oldest first" : "Newest first") { newestFirst.toggle() }.font(Karla.font(13, .bold))
+            }
+        }
+    }
+
+    private func chapterRow(_ index: Int, _ details: OnlineDetails) -> some View {
+        let chapter = details.chapters[index]
+        return Button { Task { await open(chapter: index, details: details) } } label: {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(chapter.title).font(Karla.font(15, isCurrent(index) ? .bold : .regular))
+                    if let date = chapter.date { Text(date).font(Karla.font(12)).foregroundStyle(Palette.textSecondary) }
+                }
+                Spacer()
+                if isCurrent(index) { Image(systemName: "bookmark.fill").foregroundStyle(Palette.accent) }
+                downloadMark(index)
+            }
+        }
+    }
+
+    /// The source of the page, and a list of each source that has the title, with its number of chapters.
+    private var sourceMenu: some View {
+        Menu {
+            ForEach(hits, id: \.self) { hit in
+                Button {
+                    chosen = hit
+                    userChose = true
+                } label: {
+                    if hit == chosen {
+                        Label(line(hit), systemImage: "checkmark")
+                    } else {
+                        Text(line(hit))
+                    }
+                }
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Text(installed?.info.name ?? "Source").font(Karla.font(13, .bold))
+                if hits.count > 1 {
+                    Text("· \(hits.count) sources").font(Karla.font(13))
+                    Image(systemName: "chevron.up.chevron.down").font(.system(size: 10, weight: .bold))
+                }
+            }
+            .foregroundStyle(Palette.accent)
+            .frame(minHeight: 32)
+        }
+        .disabled(hits.count < 2)
+        .accessibilityLabel("Source")
+        .accessibilityValue(installed?.info.name ?? "")
+    }
+
+    /// "Name · 12 chapters", or why the source has no number.
+    private func line(_ hit: SearchHit) -> String {
+        let name = app.library.installed.first { $0.id == hit.source }?.info.name ?? "Source"
+        if let details = answers[hit.source] { return "\(name) · \(details.chapters.count == 1 ? "1 chapter" : "\(details.chapters.count) chapters")" }
+        if faults[hit.source] != nil { return "\(name) · no answer" }
+        return "\(name) · loading"
     }
 
     /// The state of the download of a chapter: on the device, downloading, or waiting.
@@ -322,33 +415,96 @@ struct OnlineSeriesScreen: View {
         return book.page == index
     }
 
+    /// The source of the chosen hit, for its covers and its chapters.
+    private func prepare() async {
+        source = nil
+        guard let installed else { return }
+        source = try? await app.load(installed)
+        if let book { try? await app.refresh(book) }
+    }
+
+    /// Asks each source for the title at the same time. The source of a book in the library wins,
+    /// so that the place of the user stays. Else the source with the most chapters wins.
     private func load() async {
-        do {
-            let loaded = try await app.load(installed)
-            source = loaded
-            details = try await loaded.details(of: series)
-            fault = nil
-            if let book { try? await app.refresh(book) }
-        } catch {
-            fault = error.localizedDescription
+        answers = [:]
+        faults = [:]
+        if let kept = hits.first(where: { hasBook($0) }), !userChose { chosen = kept }
+        comparing = true
+        await ask(hits)
+        comparing = false
+        if !userChose && !hits.contains(where: hasBook), hits.count > 1,
+           let best = SourceChoice.best(hits.map { ($0.source, answers[$0.source]?.chapters.count) }),
+           let hit = hits.first(where: { $0.source == best }) {
+            chosen = hit
+        }
+        if findOthers { await addOthers() }
+    }
+
+    private func ask(_ asked: [SearchHit]) async {
+        await withTaskGroup(of: (String, Result<OnlineDetails, Error>).self) { group in
+            for hit in asked {
+                guard let installed = app.library.installed.first(where: { $0.id == hit.source }) else { continue }
+                group.addTask { (hit.source, await Self.details(of: hit, in: installed, app: app)) }
+            }
+            for await (id, result) in group {
+                switch result {
+                case let .success(details): answers[id] = details
+                case let .failure(error): faults[id] = error.localizedDescription
+                }
+            }
         }
     }
 
+    private static func details(of hit: SearchHit, in installed: InstalledSource, app: AppModel) async -> Result<OnlineDetails, Error> {
+        do {
+            return .success(try await app.load(installed).details(of: hit.series))
+        } catch {
+            return .failure(error)
+        }
+    }
+
+    /// Searches the other sources of the same kind for the same title, and adds them to the Source menu.
+    private func addOthers() async {
+        let key = TitleMatch.key(series.title)
+        let novels = app.library.installed.first { $0.id == chosen.source }?.info.novels
+        let others = app.library.installed.filter { other in other.info.novels == novels && !hits.contains { $0.source == other.id } }
+        let found = await app.search(series.title, in: others, limit: 4)
+        let extra = found.compactMap { hits in hits.first { TitleMatch.key($0.series.title) == key } }
+        guard !extra.isEmpty else { return }
+        hits += extra
+        await ask(extra)
+    }
+
+    private func hasBook(_ hit: SearchHit) -> Bool {
+        guard let installed = app.library.installed.first(where: { $0.id == hit.source }) else { return false }
+        return app.library.book(from: BookOrigin(list: installed.list, source: installed.info.id, series: hit.series.id)) != nil
+    }
+
     @discardableResult
-    private func add(_ details: OnlineDetails, open: Bool) async -> Book? {
+    private func add(_ details: OnlineDetails, listed: Bool) async -> Book? {
+        guard let installed else { return nil }
         adding = true
         defer { adding = false }
         do {
-            return try await app.add(details, from: installed)
+            return try await app.add(details, from: installed, listed: listed)
         } catch {
             app.fault = "The series was not added: \(error.localizedDescription)"
             return nil
         }
     }
 
+    /// Puts the title in the read list, or takes it out. A book with no place leaves the library.
+    private func toggleList(_ details: OnlineDetails) async {
+        if let book, book.listed {
+            if book.lastRead == nil { app.delete(book) } else { app.update(book.id) { $0.listed = false } }
+        } else {
+            await add(details, listed: true)
+        }
+    }
+
     /// A chapter opens in the reader. The series goes into the library first, so that the place stays.
     private func open(chapter index: Int, details: OnlineDetails) async {
-        guard let book = await add(details, open: true) else { return }
+        guard let book = await add(details, listed: false) else { return }
         // The chapter of the source is at the same place in the book, because the book has all of them in order.
         let position = (try? Novel.load(from: app.folder(of: book)))?.chapters.firstIndex { $0.remote == details.chapters[index].id } ?? index
         app.update(book.id) { $0.read(chapter: position, position: 0) }
