@@ -35,6 +35,9 @@ struct NovelReaderScreen: View {
                     ContentUnavailableView("The chapter did not load", systemImage: "wifi.exclamationmark", description: Text(fault))
                     Button("Try again") { Task { await loadChapter() } }.buttonStyle(PillButtonStyle())
                 }
+            } else if let novel, novel.chapters.isEmpty {
+                ContentUnavailableView("No chapters yet", systemImage: "book.closed",
+                                       description: Text("The source gave no chapters for this book. Check for new chapters in the library later."))
             } else if let novel, let folder, let file, novel.chapters.indices.contains(chapter) {
                 ChapterView(
                     file: file,
@@ -104,7 +107,8 @@ struct NovelReaderScreen: View {
     }
 
     private func title(of index: Int) -> String {
-        novel?.chapters[index].title ?? "Chapter \(index + 1)"
+        guard let novel, novel.chapters.indices.contains(index) else { return "" }
+        return novel.chapters[index].title ?? "Chapter \(index + 1)"
     }
 
     private var chrome: some View {
