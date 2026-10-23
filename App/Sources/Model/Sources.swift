@@ -99,8 +99,12 @@ extension AppModel {
         let source: OnlineSource
         switch kind(of: installed) {
         case .lnreader:
-            let code = try Data(contentsOf: codeFile(of: installed))
-            source = try await LNReaderPlugin(info: installed.info, code: String(decoding: code, as: UTF8.self), fetcher: appFetcher)
+            let file = codeFile(of: installed)
+            let code = try Data(contentsOf: file)
+            source = try await LNReaderPlugin(
+                info: installed.info, code: String(decoding: code, as: UTF8.self),
+                settings: file.deletingPathExtension().appendingPathExtension("settings.json"), fetcher: appFetcher
+            )
         case .paperback:
             let file = codeFile(of: installed)
             let code = String(decoding: try Data(contentsOf: file), as: UTF8.self)

@@ -116,13 +116,18 @@ struct OnlineSourceScreen: View {
     @State private var fault: String?
     @State private var query = ""
     @State private var searching = ""
+    @State private var filters: [SourceOption] = []
+    /// The values of the filters that the user applied. Empty means the list of the source with no filters.
+    @State private var applied: [String: OptionValue] = [:]
+    @State private var showFilters = false
+    @State private var hasSettings = false
 
     enum Listing: String, CaseIterable { case popular = "Popular", latest = "Latest" }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                if searching.isEmpty, source?.canShowLatest == true {
+                if searching.isEmpty, applied.isEmpty, source?.canShowLatest == true {
                     Picker("List", selection: $list) {
                         ForEach(Listing.allCases, id: \.self) { Text($0.rawValue).tag($0) }
                     }
@@ -158,10 +163,36 @@ struct OnlineSourceScreen: View {
         .onSubmit(of: .search) { searching = query; Task { await loadPage(1) } }
         .onChange(of: query) { _, text in if text.isEmpty && !searching.isEmpty { searching = ""; Task { await loadPage(1) } } }
         .onChange(of: list) { Task { await loadPage(1) } }
+        .toolbar {
+            if !filters.isEmpty {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button { showFilters = true } label: {
+                        Image(systemName: applied.isEmpty ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill")
+                    }
+                    .accessibilityLabel("Filters")
+                    .accessibilityValue(applied.isEmpty ? "Off" : "On")
+                }
+            }
+            if hasSettings, let source {
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink { SourceSettingsScreen(source: source, name: installed.info.name) } label: { Image(systemName: "gearshape") }
+                        .accessibilityLabel("Source settings")
+                }
+            }
+        }
+        .sheet(isPresented: $showFilters) {
+            FilterSheet(options: filters, applied: applied) { values in
+                applied = values
+                Task { await loadPage(1) }
+            }
+        }
         .task {
             guard source == nil else { return }
             do {
-                source = try await app.load(installed)
+                let loaded = try await app.load(installed)
+                source = loaded
+                filters = await loaded.filterOptions()
+                hasSettings = !(await loaded.settingOptions()).isEmpty
                 await loadPage(1)
             } catch {
                 fault = error.localizedDescription
@@ -176,7 +207,9 @@ struct OnlineSourceScreen: View {
         if number == 1 { items = [] }
         do {
             let result: OnlinePage
-            if !searching.isEmpty {
+            if !applied.isEmpty {
+                result = try await source.browse(page: number, query: searching, filters: applied)
+            } else if !searching.isEmpty {
                 result = try await source.search(searching, page: number)
             } else if list == .latest {
                 result = try await source.latest(page: number)

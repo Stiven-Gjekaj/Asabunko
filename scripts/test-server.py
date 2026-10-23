@@ -93,11 +93,20 @@ PLUGIN = r"""
 Object.defineProperty(exports, "__esModule", { value: true });
 var fetch_1 = require("@libs/fetch");
 var cheerio_1 = require("cheerio");
+var storage_1 = require("@libs/storage");
 var Quiet = (function () {
-  function Quiet() { this.id = "quiet"; this.name = "Quiet Novels"; this.site = "SITE"; this.version = "1.0.0"; }
+  function Quiet() {
+    this.id = "quiet"; this.name = "Quiet Novels"; this.site = "SITE"; this.version = "1.0.0";
+    this.filters = { shelf: { label: "Shelf", type: "Picker", value: "all", options: [{ label: "All", value: "all" }, { label: "Finished", value: "done" }] } };
+    this.pluginSettings = { stars: { label: "Show stars", value: false, type: "Switch" } };
+  }
   Quiet.prototype.popularNovels = async function (page, options) {
+    var star = storage_1.storage.get("stars") ? "\u2605 " : "";
+    if (options && options.filters && options.filters.shelf && options.filters.shelf.value === "done") {
+      return page === 1 ? [{ name: star + "Finished Shelf", path: "novel/dawn" }] : [];
+    }
     var $ = (0, cheerio_1.load)(await (0, fetch_1.fetchText)(this.site + "list?page=" + page));
-    return $(".novel a").map(function (i, el) { return { name: $(el).text(), path: $(el).attr("href"), cover: $(el).attr("data-cover") }; }).get();
+    return $(".novel a").map(function (i, el) { return { name: star + $(el).text(), path: $(el).attr("href"), cover: $(el).attr("data-cover") }; }).get();
   };
   Quiet.prototype.searchNovels = async function (term, page) { return this.popularNovels(page, {}); };
   Quiet.prototype.parseNovel = async function (path) {
