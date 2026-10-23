@@ -84,6 +84,20 @@ struct PageReader: View {
         .readerAwake()
         .persistentSystemOverlays(bars ? .automatic : .hidden)
         .asaScreen()
+        // A keyboard of an iPad turns the pages: the arrows go in the direction of the book, and space goes forward.
+        .focusable()
+        .focusEffectDisabled()
+        .onKeyPress(.leftArrow) { step(mode == .rightToLeft ? 1 : -1) }
+        .onKeyPress(.rightArrow) { step(mode == .rightToLeft ? -1 : 1) }
+        .onKeyPress(.downArrow) { step(1) }
+        .onKeyPress(.upArrow) { step(-1) }
+        .onKeyPress(.space) { step(1) }
+    }
+
+    private func step(_ delta: Int) -> KeyPress.Result {
+        guard count > 0 else { return .ignored }
+        page = min(max(page + delta, 0), count - 1)
+        return .handled
     }
 
     private func toggleBars() {
