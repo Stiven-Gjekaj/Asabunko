@@ -48,6 +48,10 @@ extension AppModel {
             return try await SuwayomiServer(base: link.url, fetcher: Self.fetcher(for: link)).sources()
         case .aidoku:
             return try AidokuIndex.parse(try await Network.data(for: AppModel.request(link.url, source: link)), url: link.url)
+        case .paperback:
+            // The URL of a repository can be its folder or its versioning.json.
+            let url = link.url.pathExtension == "json" ? link.url : link.url.appendingPathComponent("versioning.json")
+            return try PaperbackIndex.parse(try await Network.data(for: AppModel.request(url, source: link)), url: url)
         default:
             return []
         }
@@ -97,6 +101,13 @@ extension AppModel {
         case .lnreader:
             let code = try Data(contentsOf: codeFile(of: installed))
             source = try await LNReaderPlugin(info: installed.info, code: String(decoding: code, as: UTF8.self), fetcher: appFetcher)
+        case .paperback:
+            let file = codeFile(of: installed)
+            let code = String(decoding: try Data(contentsOf: file), as: UTF8.self)
+            source = try await PaperbackExtension(
+                info: installed.info, code: code, stateFile: file.deletingPathExtension().appendingPathExtension("settings.json"),
+                userAgent: Network.userAgent, fetcher: appFetcher
+            )
         case .aidoku:
             let file = codeFile(of: installed)
             let settings = file.deletingPathExtension().appendingPathExtension("settings.json")
@@ -148,7 +159,7 @@ extension AppModel {
         }
         let book = Book(
             id: id, title: details.series.title, author: details.author, summary: details.summary,
-            format: installed.info.novels ? .novel : .series, fileName: installed.info.name,
+            format: (details.isNovel ?? installed.info.novels) ? .novel : .series, fileName: installed.info.name,
             pageCount: novel.chapters.count, origin: origin
         )
         changeLibrary { $0.books.append(book) }
