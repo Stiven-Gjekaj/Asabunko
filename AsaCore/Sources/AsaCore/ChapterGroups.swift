@@ -39,6 +39,35 @@ public enum ChapterGroups {
         return order.map { Volume(name: $0, chapters: chapters[$0]!) }
     }
 
+    private static let numberPattern = try! NSRegularExpression(pattern: #"(?i)(?:ch(?:apter|\.)?|episode|ep\.?|#)\s*(\d+(?:\.\d+)?)"#)
+    private static let anyNumber = try! NSRegularExpression(pattern: #"(\d+(?:\.\d+)?)"#)
+
+    /// The number of a chapter in its title, such as 12 in "Vol. 2 Ch. 12: The Sea" or 7.5 in "Chapter 7.5".
+    /// With no word such as "Ch.", the last number of the title counts.
+    public static func number(of title: String) -> Double? {
+        let range = NSRange(title.startIndex..., in: title)
+        if let match = numberPattern.firstMatch(in: title, range: range), let found = Range(match.range(at: 1), in: title) {
+            return Double(title[found])
+        }
+        // A volume number is not the chapter number.
+        let withoutVolume = title.replacingOccurrences(of: #"(?i)\b(?:vol(?:ume)?\.?|v\.)\s*\d+(?:\.\d+)?"#, with: "", options: .regularExpression)
+        let rest = NSRange(withoutVolume.startIndex..., in: withoutVolume)
+        guard let last = anyNumber.matches(in: withoutVolume, range: rest).last, let found = Range(last.range(at: 1), in: withoutVolume) else { return nil }
+        return Double(withoutVolume[found])
+    }
+
+    /// The place in a new list of chapters of the chapter that the user reads in an old list:
+    /// the chapter with the same number, or else the same part of the list.
+    public static func place(of index: Int, from old: [String], in new: [String]) -> Int {
+        guard !new.isEmpty else { return 0 }
+        if old.indices.contains(index), let number = number(of: old[index]),
+           let match = new.firstIndex(where: { Self.number(of: $0) == number }) {
+            return match
+        }
+        guard old.count > 1 else { return 0 }
+        return min(Int((Double(index) / Double(old.count - 1) * Double(new.count - 1)).rounded()), new.count - 1)
+    }
+
     /// Ranges of `size` chapters, such as 0..<50 and 50..<100. One range when the list is short.
     public static func ranges(count: Int, size: Int = 50) -> [Range<Int>] {
         guard count > 0, size > 0 else { return [] }

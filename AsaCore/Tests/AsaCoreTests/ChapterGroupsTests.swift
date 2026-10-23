@@ -24,6 +24,22 @@ import Testing
         #expect(ChapterGroups.volumes([]) == nil)
     }
 
+    @Test func findsTheNumberOfAChapterInItsTitle() {
+        #expect(ChapterGroups.number(of: "Vol. 2 Ch. 12: The Sea") == 12)
+        #expect(ChapterGroups.number(of: "Chapter 7.5") == 7.5)
+        #expect(ChapterGroups.number(of: "Episode 40 - Rain") == 40)
+        #expect(ChapterGroups.number(of: "Volume 3 - 21") == 21)
+        #expect(ChapterGroups.number(of: "The Last Bell") == nil)
+    }
+
+    @Test func findsThePlaceOfAChapterInTheListOfAnotherSource() {
+        let old = ["Ch. 1", "Ch. 2", "Ch. 3", "Ch. 4"]
+        let new = ["Chapter 0", "Chapter 1", "Chapter 2", "Chapter 3", "Chapter 3.5", "Chapter 4"]
+        #expect(ChapterGroups.place(of: 2, from: old, in: new) == 3, "The same number wins.")
+        #expect(ChapterGroups.place(of: 3, from: ["A", "B", "C", "D"], in: ["W", "X", "Y"]) == 2, "With no numbers, the same part of the list.")
+        #expect(ChapterGroups.place(of: 0, from: old, in: []) == 0)
+    }
+
     @Test func splitsALongListIntoRangesOfFifty() {
         let ranges = ChapterGroups.ranges(count: 120)
         #expect(ranges == [0..<50, 50..<100, 100..<120])
