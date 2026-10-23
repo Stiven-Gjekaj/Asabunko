@@ -64,6 +64,7 @@
 				<string>org.idpf.epub-container</string>
 				<string>com.adobe.pdf</string>
 				<string>public.plain-text</string>
+				<string>public.html</string>
 			</array>
 		</dict>
 	</array>

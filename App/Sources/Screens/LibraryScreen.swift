@@ -14,6 +14,7 @@ struct LibraryScreen: View {
     @State private var category: UUID?
     @State private var editingCategories = false
     @State private var tracking: Book?
+    @State private var sharing: SharedFile?
 
     private let columns = [GridItem(.adaptive(minimum: 104, maximum: 160), spacing: 16, alignment: .top)]
 
@@ -45,6 +46,7 @@ struct LibraryScreen: View {
             .searchable(text: $query, prompt: "Search the library")
             .sheet(isPresented: $editingCategories) { CategoriesSheet() }
             .sheet(item: $tracking) { book in TrackSheet(bookID: book.id) }
+            .sheet(item: $sharing) { file in ShareSheet(items: [file.url]).ignoresSafeArea() }
             .refreshable {
                 guard app.library.books.contains(where: { $0.origin != nil }) else { return }
                 let result = await app.refreshAll()
@@ -316,12 +318,31 @@ struct LibraryScreen: View {
             } label: { Label("Categories", systemImage: "tag") }
         }
         Button { tracking = book } label: { Label("Track", systemImage: "chart.line.uptrend.xyaxis") }
+        if book.origin == nil && BookExport.canShare(book.format, folder: app.folder(of: book)) {
+            Button { share(book) } label: { Label("Share the file", systemImage: "square.and.arrow.up") }
+        }
         if book.listed && book.origin != nil {
             Button { app.update(book.id) { $0.listed = false } } label: { Label("Remove from the read list", systemImage: "bookmark.slash") }
         } else if !book.listed {
             Button { app.update(book.id) { $0.listed = true } } label: { Label("Add to the read list", systemImage: "bookmark") }
         }
         Button(role: .destructive) { deleting = book } label: { Label("Delete", systemImage: "trash") }
+    }
+
+    /// Makes the file of the book in the temporary folder, then opens the share sheet.
+    private func share(_ book: Book) {
+        let folder = app.folder(of: book)
+        let target = FileManager.default.temporaryDirectory.appendingPathComponent("Share", isDirectory: true)
+        Task {
+            let result = await Task.detached(priority: .userInitiated) {
+                Result { try BookExport.file(of: book.format, title: book.title, folder: folder, into: target) }
+            }.value
+            switch result {
+            case let .success(url?): sharing = SharedFile(url: url)
+            case .success(nil): break
+            case let .failure(error): app.fault = "The file of \(book.title) was not made: \(error.localizedDescription)"
+            }
+        }
     }
 
     @ViewBuilder

@@ -45,12 +45,14 @@ void archive_entry_set_pathname(struct archive_entry *, const char *);
 void archive_entry_set_filetype(struct archive_entry *, unsigned int);
 void archive_entry_set_perm(struct archive_entry *, mode_t);
 void archive_entry_set_size(struct archive_entry *, int64_t);
+void archive_entry_set_pathname_utf8(struct archive_entry *, const char *);
 
-// Write. Only the tests write archives.
+// Write. The share of a book writes a ZIP, and the tests write archives.
 struct archive *archive_write_new(void);
 int archive_write_set_format_zip(struct archive *);
 int archive_write_set_format_7zip(struct archive *);
 int archive_write_set_format_pax_restricted(struct archive *);
+int archive_write_set_options(struct archive *, const char *options);
 int archive_write_open_filename(struct archive *, const char *filename);
 int archive_write_header(struct archive *, struct archive_entry *);
 ssize_t archive_write_data(struct archive *, const void *, size_t);
