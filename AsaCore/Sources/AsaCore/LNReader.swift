@@ -60,8 +60,16 @@ public final class LNReaderPlugin: OnlineSource, @unchecked Sendable {
         let cover: String?
     }
 
+    /// A cover can be a path of the site.
+    private func coverURL(_ text: String?) -> URL? {
+        guard let text, !text.isEmpty else { return nil }
+        if text.hasPrefix("http://") || text.hasPrefix("https://") { return URL(lenient: text) }
+        if text.hasPrefix("//") { return URL(lenient: "https:" + text) }
+        return site.flatMap { URL(string: text, relativeTo: $0)?.absoluteURL }
+    }
+
     private func page(_ items: [Item]) -> OnlinePage {
-        let series = items.map { OnlineSeries(id: $0.path, title: $0.name ?? $0.path, cover: $0.cover.flatMap { URL(lenient: $0) }) }
+        let series = items.map { OnlineSeries(id: $0.path, title: $0.name ?? $0.path, cover: coverURL($0.cover)) }
         // A plugin gives an empty page at the end of its list.
         return OnlinePage(items: series, hasMore: !series.isEmpty)
     }
@@ -112,7 +120,7 @@ public final class LNReaderPlugin: OnlineSource, @unchecked Sendable {
         }
         let genres = (novel.genres ?? "").split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
         return OnlineDetails(
-            series: OnlineSeries(id: series.id, title: novel.name ?? series.title, cover: novel.cover.flatMap { URL(lenient: $0) } ?? series.cover),
+            series: OnlineSeries(id: series.id, title: novel.name ?? series.title, cover: coverURL(novel.cover) ?? series.cover),
             author: novel.author?.nonEmpty, summary: novel.summary?.nonEmpty, status: novel.status?.nonEmpty, genres: genres,
             chapters: chapters.enumerated().map { index, chapter in
                 OnlineChapter(id: chapter.path, title: chapter.name?.nonEmpty ?? "Chapter \(index + 1)", number: chapter.chapterNumber, date: chapter.releaseTime)

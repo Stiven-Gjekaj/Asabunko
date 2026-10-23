@@ -48,7 +48,7 @@ exports.default = new Quiet();
 """#
 
 private let site: [String: (Int, String, String)] = [
-    "https://quiet.test/list/popular?page=1": (200, "text/html", #"<div class="novel"><img src="https://quiet.test/c/1.jpg"><a href="novel/dawn">Dawn Tea</a></div><div class="novel"><a href="novel/rain">Rain Shop</a></div>"#),
+    "https://quiet.test/list/popular?page=1": (200, "text/html", #"<div class="novel"><img src="https://quiet.test/c/1.jpg"><a href="novel/dawn">Dawn Tea</a></div><div class="novel"><img src="/c/2.jpg"><a href="novel/rain">Rain Shop</a></div>"#),
     "https://quiet.test/list/latest?page=1": (200, "text/html", #"<div class="novel"><a href="novel/new">New One</a></div>"#),
     "https://quiet.test/list/popular?page=2": (200, "text/html", "<p>No more</p>"),
     "https://quiet.test/search?q=tea%20time": (200, "application/json", #"{"results": [{"title": "Dawn Tea", "slug": "novel/dawn"}]}"#),
@@ -70,7 +70,7 @@ private let site: [String: (Int, String, String)] = [
         let popular = try await source.popular(page: 1)
         #expect(popular.items == [
             OnlineSeries(id: "novel/dawn", title: "Dawn Tea", cover: URL(string: "https://quiet.test/c/1.jpg")),
-            OnlineSeries(id: "novel/rain", title: "Rain Shop"),
+            OnlineSeries(id: "novel/rain", title: "Rain Shop", cover: URL(string: "https://quiet.test/c/2.jpg")),
         ])
         #expect(popular.hasMore)
         #expect(try await source.popular(page: 2).hasMore == false)
