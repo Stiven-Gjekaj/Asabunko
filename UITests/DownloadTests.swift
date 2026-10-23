@@ -55,6 +55,30 @@ final class DownloadTests: XCTestCase {
         app.buttons["Close"].tap()
     }
 
+    func testShowsAFailedDownloadAndTriesItAgain() throws {
+        app.saveSourceLine(server + "/aidoku/index.min.json")
+        app.waitForInstalled(1)
+        app.search("sunrise")
+        let series = app.button(containing: "Aidoku Sunrise")
+        XCTAssertTrue(series.waitForExistence(timeout: 10))
+        series.tap()
+        XCTAssertTrue(app.buttons["Add to the read list"].waitForExistence(timeout: 10))
+        app.buttons["Add to the read list"].tap()
+
+        control("offline")
+        app.buttons["Downloads"].tap()
+        app.buttons["Download all chapters"].tap()
+        XCTAssertTrue(app.images["Download failed"].waitForExistence(timeout: 20), "The chapter shows that its download failed.")
+        shot("3 Failed download")
+
+        control("online")
+        app.buttons["Downloads"].tap()
+        let retry = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Try the failed downloads again'")).firstMatch
+        XCTAssertTrue(retry.waitForExistence(timeout: 5))
+        retry.tap()
+        XCTAssertTrue(app.images["Downloaded"].waitForExistence(timeout: 20), "The chapter downloads on the second try.")
+    }
+
     private func shot(_ name: String) {
         let attachment = XCTAttachment(screenshot: app.screenshot())
         attachment.name = name

@@ -99,9 +99,16 @@ final class AppModel {
     }
 
     func delete(_ book: Book) {
+        downloads.cancel(book.id)
         library.books.removeAll { $0.id == book.id }
         try? FileManager.default.removeItem(at: folder(of: book))
         save()
+    }
+
+    /// Removes the folder of a book that is not in the library.
+    func removeFolder(of id: Book.ID) {
+        guard book(id) == nil else { return }
+        try? FileManager.default.removeItem(at: folder(of: Book(id: id, title: "", fileName: "", pageCount: 0)))
     }
 
     // MARK: Import

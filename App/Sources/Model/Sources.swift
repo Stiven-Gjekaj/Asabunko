@@ -16,25 +16,49 @@ enum ChapterFault: LocalizedError {
     case missing
     case sourceGone
     case notText
+    case notPages
 
     var errorDescription: String? {
         switch self {
         case .missing: "The file of the chapter is not on this device."
         case .sourceGone: "The source of this book is not installed. Add its list again in Settings, Sources."
         case .notText: "The source gave images for this chapter, not text."
+        case .notPages: "The source gave text for this chapter, not pages."
         }
     }
 }
 
 /// The sources that the app has loaded in this session, by the ID of their installation.
+/// A source runs a JavaScript context or a WebAssembly instance, so the sources that the user did not
+/// use for the longest time leave the memory when there are many.
 @MainActor
 final class LoadedSources {
     static let shared = LoadedSources()
     private var sources: [String: OnlineSource] = [:]
+    /// The IDs from the last used to the most recently used.
+    private var order: [String] = []
+    /// The loads that run now, so that two screens that ask for one source get one runtime.
+    var loading: [String: Task<OnlineSource, Error>] = [:]
+    static let limit = 24
 
-    func get(_ id: String) -> OnlineSource? { sources[id] }
-    func set(_ id: String, _ source: OnlineSource) { sources[id] = source }
-    func remove(_ id: String) { sources[id] = nil }
+    func get(_ id: String) -> OnlineSource? {
+        guard let source = sources[id] else { return nil }
+        order.removeAll { $0 == id }
+        order.append(id)
+        return source
+    }
+
+    func set(_ id: String, _ source: OnlineSource) {
+        sources[id] = source
+        order.removeAll { $0 == id }
+        order.append(id)
+        while order.count > Self.limit { sources[order.removeFirst()] = nil }
+    }
+
+    func remove(_ id: String) {
+        sources[id] = nil
+        order.removeAll { $0 == id }
+    }
 }
 
 extension AppModel {

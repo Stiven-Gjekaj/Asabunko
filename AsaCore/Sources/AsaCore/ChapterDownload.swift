@@ -50,6 +50,7 @@ public enum ChapterDownload {
         try manager.createDirectory(at: staging, withIntermediateDirectories: true)
         do {
             for (index, request) in requests.enumerated() {
+                try Task.checkCancellation()
                 var data = Data(), mime: String?
                 var attempt = 0
                 while true {

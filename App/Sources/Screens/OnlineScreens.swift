@@ -311,6 +311,11 @@ struct OnlineSeriesScreen: View {
                             Menu {
                                 Button { app.downloadChapters(book.id) } label: { Label("Download all chapters", systemImage: "arrow.down.circle") }
                                 Button { app.downloadChapters(book.id, from: book.page) } label: { Label("Download from this chapter", systemImage: "arrow.down.to.line") }
+                                if app.downloads.failedCount(book.id) > 0 {
+                                    Button { app.downloads.retry(book.id, app: app) } label: {
+                                        Label("Try the failed downloads again (\(app.downloads.failedCount(book.id)))", systemImage: "arrow.clockwise")
+                                    }
+                                }
                                 Button(role: .destructive) { app.downloads.cancel(book.id); app.removeDownloads(book.id) } label: { Label("Remove downloads", systemImage: "trash") }
                             } label: {
                                 Image(systemName: "arrow.down.circle").font(.system(size: 22)).frame(width: 44, height: 44)
@@ -519,6 +524,8 @@ struct OnlineSeriesScreen: View {
                 } else {
                     ProgressView().accessibilityLabel("Downloading")
                 }
+            } else if app.downloads.fault(book.id, position) != nil {
+                Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(Palette.danger).accessibilityLabel("Download failed")
             } else if app.downloads.isWaiting(book.id, position) {
                 Image(systemName: "clock").foregroundStyle(Palette.textSecondary).accessibilityLabel("Waiting to download")
             } else if app.isDownloaded(book.id, index: position) {
@@ -619,7 +626,8 @@ struct OnlineSeriesScreen: View {
     /// Puts the title in the read list, or takes it out. A book with no place leaves the library.
     private func toggleList(_ details: OnlineDetails) async {
         if let book, book.listed {
-            if book.lastRead == nil { app.delete(book) } else { app.update(book.id) { $0.listed = false } }
+            // A book with no place and no downloads leaves the library. Downloads stay with the book.
+            if book.lastRead == nil && app.downloadedCount(book.id) == 0 { app.delete(book) } else { app.update(book.id) { $0.listed = false } }
         } else {
             await add(details, listed: true)
         }
