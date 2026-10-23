@@ -12,6 +12,9 @@ Under /aidoku/, it serves a list of Aidoku sources with one source. The source
 is a small WebAssembly module that this script writes. It gives one series of
 one chapter of two pages, from /pages/.
 
+Under /paperback/, it serves a repository of Paperback 0.9 extensions with
+one extension. Its interceptor adds a referer, which the pages need.
+
 Under /suwayomi/, it answers the GraphQL queries of a Suwayomi server with
 one source, one series, and one chapter of three pages, with the same user
 name and password as /opds/.
@@ -108,6 +111,34 @@ var Quiet = (function () {
   return Quiet;
 }());
 exports.default = new Quiet();
+"""
+
+PAPERBACK = r"""
+var source = (function (e) {
+  class Quiet {
+    async initialise() {
+      Application.registerInterceptor('referer', Application.Selector(this, 'interceptRequest'), Application.Selector(this, 'interceptResponse'));
+    }
+    async interceptRequest(request) { return { ...request, headers: { ...(request.headers ?? {}), referer: 'BASE/' } }; }
+    async interceptResponse(request, response, data) { return data; }
+    async getDiscoverSections() { return [{ id: 'popular', title: 'Popular', type: 1 }]; }
+    async getDiscoverSectionItems(section, metadata) {
+      const [, data] = await Application.scheduleRequest({ url: 'BASE/paperback/api/popular', method: 'GET' });
+      const list = JSON.parse(Application.arrayBufferToUTF8String(data));
+      return { items: list.map((t) => ({ type: 'simpleCarouselItem', mangaId: t.id, title: t.title, imageUrl: 'BASE/paperback/page/1' })), metadata: undefined };
+    }
+    async getSearchResults(query) { return { items: [], metadata: undefined }; }
+    async getMangaDetails(mangaId) {
+      return { mangaId, mangaInfo: { primaryTitle: 'Paper Moon', thumbnailUrl: 'BASE/paperback/page/1', synopsis: 'A comic from JavaScript.',
+        secondaryTitles: [], contentRating: 'SAFE', author: 'Script Artist' } };
+    }
+    async getChapters(manga) { return [{ chapterId: 'p1', sourceManga: manga, langCode: 'en', chapNum: 1, title: 'Lanterns' }]; }
+    async getChapterDetails(chapter) {
+      return { id: chapter.chapterId, mangaId: chapter.sourceManga.mangaId, pages: ['BASE/paperback/page/2', 'BASE/paperback/page/3'] };
+    }
+  }
+  return e.Quiet = new Quiet(), e;
+})({});
 """
 
 SITE = {
@@ -227,6 +258,24 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         path = self.path.split("?")[0]
         host = self.headers.get("Host")
+        if path == "/paperback/versioning.json":
+            repo = {"buildTime": "2026-10-23", "builtWith": {"toolchain": "1.0.0", "types": "1.0.0"},
+                    "repository": {"name": "Test repository", "description": ""},
+                    "sources": [{"id": "Quiet", "name": "Quiet Paper", "description": "", "version": "1.0.0", "icon": "icon.png",
+                                 "language": "en", "contentRating": "SAFE", "badges": [], "capabilities": [1, 4, 64], "developers": []}]}
+            return self.reply(json.dumps(repo).encode(), "application/json")
+        if path == "/paperback/Quiet/index.js":
+            return self.reply(PAPERBACK.replace("BASE", f"http://{host}").encode(), "application/javascript")
+        if path == "/paperback/Quiet/static/icon.png":
+            return self.reply(page(1), "image/png")
+        if path == "/paperback/api/popular":
+            return self.reply(b'[{"id": "moon", "title": "Paper Moon"}]', "application/json")
+        if path.startswith("/paperback/page/"):
+            if self.headers.get("Referer") != f"http://{host}/":
+                self.send_response(403)
+                self.end_headers()
+                return
+            return self.reply(page(int(path.rsplit("/", 1)[1])), "image/png")
         if path == "/aidoku/index.min.json":
             index = {"name": "Test list", "sources": [{"id": "en.test", "name": "Test Aidoku", "version": 1, "iconURL": "../pages/3",
                                                         "downloadURL": "sources/en.test-v1.aix", "languages": ["en"], "contentRating": 0}]}
