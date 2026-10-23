@@ -47,4 +47,13 @@ import Testing
         #expect(SourceChoice.best([("A", nil), ("B", 0)]) == "A")
         #expect(SourceChoice.best([]) == nil)
     }
+
+    @Test func mixTakesOneOfEachSourceInTurnWithNoSameTitle() {
+        let a = [SearchHit(source: "A", series: OnlineSeries(id: "1", title: "One")), SearchHit(source: "A", series: OnlineSeries(id: "2", title: "Two"))]
+        let b = [SearchHit(source: "B", series: OnlineSeries(id: "3", title: "one")), SearchHit(source: "B", series: OnlineSeries(id: "4", title: "Four")),
+                 SearchHit(source: "B", series: OnlineSeries(id: "5", title: "Five"))]
+        #expect(TitleMix.roundRobin([a, b]).map(\.series.id) == ["1", "2", "4", "5"])
+        #expect(TitleMix.roundRobin([a, b], limit: 2).map(\.series.id) == ["1", "2"])
+        #expect(TitleMix.roundRobin([]).isEmpty)
+    }
 }

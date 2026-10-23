@@ -98,3 +98,22 @@ public enum SourceChoice {
         return best?.source ?? chapters.first?.source
     }
 }
+
+/// Puts the lists of some sources into one list: the first of each source, then the second of each, and so on.
+/// A title that an earlier source gave does not come two times.
+public enum TitleMix {
+    public static func roundRobin(_ lists: [[SearchHit]], limit: Int = .max) -> [SearchHit] {
+        var mixed: [SearchHit] = []
+        var seen: Set<String> = []
+        let longest = lists.map(\.count).max() ?? 0
+        for index in 0..<longest {
+            for list in lists where index < list.count {
+                let key = TitleMatch.key(list[index].series.title)
+                guard !key.isEmpty, seen.insert(key).inserted else { continue }
+                mixed.append(list[index])
+                if mixed.count == limit { return mixed }
+            }
+        }
+        return mixed
+    }
+}
