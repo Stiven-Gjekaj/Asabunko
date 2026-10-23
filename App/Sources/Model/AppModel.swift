@@ -13,6 +13,8 @@ final class AppModel {
     private(set) var importing: (done: Int, total: Int)?
     /// The downloads of the chapters of online series.
     let downloads = Downloads()
+    /// The popular and the latest titles of the installed sources.
+    let discover = DiscoverFeed()
     /// The install of the sources of new lines: the sources that installed, of all of them.
     private(set) var sourceSetup: (done: Int, total: Int)?
 
