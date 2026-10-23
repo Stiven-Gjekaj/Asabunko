@@ -107,6 +107,7 @@ final class PageController: UIViewController, UIScrollViewDelegate {
         imageView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         imageView.isAccessibilityElement = true
         imageView.accessibilityLabel = "Page \(index + 1)"
+        imageView.accessibilityValue = "Loading"
         scrollView.addSubview(imageView)
 
         let double = UITapGestureRecognizer(target: self, action: #selector(doubleTap(_:)))
@@ -120,6 +121,7 @@ final class PageController: UIViewController, UIScrollViewDelegate {
         Task { [weak self] in
             let image = await PageImages.shared.image(source, maxPixels: PageImages.screenPixels)
             self?.imageView.image = image
+            self?.imageView.accessibilityValue = image == nil ? "Not loaded" : "Loaded"
         }
     }
 

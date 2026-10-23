@@ -240,6 +240,9 @@ def suwayomi(query):
     return None
 
 
+OFFLINE = {"on": False}
+
+
 class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         if self.path.split("?")[0] != "/suwayomi/api/graphql":
@@ -258,6 +261,13 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         path = self.path.split("?")[0]
         host = self.headers.get("Host")
+        if path in ("/control/offline", "/control/online"):
+            OFFLINE["on"] = path.endswith("offline")
+            return self.reply(b"ok", "text/plain")
+        if OFFLINE["on"] and ("/page" in path or path.startswith("/pages/")):
+            self.send_response(503)
+            self.end_headers()
+            return
         if path == "/paperback/versioning.json":
             repo = {"buildTime": "2026-10-23", "builtWith": {"toolchain": "1.0.0", "types": "1.0.0"},
                     "repository": {"name": "Test repository", "description": ""},
