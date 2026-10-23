@@ -17,9 +17,13 @@ struct AsabunkoApp: App {
         WindowGroup {
             RootView()
                 .environment(app)
-                // "Open in Asabunko" from Files or from another app gives a copy of the file.
+                // A tap on the widget opens its book. "Open in Asabunko" from Files or from another app gives a copy of the file.
                 .onOpenURL { url in
-                    Task { await app.importItems([url]) }
+                    if let id = Shelf.book(in: url) {
+                        app.openRequest = id
+                    } else if url.isFileURL {
+                        Task { await app.importItems([url]) }
+                    }
                 }
                 // The last place of the reader goes to the file before iOS can stop the app.
                 .onChange(of: phase) { _, new in
@@ -29,6 +33,8 @@ struct AsabunkoApp: App {
                 .background(FrameMeterHook())
                 .task {
                     NotificationHandler.shared.app = app
+                    // The widget gets the books of Continue reading, also from a library of an older version.
+                    app.updateShelf()
                     UNUserNotificationCenter.current().delegate = NotificationHandler.shared
                     // A UI test runs the check of the background at the start, because the simulator has no background tasks.
                     if ProcessInfo.processInfo.environment["ASABUNKO_CHECK_NOW"] == "1" { await app.backgroundCheck() }

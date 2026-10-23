@@ -343,6 +343,7 @@ final class AppModel {
             guard !Task.isCancelled else { return }
             let result = await Task.detached(priority: .utility) { Result { try LibraryStore.save(snapshot, to: file) } }.value
             if case let .failure(error) = result { self?.fault = "The library was not saved: \(error.localizedDescription)" }
+            self?.updateShelf()
         }
     }
 
