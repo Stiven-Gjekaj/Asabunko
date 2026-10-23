@@ -54,10 +54,13 @@ final class FilesTests: XCTestCase {
         app.buttons.matching(NSPredicate(format: "label == 'Delete'")).firstMatch.tap()
         XCTAssertTrue(app.staticTexts["Your shelf is empty"].waitForExistence(timeout: 10))
         app.buttons["Import"].tap()
-        let browse = app.buttons["Browse"]
-        if browse.waitForExistence(timeout: 5) { browse.tap() }
-        if device.waitForExistence(timeout: 5) { device.tap() }
+        // The picker can open in the last folder, where the file is already.
         let file = app.cells.matching(NSPredicate(format: "label CONTAINS %@", name)).firstMatch
+        if !file.waitForExistence(timeout: 4) {
+            let browse = app.buttons["Browse"]
+            if browse.waitForExistence(timeout: 5) { browse.tap() }
+            if device.waitForExistence(timeout: 5) { device.tap() }
+        }
         XCTAssertTrue(file.waitForExistence(timeout: 10), "Files shows the saved book.")
         shot("2 Files")
         file.tap()
