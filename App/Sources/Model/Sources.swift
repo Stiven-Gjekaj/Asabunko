@@ -29,13 +29,30 @@ extension AppModel {
         return pluginsFolder.appendingPathComponent(installed.list.uuidString).appendingPathComponent(safe + ".code")
     }
 
+    /// The fetcher of a server with an account: it adds the user name and the password of its line.
+    nonisolated static func fetcher(for link: SourceLink) -> Fetcher {
+        { request in
+            var request = request
+            let signed = AppModel.request(request.url!, source: link)
+            if let value = signed.value(forHTTPHeaderField: "Authorization") { request.setValue(value, forHTTPHeaderField: "Authorization") }
+            return try await appFetcher(request)
+        }
+    }
+
     /// The sources in a list of the source list.
     func sources(in link: SourceLink) async throws -> [SourceInfo] {
-        let data = try await Network.data(for: AppModel.request(link.url, source: link))
         switch link.kind {
-        case .lnreader: return try LNReaderIndex.parse(data)
-        default: return []
+        case .lnreader:
+            return try LNReaderIndex.parse(try await Network.data(for: AppModel.request(link.url, source: link)))
+        case .suwayomi:
+            return try await SuwayomiServer(base: link.url, fetcher: Self.fetcher(for: link)).sources()
+        default:
+            return []
         }
+    }
+
+    private func link(of installed: InstalledSource) -> SourceLink? {
+        library.sources.first { $0.id == installed.list }
     }
 
     func isInstalled(_ info: SourceInfo, from link: SourceLink) -> Bool {
@@ -45,10 +62,13 @@ extension AppModel {
     /// Downloads the code of a source and keeps it on the device.
     func install(_ info: SourceInfo, from link: SourceLink) async throws {
         let installed = InstalledSource(list: link.id, info: info)
-        let code = try await Network.data(for: URLRequest(url: info.code))
-        let file = codeFile(of: installed)
-        try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try code.write(to: file, options: .atomic)
+        // A source of a server runs on the server, so it has no code on the device.
+        if link.kind != .suwayomi {
+            let code = try await Network.data(for: URLRequest(url: info.code))
+            let file = codeFile(of: installed)
+            try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try code.write(to: file, options: .atomic)
+        }
         LoadedSources.shared.remove(installed.id)
         changeLibrary { library in
             library.installed.removeAll { $0.id == installed.id }
@@ -69,12 +89,20 @@ extension AppModel {
     /// The source, loaded one time in each session.
     func load(_ installed: InstalledSource) async throws -> OnlineSource {
         if let source = LoadedSources.shared.get(installed.id) { return source }
-        let file = codeFile(of: installed)
-        let code = try Data(contentsOf: file)
         let source: OnlineSource
         switch kind(of: installed) {
         case .lnreader:
+            let code = try Data(contentsOf: codeFile(of: installed))
             source = try await LNReaderPlugin(info: installed.info, code: String(decoding: code, as: UTF8.self), fetcher: appFetcher)
+        case .suwayomi:
+            guard let link = link(of: installed) else { throw SuwayomiServer.Failure.graphQL("The server is not in the source list.") }
+            source = SuwayomiSource(info: installed.info, server: SuwayomiServer(base: link.url, fetcher: Self.fetcher(for: link))) { request in
+                var request = request
+                if let value = AppModel.request(request.url!, source: link).value(forHTTPHeaderField: "Authorization") {
+                    request.setValue(value, forHTTPHeaderField: "Authorization")
+                }
+                return request
+            }
         default:
             throw JSRuntimeError.script("Asabunko cannot run this kind of source.")
         }

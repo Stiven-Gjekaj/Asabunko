@@ -46,20 +46,21 @@ struct SourceListScreen: View {
             SourceIcon(url: info.icon)
             VStack(alignment: .leading, spacing: 2) {
                 Text(info.name).font(Karla.font(16, .bold))
-                Text("Version \(info.version)" + (info.adult ? " · 18+" : "")).font(Karla.font(12)).foregroundStyle(Palette.textSecondary)
+                Text([info.version.isEmpty ? nil : "Version \(info.version)", info.adult ? "18+" : nil].compactMap { $0 }.joined(separator: " · "))
+                    .font(Karla.font(12)).foregroundStyle(Palette.textSecondary)
             }
             Spacer()
             if working.contains(info.id) {
                 ProgressView()
             } else if app.isInstalled(info, from: link) {
-                Button("Remove") {
+                Button(link.kind == .suwayomi ? "Hide" : "Remove") {
                     if let installed = app.library.installed.first(where: { $0.list == link.id && $0.info.id == info.id }) { app.uninstall(installed) }
                 }
                 .font(Karla.font(14, .bold))
                 .foregroundStyle(Palette.danger)
                 .buttonStyle(.borderless)
             } else {
-                Button("Install") {
+                Button(link.kind == .suwayomi ? "Show" : "Install") {
                     working.insert(info.id)
                     Task {
                         do { try await app.install(info, from: link) } catch { app.fault = "\(info.name) did not install: \(error.localizedDescription)" }
