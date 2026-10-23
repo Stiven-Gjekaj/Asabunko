@@ -128,6 +128,60 @@ final class AppModel {
         }
     }
 
+    // MARK: Sources
+
+    /// Replaces the source list with the text of the paste box. A password goes to the Keychain.
+    /// A line with a user name and no password keeps the password that the Keychain has.
+    @discardableResult
+    func saveSources(_ text: String) -> [SourceLink] {
+        let lines = SourceList.parse(text, existing: library.sources)
+        let kept = Set(lines.map(\.link.id))
+        for old in library.sources where !kept.contains(old.id) { Keychain.setPassword(nil, for: old.id) }
+        for line in lines where line.password != nil { Keychain.setPassword(line.password, for: line.link.id) }
+        library.sources = lines.map(\.link)
+        save()
+        return library.sources
+    }
+
+    /// Keeps the kind and the name that the app found when it read a source.
+    func learn(_ id: SourceLink.ID, kind: SourceKind?, name: String?) {
+        guard let index = library.sources.firstIndex(where: { $0.id == id }) else { return }
+        if let kind { library.sources[index].kind = kind }
+        if let name, !name.isEmpty { library.sources[index].name = name }
+        save()
+    }
+
+    /// A request to a source, with its user name and its password when it has them.
+    nonisolated static func request(_ url: URL, source: SourceLink?) -> URLRequest {
+        var request = URLRequest(url: url)
+        request.setValue("application/atom+xml, application/opds+json, application/json;q=0.9, */*;q=0.8", forHTTPHeaderField: "Accept")
+        // The password goes only to the host of the source. A link to another host gets no password.
+        if let source, let user = source.username, !user.isEmpty, url.host == source.url.host {
+            let password = Keychain.password(for: source.id) ?? ""
+            request.setValue("Basic " + Data("\(user):\(password)".utf8).base64EncodedString(), forHTTPHeaderField: "Authorization")
+        }
+        return request
+    }
+
+    /// Downloads a book from the network and imports it into the library.
+    func download(_ request: URLRequest, title: String, fileExtension: String) async {
+        do {
+            let (temporary, response) = try await Network.session.download(for: request)
+            if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
+                throw Network.Failure.status(http.statusCode)
+            }
+            let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            defer { try? FileManager.default.removeItem(at: folder) }
+            let safe = title.replacingOccurrences(of: "/", with: "-").replacingOccurrences(of: ":", with: "-")
+            let file = folder.appendingPathComponent("\(safe.isEmpty ? "Book" : safe).\(fileExtension)")
+            try FileManager.default.moveItem(at: temporary, to: file)
+            await importItems([file])
+        } catch {
+            fault = "The book was not downloaded: \(error.localizedDescription)"
+        }
+    }
+
     // MARK: Store
 
     private func save() {
