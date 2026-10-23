@@ -62,6 +62,14 @@ var source = (function (e) {
               { type: 'multiselect', id: 'genre', title: 'Genre', options: [{ id: 'calm', value: 'Calm' }, { id: 'loud', value: 'Loud' }], value: {}, allowExclusion: true }];
     }
     async getSearchResults(query, metadata) {
+      if (query.title === 'web') {
+        // The page sets its value some time after the load, as the pages of MangaFire and AllManga do.
+        const html = '<html><head><script>setTimeout(function () { window.__answer = "page-" + document.cookie; }, 200);</script></head><body></body></html>';
+        const run = await Application.executeInWebView({ source: { html, baseUrl: 'https://quiet.test/read', loadCSS: false, loadImages: false },
+          inject: 'return window.__answer', storage: { cookies: [{ name: 'seen', value: 'yes', domain: 'quiet.test', path: '/' }] } });
+        const names = run.storage.cookies.map((c) => c.name).join(',');
+        return { items: [{ mangaId: 'w', title: String(run.result) + ' with ' + names, imageUrl: '' }], metadata: undefined };
+      }
       const filters = (query.filters ?? []).map((f) => f.id + '=' + (typeof f.value === 'string' ? f.value : Object.keys(f.value).sort().map((k) => k + ':' + f.value[k]).join(','))).sort().join(';');
       return { items: [{ mangaId: 'm1', title: 'Found ' + query.title + (filters ? ' with ' + filters : ''), imageUrl: '' }], metadata: undefined };
     }
@@ -181,6 +189,12 @@ private func encrypted(_ text: String) -> String {
         await #expect(throws: JSRuntimeError.self) { try await source.formAction(root.id, row: "secret", input: .tap) }
     }
 
+    @Test func runsAPageInAWebViewWithTheCookiesOfTheExtension() async throws {
+        let source = try await load(SeenRequests(), state: try temporaryFolder().appendingPathComponent("state.json"))
+        let page = try await source.search("web", page: 1)
+        #expect(page.items.first?.title == "page-seen=yes with seen", "The page gets the cookie, and its late value comes back.")
+    }
+
     @Test func readsTheSeriesTheChaptersAndThePagesWithTheStateAndTheCrypto() async throws {
         let seen = SeenRequests()
         let state = try temporaryFolder().appendingPathComponent("state.json")
@@ -208,7 +222,7 @@ private func encrypted(_ text: String) -> String {
     }
 
     /// Runs real extensions of Inkdex from the web. It runs only with ASABUNKO_LIVE=1.
-    @Test(.enabled(if: ProcessInfo.processInfo.environment["ASABUNKO_LIVE"] == "1"), arguments: ["WeebCentral", "MangaDex"])
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["ASABUNKO_LIVE"] == "1"), arguments: ["WeebCentral", "MangaDex", "MangaFire", "AllManga"])
     func readsARealExtension(id: String) async throws {
         let agent = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1"
         let session: Fetcher = { request in

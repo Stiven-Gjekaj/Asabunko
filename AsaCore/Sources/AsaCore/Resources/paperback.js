@@ -116,7 +116,15 @@
     base64Decode: (value) => native.base64Decode(typeof value === 'string' ? value : new TextDecoder().decode(value)),
     crypto_md5Hash: (value) => native.digest('MD5', new Uint8Array(bufferOf(value)), true),
     decodeHTMLEntities: (text) => native.decodeEntities(String(text)),
-    executeInWebView: async (context) => ({ result: null, storage: { cookies: (context.storage && context.storage.cookies) || [] } }),
+    // A page in a hidden web view of the host. The result and the cookies come back when the script of the page ends.
+    async executeInWebView(context) {
+      const source = context.source || {};
+      const cookies = ((context.storage && context.storage.cookies) || []).map((c) => ({ name: String(c.name), value: String(c.value), domain: c.domain || null, path: c.path || '/' }));
+      const answer = JSON.parse(await native.webView(JSON.stringify({ html: String(source.html || ''), baseUrl: String(source.baseUrl || ''),
+        userAgent: source.userAgent || null, inject: String(context.inject || ''), cookies })));
+      return { result: answer.result, storage: { cookies: (answer.cookies || []).map((c) => ({ name: c.name, value: c.value, domain: c.domain, path: c.path || '/',
+        created: new Date(), expires: c.expires === undefined ? undefined : new Date(c.expires) })) } };
+    },
     registerDiscoverSection() {}, unregisterDiscoverSection() {}, registeredDiscoverSections: () => [],
     invalidateDiscoverSections() {},
     formDidChange() {},

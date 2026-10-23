@@ -315,6 +315,7 @@ public final class PaperbackExtension: OnlineSource, @unchecked Sendable {
                               ("base64Decode", decode), ("digest", digest), ("aes", aes), ("decodeEntities", entities), ("random", random), ("uuid", uuid)] as [(String, Any)] {
             runtime.define(name, block)
         }
+        runtime.defineAsync("webView") { try await PaperbackWebView.run($0) }
     }
 }
 

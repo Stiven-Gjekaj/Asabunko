@@ -104,6 +104,53 @@ public final class JSRuntime: @unchecked Sendable {
         }
     }
 
+    /// Adds a native function that takes time, such as a page in a web view. The script calls `__native.<name>(text)`
+    /// and gets a promise of the text of the answer. A thrown error rejects the promise with its message.
+    public func defineAsync(_ name: String, _ handler: @escaping @Sendable (String) async throws -> String) {
+        let start: @convention(block) (Int, String) -> Void = { [weak self] id, input in
+            Task.detached {
+                let result: Result<String, Error>
+                do { result = .success(try await handler(input)) } catch { result = .failure(error) }
+                self?.queue.async {
+                    let done = self?.context.objectForKeyedSubscript("__asyncDone")
+                    switch result {
+                    case let .success(text): done?.call(withArguments: [id, NSNull(), text])
+                    case let .failure(error): done?.call(withArguments: [id, error.localizedDescription, NSNull()])
+                    }
+                }
+            }
+        }
+        queue.sync {
+            let native = context.objectForKeyedSubscript("__native")!
+            native.setObject(start, forKeyedSubscript: "__start_\(name)" as NSString)
+            context.evaluateScript("""
+            (function () {
+              if (!globalThis.__asyncDone) {
+                const waiting = {};
+                let next = 0;
+                globalThis.__asyncCall = (name, input) => new Promise((resolve, reject) => {
+                  const id = ++next;
+                  waiting[id] = { resolve, reject };
+                  __native['__start_' + name](id, String(input));
+                });
+                globalThis.__asyncDone = (id, error, value) => {
+                  const call = waiting[id];
+                  delete waiting[id];
+                  if (!call) return;
+                  if (error === null || error === undefined) call.resolve(value); else call.reject(new Error(error));
+                };
+              }
+              __native[\(Self.quoted(name))] = (input) => __asyncCall(\(Self.quoted(name)), input);
+            })();
+            """)
+        }
+    }
+
+    private static func quoted(_ text: String) -> String {
+        let data = (try? JSONSerialization.data(withJSONObject: [text])) ?? Data("[\"\"]".utf8)
+        return String(String(decoding: data, as: UTF8.self).dropFirst().dropLast())
+    }
+
     /// The bytes of a typed array or an ArrayBuffer, for a native function. The caller is on the queue of the context.
     public func bytes(of value: JSValue) -> Data { data(of: value) }
 
