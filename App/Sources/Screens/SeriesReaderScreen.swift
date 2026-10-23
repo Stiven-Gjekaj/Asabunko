@@ -50,6 +50,13 @@ struct SeriesReaderScreen: View {
 
     /// The pages of the chapter, from the source.
     private func load(startAt place: Double = 0) async {
+        // A chapter that downloaded opens from its files, with no network.
+        if let files = app.downloadedPages(bookID, index: chapter) {
+            fault = nil
+            page = min(Int((place * Double(max(files.count - 1, 0))).rounded()), max(files.count - 1, 0))
+            content = .images(files.map(PageSource.file))
+            return
+        }
         guard let book, let novel, novel.chapters.indices.contains(chapter),
               let remote = novel.chapters[chapter].remote, let installed = app.installed(for: book), let origin = book.origin
         else {
