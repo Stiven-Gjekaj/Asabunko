@@ -195,6 +195,26 @@ public struct HistoryEntry: Codable, Sendable, Equatable, Identifiable {
     }
 }
 
+/// A bookmark or a highlight in a chapter of a novel.
+public struct BookMark: Codable, Sendable, Equatable, Identifiable {
+    public enum Kind: String, Codable, Sendable { case bookmark, highlight }
+
+    public var id: UUID
+    public var book: UUID
+    public var chapter: Int
+    /// The place in the chapter, from 0 to 1.
+    public var position: Double
+    /// The words of a highlight, or the first words at the place of a bookmark.
+    public var text: String
+    public var kind: Kind
+    public var created: Date
+
+    public init(id: UUID = UUID(), book: UUID, chapter: Int, position: Double, text: String, kind: Kind, created: Date = .now) {
+        self.id = id; self.book = book; self.chapter = chapter; self.position = min(max(position, 0), 1)
+        self.text = text; self.kind = kind; self.created = created
+    }
+}
+
 /// A new chapter that a check found.
 public struct ChapterUpdate: Codable, Sendable, Equatable, Identifiable {
     public var id: UUID
@@ -228,6 +248,8 @@ public struct Library: Codable, Sendable, Equatable {
     /// The chapters and the books that the user opened, the newest first.
     public var history: [HistoryEntry]
     public static let historyLimit = 500
+    /// The bookmarks and the highlights of the novels.
+    public var marks: [BookMark]
 
     public init(books: [Book] = [], defaultMode: ReadingMode = .rightToLeft, sources: [SourceLink] = []) {
         self.form = Self.currentForm
@@ -238,9 +260,10 @@ public struct Library: Codable, Sendable, Equatable {
         self.updates = []
         self.categories = []
         self.history = []
+        self.marks = []
     }
 
-    private enum CodingKeys: String, CodingKey { case form, books, defaultMode, sources, installed, updates, categories, history }
+    private enum CodingKeys: String, CodingKey { case form, books, defaultMode, sources, installed, updates, categories, history, marks }
 
     /// A list that an older version did not write is empty.
     public init(from decoder: Decoder) throws {
@@ -253,6 +276,7 @@ public struct Library: Codable, Sendable, Equatable {
         updates = try c.decodeIfPresent([ChapterUpdate].self, forKey: .updates) ?? []
         categories = try c.decodeIfPresent([BookCategory].self, forKey: .categories) ?? []
         history = try c.decodeIfPresent([HistoryEntry].self, forKey: .history) ?? []
+        marks = try c.decodeIfPresent([BookMark].self, forKey: .marks) ?? []
     }
 
     /// Keeps a visit of a book in the history. A visit of the same place of the same book on the same day
@@ -261,6 +285,11 @@ public struct Library: Codable, Sendable, Equatable {
         history.removeAll { $0.book == book && $0.place == place && calendar.isDate($0.date, inSameDayAs: date) }
         history.insert(HistoryEntry(book: book, place: place, date: date), at: 0)
         if history.count > Self.historyLimit { history.removeLast(history.count - Self.historyLimit) }
+    }
+
+    /// The marks of a book in the order of the book: by chapter, then by place.
+    public func marks(of book: UUID) -> [BookMark] {
+        marks.filter { $0.book == book }.sorted { ($0.chapter, $0.position) < ($1.chapter, $1.position) }
     }
 
     /// The history of the books that are in the library.

@@ -166,4 +166,19 @@ import Testing
         library.books = []
         #expect(library.shownHistory.isEmpty)
     }
+
+    @Test func keepsTheMarksOfANovelInTheOrderOfTheBook() throws {
+        let book = Book(title: "Tide", format: .novel, fileName: "t", pageCount: 5)
+        var library = Library(books: [book])
+        library.marks = [
+            BookMark(book: book.id, chapter: 2, position: 0.5, text: "late", kind: .highlight),
+            BookMark(book: book.id, chapter: 0, position: 1.4, text: "end", kind: .bookmark),
+            BookMark(book: book.id, chapter: 2, position: 0.1, text: "early", kind: .bookmark),
+            BookMark(book: UUID(), chapter: 0, position: 0, text: "other", kind: .bookmark),
+        ]
+        #expect(library.marks(of: book.id).map(\.text) == ["end", "early", "late"])
+        #expect(library.marks[1].position == 1, "A place stays between 0 and 1.")
+        let read = try JSONDecoder().decode(Library.self, from: try JSONEncoder().encode(library))
+        #expect(read.marks == library.marks)
+    }
 }
