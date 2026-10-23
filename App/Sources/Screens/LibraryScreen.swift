@@ -1,7 +1,7 @@
 import AsaCore
 import SwiftUI
 
-/// The shelf: the books that the user reads now, and every book in the library.
+/// The shelf: the books that the user reads now, and the read list.
 struct LibraryScreen: View {
     @Environment(AppModel.self) private var app
     @State private var importing = false
@@ -16,11 +16,16 @@ struct LibraryScreen: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 28) {
                     greeting
-                    if app.library.books.isEmpty {
+                    if app.library.continueReading.isEmpty && app.library.readList.isEmpty {
                         emptyShelf
                     } else {
                         if !app.library.continueReading.isEmpty { continueReading }
-                        allBooks
+                        if app.library.readList.isEmpty {
+                            EmptyArt(covers: [], title: "Your read list is empty",
+                                     text: "Tap the bookmark on the page of a title to keep it here. A book that you import goes here too.")
+                        } else {
+                            readList
+                        }
                     }
                 }
                 .padding(.horizontal, gutter)
@@ -106,24 +111,13 @@ struct LibraryScreen: View {
     }
 
     private var emptyShelf: some View {
-        VStack(spacing: 16) {
-            Image("Mark")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 120, height: 120)
-                .clipShape(RoundedRectangle(cornerRadius: 27, style: .continuous))
-                .accessibilityHidden(true)
-            Text("Your shelf is empty")
-                .font(Karla.font(20, .bold))
-            Text("Import an EPUB, a PDF, a comic archive such as CBZ or CBR, a TXT or FB2 file, or a folder of images, from Files.")
-                .font(Karla.font(15))
-                .foregroundStyle(Palette.textSecondary)
-                .multilineTextAlignment(.center)
-            Button("Import a book") { importing = true }
-                .buttonStyle(PillButtonStyle())
-                .padding(.top, 4)
+        EmptyArt(
+            covers: app.discover.covers.dropFirst(3).map { $0 },
+            title: "Your shelf is empty",
+            text: "Find a title in Discover or Search, and bookmark it. Or import an EPUB, a PDF, a comic archive such as CBZ or CBR, a TXT or FB2 file, or a folder of images, from Files."
+        ) {
+            Button("Import a book") { importing = true }.buttonStyle(PillButtonStyle())
         }
-        .padding(.vertical, 36)
         .card()
     }
 
@@ -143,11 +137,11 @@ struct LibraryScreen: View {
         }
     }
 
-    private var allBooks: some View {
+    private var readList: some View {
         VStack(alignment: .leading, spacing: 12) {
-            sectionTitle("All books")
+            sectionTitle("Read list")
             LazyVGrid(columns: columns, spacing: 22) {
-                ForEach(app.library.recentlyAdded) { book in
+                ForEach(app.library.readList) { book in
                     Button { reading = book } label: { BookTile(book: book, cover: app.cover(of: book)) }
                         .buttonStyle(.plain)
                         .contextMenu { menu(for: book) }
@@ -180,6 +174,11 @@ struct LibraryScreen: View {
             if app.downloadedCount(book.id) > 0 {
                 Button { app.downloads.cancel(book.id); app.removeDownloads(book.id) } label: { Label("Remove downloads", systemImage: "xmark.bin") }
             }
+        }
+        if book.listed && book.origin != nil {
+            Button { app.update(book.id) { $0.listed = false } } label: { Label("Remove from the read list", systemImage: "bookmark.slash") }
+        } else if !book.listed {
+            Button { app.update(book.id) { $0.listed = true } } label: { Label("Add to the read list", systemImage: "bookmark") }
         }
         Button(role: .destructive) { deleting = book } label: { Label("Delete", systemImage: "trash") }
     }
