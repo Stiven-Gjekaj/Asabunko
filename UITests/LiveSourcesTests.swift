@@ -13,6 +13,36 @@ final class LiveSourcesTests: XCTestCase {
         app.launch()
     }
 
+    /// MangaFire makes the key of each chapter in a web view, with `executeInWebView`.
+    func testReadsAChapterOfMangaFire() throws {
+        app.saveSourceLine("https://inkdex.github.io/extensions/0.9/stable/versioning.json")
+        let installed = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'Installed ('")).firstMatch
+        XCTAssertTrue(installed.waitForExistence(timeout: 120), "The English extensions of Inkdex install.")
+        // The list is long, so the row of MangaFire can be below the screen.
+        let row = app.button(containing: "MangaFire")
+        var swipes = 0
+        while !(row.exists && row.isHittable) && swipes < 12 { app.swipeUp(); swipes += 1 }
+        XCTAssertTrue(row.isHittable, "MangaFire is an English extension of the list.")
+        row.tap()
+        let titles = app.scrollViews.buttons.matching(NSPredicate(format: "NOT (label IN %@)", ["Popular", "Latest"]))
+        XCTAssertTrue(titles.firstMatch.waitForExistence(timeout: 60), "MangaFire gives its popular titles.")
+        // The list can open with an offset, so the test takes a title that is on the screen.
+        let series = (0..<min(titles.count, 30)).map { titles.element(boundBy: $0) }.first { $0.isHittable }
+        try XCTUnwrap(series, "A title is on the screen.").tap()
+        let chapter = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Ch.'")).firstMatch
+        // The chapters are under the facts of the title, in a list that loads its rows when they come on the screen.
+        XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Chapters '")).firstMatch.waitForExistence(timeout: 60)
+                      || chapter.exists, "The title has chapters.")
+        var scrolls = 0
+        while !(chapter.exists && chapter.isHittable) && scrolls < 8 { app.swipeUp(); scrolls += 1 }
+        XCTAssertTrue(chapter.isHittable, "A chapter is on the screen.")
+        chapter.tap()
+        let pages = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH '1 of '")).firstMatch
+        XCTAssertTrue(pages.waitForExistence(timeout: 90), "The pages of the chapter come from the key of the web view.")
+        sleep(4)
+        shot("10 MangaFire page")
+    }
+
     func testSearchesAndDiscoversWithRealSources() throws {
         app.saveSourceLine("https://aidoku-community.github.io/sources/index.min.json")
         let installing = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'Installing'")).firstMatch
