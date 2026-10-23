@@ -11,7 +11,7 @@ the decisions.
 A tag such as `v0.1.0` builds the unsigned IPA and attaches it to a release on
 GitHub as `Asabunko.ipa`.
 
-## 1.2.0 (not released)
+## 1.2.0 (2026-10-23)
 
 - Search asks all your sources at the same time, as in ZettaStream. A title
   that many sources have shows one time, with the number of its sources.
