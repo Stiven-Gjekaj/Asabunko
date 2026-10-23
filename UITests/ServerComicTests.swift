@@ -37,6 +37,34 @@ final class ServerComicTests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Chapter 1 of 1"].waitForExistence(timeout: 5))
     }
 
+    func testFiltersTheListAndChangesAPreferenceOfAServerSource() throws {
+        app.saveSourceLine(server.replacingOccurrences(of: "http://", with: "http://asa:morning@") + "/suwayomi")
+        app.waitForInstalled(1)
+        app.button(containing: "Test Comics (EN)").tap()
+        XCTAssertTrue(app.button(containing: "Morning Strip").waitForExistence(timeout: 10))
+
+        // A group of genres of the Mihon source is one choice of many values.
+        app.buttons["Filters"].tap()
+        let genres = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Genres'")).firstMatch
+        XCTAssertTrue(genres.waitForExistence(timeout: 5), "The filters of the server show.")
+        genres.tap()
+        app.buttons["Comedy"].tap()
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+        app.buttons["Apply"].tap()
+        XCTAssertTrue(app.button(containing: "Comedy Strip").waitForExistence(timeout: 10), "The server gets the change of the filter.")
+        shot("4 Filtered list of the server")
+
+        app.buttons["Source settings"].tap()
+        let stars = app.switches["Show stars"]
+        XCTAssertTrue(stars.waitForExistence(timeout: 5), "The preferences of the source show.")
+        stars.switches.firstMatch.tap()
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+        app.buttons["Filters"].tap()
+        app.buttons["Reset"].tap()
+        app.buttons["Apply"].tap()
+        XCTAssertTrue(app.button(containing: "\u{2605} Morning Strip").waitForExistence(timeout: 10), "The server keeps the new preference.")
+    }
+
     private func shot(_ name: String) {
         let attachment = XCTAttachment(screenshot: app.screenshot())
         attachment.name = name

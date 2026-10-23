@@ -275,14 +275,37 @@ def aidoku_package(host):
     return buffer.getvalue()
 
 
-def suwayomi(query):
+# The preference of the Suwayomi source: a switch that puts a star before each title.
+SUWAYOMI = {"stars": False}
+
+
+def suwayomi(query, variables=None):
     """The answer of the small Suwayomi server to a GraphQL query, by a word in it."""
+    variables = variables or {}
+    if "filters {" in query:
+        return {"source": {"filters": [
+            {"__typename": "SortFilter", "name": "Sort", "values": ["Popular", "Latest"], "sortDefault": {"index": 0, "ascending": False}},
+            {"__typename": "GroupFilter", "name": "Genres", "filters": [{"__typename": "TriStateFilter", "name": "Comedy", "triDefault": "IGNORE"},
+                                                                       {"__typename": "TriStateFilter", "name": "Horror", "triDefault": "IGNORE"}]}]}}
+    if "preferences {" in query:
+        return {"source": {"preferences": [{"__typename": "SwitchPreference", "key": "stars", "title": "Show stars", "visible": True,
+                                            "on": SUWAYOMI["stars"], "onDefault": False}]}}
+    if "updateSourcePreference" in query:
+        change = variables.get("input", {}).get("change", {})
+        if change.get("position") == 0 and "switchState" in change:
+            SUWAYOMI["stars"] = change["switchState"]
+        return {"updateSourcePreference": {"clientMutationId": None}}
     if "sources {" in query:
         return {"sources": {"nodes": [{"id": "0", "name": "Local source", "lang": "localsourcelang"},
                                        {"id": "777", "name": "Test Comics", "displayName": "Test Comics (EN)", "lang": "en",
                                         "iconUrl": "/pages/3", "isNsfw": False, "supportsLatest": True}]}}
     if "fetchSourceManga" in query:
-        return {"fetchSourceManga": {"hasNextPage": False, "mangas": [{"id": 5, "title": "Morning Strip", "thumbnailUrl": "/pages/0"}]}}
+        star = "\u2605 " if SUWAYOMI["stars"] else ""
+        changes = variables.get("input", {}).get("filters") or []
+        # A filter of a genre that the list includes gives another title, so that a test sees the filter.
+        genres = [c["groupChange"] for c in changes if c.get("position") == 1 and "groupChange" in c]
+        title = "Comedy Strip" if any(g.get("position") == 0 and g.get("triState") == "INCLUDE" for g in genres) else "Morning Strip"
+        return {"fetchSourceManga": {"hasNextPage": False, "mangas": [{"id": 5, "title": star + title, "thumbnailUrl": "/pages/0"}]}}
     if "fetchManga" in query:
         return {"fetchManga": {"manga": {"id": 5, "title": "Morning Strip", "thumbnailUrl": "/pages/0", "author": "Test Artist",
                                           "artist": "Test Artist", "description": "A strip from the server.", "genre": ["Comedy"], "status": "ONGOING"}},
@@ -309,7 +332,7 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             return
         body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", "0"))) or b"{}")
-        data = suwayomi(body.get("query", ""))
+        data = suwayomi(body.get("query", ""), body.get("variables"))
         reply = {"data": data} if data is not None else {"errors": [{"message": "unknown query"}]}
         self.reply(json.dumps(reply).encode(), "application/json")
 
