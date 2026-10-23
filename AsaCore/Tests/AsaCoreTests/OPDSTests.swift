@@ -57,6 +57,13 @@ import Testing
         #expect(book.download?.url == URL(string: "https://komga.local:25600/opds/v1.2/a.pdf"))
     }
 
+    @Test func knowsTheKindleTypesOfProjectGutenberg() {
+        let link = URL(string: "https://www.gutenberg.org/ebooks/11.kf8.images")!
+        #expect(OPDS.fileExtension(for: "application/x-mobipocket-ebook", url: link) == "mobi")
+        #expect(OPDS.fileExtension(for: "application/vnd.amazon.mobi8-ebook", url: link) == "azw3")
+        #expect(OPDS.fileExtension(for: "application/octet-stream", url: link) == nil)
+    }
+
     @Test func readsAnOPDS2FeedWithGroups() throws {
         let json = """
         {"metadata": {"title": "Library"},

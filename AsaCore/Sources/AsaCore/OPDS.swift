@@ -108,6 +108,9 @@ public enum OPDS {
         case "application/x-rar-compressed", "application/vnd.rar": return "cbr"
         case "application/x-fictionbook+xml", "text/fb2+xml": return "fb2"
         case "text/plain": return "txt"
+        // Project Gutenberg gives its Kindle files with these types, and with no extension in the link.
+        case "application/x-mobipocket-ebook": return "mobi"
+        case "application/vnd.amazon.mobi8-ebook", "application/vnd.amazon.ebook": return "azw3"
         default:
             let ext = url.pathExtension.lowercased()
             return BookImporter.supportedExtensions.contains(ext) ? ext : nil
