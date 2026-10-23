@@ -195,8 +195,82 @@
       case 'inputRow': return { ...base, value: item.value === undefined || item.value === null ? '' : String(item.value) };
       case 'toggleRow': return { ...base, on: !!item.value };
       case 'navigationRow': return { ...base, value: label(item.value), form: item.form ? formId(item.form) : null };
+      case 'oauthButtonRow': return { ...base, type: 'loginRow', login: item.__asabunko_login || null };
       default: return { ...base, selectable: item.onSelect != null };
     }
+  }
+
+  // The parts of a query, with no URL class: JavaScriptCore has no URL or URLSearchParams.
+  const encodeQuery = (values) => Object.keys(values).map((k) => encodeURIComponent(k) + '=' + encodeURIComponent(values[k])).join('&');
+  function decodeQuery(text) {
+    const values = {};
+    for (const part of String(text || '').split('&')) {
+      const index = part.indexOf('=');
+      if (index > 0) values[decodeURIComponent(part.slice(0, index).replace(/\+/g, ' '))] = decodeURIComponent(part.slice(index + 1).replace(/\+/g, ' '));
+    }
+    return values;
+  }
+
+  // An OAuth sign-in of a form. The page of the sign-in ends at the redirect URI, and the app gives that URI back.
+  const base64url = (bytes) => { let text = ''; for (const b of new Uint8Array(bytes)) text += String.fromCharCode(b);
+    return btoa(text).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
+  async function oauth(form, item) {
+    const keep = form.__asabunko_oauth || (Object.defineProperty(form, '__asabunko_oauth', { value: {}, enumerable: false }), form.__asabunko_oauth);
+    const type = (item.responseType && item.responseType.type) || 'token';
+    let started = keep[item.id];
+    if (!started) {
+      const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+      const random = new Uint8Array(Math.min(Math.max(Number(item.responseType && item.responseType.pkceCodeLength) || 64, 43), 128));
+      crypto.getRandomValues(random);
+      started = keep[item.id] = { verifier: Array.from(random, (b) => characters[b % characters.length]).join(''), state: crypto.randomUUID() };
+    }
+    const query = { response_type: type === 'token' ? 'token' : 'code' };
+    if (item.clientId) query.client_id = item.clientId;
+    if (item.redirectUri) query.redirect_uri = item.redirectUri;
+    if (item.scopes && item.scopes.length) query.scope = item.scopes.join(' ');
+    query.state = started.state;
+    if (type === 'pkce') {
+      const plain = item.responseType.pkceCodeMethod === 'plain';
+      query.code_challenge = plain ? started.verifier : base64url(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(started.verifier)));
+      query.code_challenge_method = plain ? 'plain' : 'S256';
+    }
+    const endpoint = String(item.authorizeEndpoint);
+    const scheme = item.redirectUri ? String(item.redirectUri).split(':')[0] : 'asabunko';
+    item.__asabunko_login = { method: 'oauth', url: endpoint + (endpoint.includes('?') ? '&' : '?') + encodeQuery(query), callbackScheme: scheme, signedIn: false };
+  }
+
+  // The tokens of the callback: in the fragment for the type "token", or from the token endpoint for a code.
+  async function finishOAuth(form, item, callback) {
+    const hash = callback.indexOf('#');
+    const fragment = decodeQuery(hash >= 0 ? callback.slice(hash + 1) : '');
+    const head = hash >= 0 ? callback.slice(0, hash) : callback;
+    const search = decodeQuery(head.indexOf('?') >= 0 ? head.slice(head.indexOf('?') + 1) : '');
+    const started = (form.__asabunko_oauth || {})[item.id] || {};
+    const type = (item.responseType && item.responseType.type) || 'token';
+    let access, refresh;
+    if (type === 'token') {
+      access = fragment.access_token;
+      refresh = fragment.refresh_token || '';
+    } else {
+      const code = search.code || fragment.code;
+      if (!code) throw new Error('The sign-in gave no code.');
+      if (started.state && search.state && search.state !== started.state) throw new Error('The sign-in is not the one that the app started.');
+      const grant = { grant_type: 'authorization_code', code };
+      if (item.redirectUri) grant.redirect_uri = item.redirectUri;
+      if (item.clientId) grant.client_id = item.clientId;
+      if (type === 'pkce') grant.code_verifier = started.verifier;
+      const formEncoded = type !== 'pkce' || item.responseType.formEncodeGrant !== false;
+      const res = await fetch(String(item.responseType.tokenEndpoint), { method: 'POST',
+        headers: { 'content-type': formEncoded ? 'application/x-www-form-urlencoded' : 'application/json' },
+        body: formEncoded ? encodeQuery(grant) : JSON.stringify(grant) });
+      if (res.status < 200 || res.status >= 300) throw new Error('The token endpoint answered ' + res.status + '.');
+      const tokens = await res.json();
+      access = tokens.access_token;
+      refresh = tokens.refresh_token || '';
+    }
+    if (!access) throw new Error('The sign-in gave no token.');
+    delete (form.__asabunko_oauth || {})[item.id];
+    await SelectorRegistry.selector(item.onSuccess)(refresh, access);
   }
   async function renderForm(id) {
     const form = forms.get(id);
@@ -208,8 +282,12 @@
     const rows = new Map();
     const sections = ((await form.getSections()) || []).filter((s) => s && !s.isHidden).map((s, k) => ({
       id: String(s.id === undefined ? k : s.id), header: s.header ? String(s.header) : null, footer: s.footer ? String(s.footer) : null,
-      rows: (s.items || []).filter((i) => i && !i.isHidden).map((i) => { rows.set(String(i.id), i); return row(i); }),
+      rows: (s.items || []).filter((i) => i && !i.isHidden).map((i) => { rows.set(String(i.id), i); return i; }),
     }));
+    for (const section of sections) {
+      for (const item of section.rows) if (item.type === 'oauthButtonRow') await oauth(form, item);
+      section.rows = section.rows.map(row);
+    }
     Object.defineProperty(form, '__asabunko_rows', { value: rows, enumerable: false, configurable: true });
     return { id, submit: !!form.requiresExplicitSubmission, sections };
   }
@@ -291,6 +369,11 @@
       const item = form && form.__asabunko_rows && form.__asabunko_rows.get(rowId);
       if (!item) throw new Error('The row is not in the form.');
       const value = JSON.parse(json);
+      if (item.type === 'oauthButtonRow') {
+        if (!value || typeof value.callback !== 'string') throw new Error('The sign-in needs the URL of its callback.');
+        await finishOAuth(form, item, value.callback);
+        return renderForm(id);
+      }
       const action = SelectorRegistry.selector(item.type === 'inputRow' || item.type === 'toggleRow' ? item.onValueChange : item.onSelect);
       if (typeof action === 'function') await (value === null ? action() : action(value));
       return renderForm(id);

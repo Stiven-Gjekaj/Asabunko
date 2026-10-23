@@ -64,6 +64,23 @@ final class PaperbackTests: XCTestCase {
         XCTAssertTrue(app.button(containing: "\u{2605} PAPER MOON").waitForExistence(timeout: 15), "The extension reads the new settings.")
     }
 
+    func testSignsInWithOAuthInTheSettingsForm() throws {
+        app.saveSourceLine(server + "/paperback/versioning.json")
+        app.waitForInstalled(1)
+        app.button(containing: "Quiet Paper").tap()
+        XCTAssertTrue(app.button(containing: "Paper Moon").waitForExistence(timeout: 15))
+        app.buttons["Source settings"].tap()
+        let signIn = app.button(containing: "Sign in with Quiet")
+        XCTAssertTrue(signIn.waitForExistence(timeout: 5), "The OAuth row of the extension shows.")
+        signIn.tap()
+        // iOS asks before the sign-in page opens. That question is not part of the app.
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        let proceed = springboard.buttons["Continue"]
+        if proceed.waitForExistence(timeout: 10) { proceed.tap() }
+        XCTAssertTrue(app.staticTexts["token-42"].waitForExistence(timeout: 20), "The extension gets the token of the sign-in.")
+        shot("7 Signed in with OAuth")
+    }
+
     private func shot(_ name: String) {
         let attachment = XCTAttachment(screenshot: app.screenshot())
         attachment.name = name

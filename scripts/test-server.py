@@ -32,6 +32,7 @@ Usage: python3 scripts/test-server.py [port]
 import base64
 import io
 import json
+import urllib.parse
 import struct
 import sys
 import zipfile
@@ -147,9 +148,16 @@ var source = (function (e) {
       return [{ type: 'listSection', id: 'look', header: 'Look', items: [
         { type: 'toggleRow', id: 'loud', title: 'Capital letters', isHidden: false, value: Application.getState('loud') ?? false, onValueChange: Application.Selector(this, 'setLoud') },
         { type: 'navigationRow', id: 'style', title: 'Title style', isHidden: false, value: Application.getState('style') ?? 'plain', form: new StyleForm() },
+      ] }, { type: 'listSection', id: 'account', header: 'Account', items: [
+        Application.getState('token')
+          ? { type: 'labelRow', id: 'signed', title: 'Signed in', value: Application.getState('token'), isHidden: false }
+          : { type: 'oauthButtonRow', id: 'login', title: 'Sign in with Quiet', isHidden: false, authorizeEndpoint: 'BASE/oauth/authorize', clientId: 'quiet',
+              redirectUri: 'asabunkotest://signed-in', onSuccess: Application.Selector(this, 'signedIn'),
+              responseType: { type: 'pkce', tokenEndpoint: 'BASE/oauth/token', pkceCodeLength: 64, pkceCodeMethod: 'S256', formEncodeGrant: true } },
       ] }];
     }
     async setLoud(value) { Application.setState(value, 'loud'); }
+    async signedIn(refresh, access) { Application.setState(access, 'token'); this.reloadForm && this.reloadForm(); }
   }
   // The settings change the titles of the list.
   function titled(title) {
@@ -323,6 +331,17 @@ OFFLINE = {"on": False}
 
 class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
+        # The token endpoint of the small OAuth server. It needs the code of the page and a verifier.
+        if self.path.split("?")[0] == "/oauth/token":
+            grant = urllib.parse.parse_qs(self.rfile.read(int(self.headers.get("Content-Length", "0"))).decode())
+            ok = grant.get("code") == ["quiet-code"] and len((grant.get("code_verifier") or [""])[0]) >= 43
+            body = json.dumps({"access_token": "token-42", "refresh_token": "refresh-42"} if ok else {"error": "invalid_grant"}).encode()
+            self.send_response(200 if ok else 400)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
         if self.path.split("?")[0] != "/suwayomi/api/graphql":
             self.send_response(404)
             self.end_headers()
@@ -339,6 +358,14 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         path = self.path.split("?")[0]
         host = self.headers.get("Host")
+        # The sign-in page of the small OAuth server sends the browser to the redirect URI with a code.
+        if path == "/oauth/authorize":
+            query = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            target = query["redirect_uri"][0] + "?" + urllib.parse.urlencode({"code": "quiet-code", "state": query.get("state", [""])[0]})
+            self.send_response(302)
+            self.send_header("Location", target)
+            self.end_headers()
+            return
         # Under /cf/, the server acts as a site behind the browser check of Cloudflare. The page of the
         # check sets the cookie of a passed check and loads again. With the cookie, the path works.
         if path.startswith("/cf/"):

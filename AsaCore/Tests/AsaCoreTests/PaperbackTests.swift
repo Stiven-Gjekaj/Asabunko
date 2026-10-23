@@ -27,13 +27,16 @@ var source = (function (e) {
           { type: 'inputRow', id: 'name', title: 'Name', value: Application.getState('name') ?? '', onValueChange: Application.Selector(this, 'setName') },
           { type: 'navigationRow', id: 'languages', title: 'Languages', value: (Application.getState('languages') ?? ['en']).join(', '), form: new LanguageForm() },
           { type: 'labelRow', id: 'secret', title: 'Secret', isHidden: true },
-          { type: 'oauthButtonRow', id: 'login', title: 'Sign in' },
+          { type: 'oauthButtonRow', id: 'login', title: 'Sign in', authorizeEndpoint: 'https://auth.quiet.test/auth', clientId: 'quiet',
+            redirectUri: 'quiet://signed-in', scopes: ['read', 'list'], onSuccess: Application.Selector(this, 'signedIn'),
+            responseType: { type: 'pkce', tokenEndpoint: 'https://auth.quiet.test/token', pkceCodeLength: 64, pkceCodeMethod: 'S256', formEncodeGrant: true } },
         ] },
         { type: 'listSection', id: 'reset', items: [{ type: 'buttonRow', id: 'reset', title: 'Reset', onSelect: Application.Selector(this, 'reset') }] },
       ];
     }
     async setAdult(value) { Application.setState(value, 'adult'); }
     async setName(value) { Application.setState(value, 'name'); }
+    async signedIn(refresh, access) { Application.setState(refresh + '|' + access, 'tokens'); }
     async reset() { Application.resetAllState(); this.reloadForm(); }
   }
   class Quiet {
@@ -160,7 +163,7 @@ private func encrypted(_ text: String) -> String {
         #expect(root.sections[0].footer == "Changes go at once.")
         // The hidden row does not show. The app cannot do the sign-in row.
         #expect(root.sections[0].rows.map(\.id) == ["adult", "name", "languages", "login"])
-        #expect(root.sections[0].rows.map(\.kind) == [.toggle, .input, .link, .unsupported])
+        #expect(root.sections[0].rows.map(\.kind) == [.toggle, .input, .link, .login])
         #expect(root.sections[0].rows[0].on == false)
 
         var form = try await source.formAction(root.id, row: "adult", input: .toggle(true))
@@ -187,6 +190,51 @@ private func encrypted(_ text: String) -> String {
         #expect(form.sections[0].rows[0].on == false)
         #expect(form.sections[0].rows[1].value == "")
         await #expect(throws: JSRuntimeError.self) { try await source.formAction(root.id, row: "secret", input: .tap) }
+    }
+
+    @Test func signsInWithOAuthAndPKCE() async throws {
+        let seen = SeenRequests()
+        let state = try temporaryFolder().appendingPathComponent("state.json")
+        let fetcher: Fetcher = { request in
+            seen.add(request)
+            let body = #"{"access_token":"access-1","refresh_token":"refresh-1"}"#
+            return (Data(body.utf8), HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: ["Content-Type": "application/json"])!)
+        }
+        let source = try await PaperbackExtension(info: info, code: bundle, stateFile: state, userAgent: "Test", fetcher: fetcher)
+        let root = try #require(try await source.settingsForm())
+        let login = try #require(root.sections[0].rows.first { $0.id == "login" }?.login)
+        #expect(login.method == "oauth")
+        #expect(login.callbackScheme == "quiet")
+        let page = try #require(login.url.flatMap { URLComponents(string: $0) })
+        func query(_ name: String) -> String? { page.queryItems?.first { $0.name == name }?.value }
+        #expect(page.host == "auth.quiet.test")
+        #expect(query("response_type") == "code")
+        #expect(query("client_id") == "quiet")
+        #expect(query("scope") == "read list")
+        #expect(query("code_challenge_method") == "S256")
+        let challenge = try #require(query("code_challenge"))
+        let stateValue = try #require(query("state"))
+        // The verifier stays the same until the sign-in ends.
+        #expect(try await source.form(root.id).sections[0].rows.first { $0.id == "login" }?.login?.url == login.url)
+
+        _ = try await source.formAction(root.id, row: "login", input: .callback(URL(string: "quiet://signed-in?code=abc&state=\(stateValue)")!))
+        let request = try #require(seen.all.last)
+        #expect(request.url?.absoluteString == "https://auth.quiet.test/token")
+        #expect(request.httpMethod == "POST")
+        let grant = Dictionary(uniqueKeysWithValues: String(decoding: request.httpBody ?? Data(), as: UTF8.self).split(separator: "&").map { part in
+            let pair = part.split(separator: "=", maxSplits: 1).map { String($0).removingPercentEncoding ?? String($0) }
+            return (pair[0], pair.count > 1 ? pair[1] : "")
+        })
+        #expect(grant["grant_type"] == "authorization_code")
+        #expect(grant["code"] == "abc")
+        #expect(grant["redirect_uri"] == "quiet://signed-in")
+        let verifier = try #require(grant["code_verifier"])
+        #expect(verifier.count == 64)
+        #expect(AidokuSettings.challenge(verifier) == challenge, "The challenge of the page is the SHA-256 of the verifier.")
+        #expect(try String(contentsOf: state, encoding: .utf8).contains("refresh-1|access-1"), "The extension gets the refresh token and the access token.")
+        await #expect(throws: JSRuntimeError.self) {
+            try await source.formAction(root.id, row: "login", input: .callback(URL(string: "quiet://signed-in?code=abc&state=other")!))
+        }
     }
 
     @Test func runsAPageInAWebViewWithTheCookiesOfTheExtension() async throws {
