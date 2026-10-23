@@ -9,6 +9,10 @@ struct LibraryScreen: View {
     @State private var deleting: Book?
     @State private var updating = false
     @AppStorage("library.order") private var order = ReadListOrder.added
+    @State private var query = ""
+    @State private var filters: Set<LibraryFilter> = []
+    @State private var category: UUID?
+    @State private var editingCategories = false
 
     private let columns = [GridItem(.adaptive(minimum: 104, maximum: 160), spacing: 16, alignment: .top)]
 
@@ -17,12 +21,14 @@ struct LibraryScreen: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 28) {
                     greeting
-                    if !app.library.shownUpdates.isEmpty { updatesLink }
-                    if !app.library.shownHistory.isEmpty { historyLink }
+                    if query.isEmpty {
+                        if !app.library.shownUpdates.isEmpty { updatesLink }
+                        if !app.library.shownHistory.isEmpty { historyLink }
+                    }
                     if app.library.continueReading.isEmpty && app.library.readList.isEmpty {
                         emptyShelf
                     } else {
-                        if !app.library.continueReading.isEmpty { continueReading }
+                        if !app.library.continueReading.isEmpty && query.isEmpty && filters.isEmpty { continueReading }
                         if app.library.readList.isEmpty {
                             EmptyArt(covers: [], title: "Your read list is empty",
                                      text: "Tap the bookmark on the page of a title to keep it here. A book that you import goes here too.")
@@ -35,6 +41,8 @@ struct LibraryScreen: View {
                 .padding(.bottom, 32)
             }
             .asaScreen()
+            .searchable(text: $query, prompt: "Search the library")
+            .sheet(isPresented: $editingCategories) { CategoriesSheet() }
             .refreshable {
                 guard app.library.books.contains(where: { $0.origin != nil }) else { return }
                 let result = await app.refreshAll()
@@ -192,6 +200,18 @@ struct LibraryScreen: View {
                 sectionTitle("Read list")
                 Spacer()
                 Menu {
+                    ForEach(LibraryFilter.allCases, id: \.self) { filter in
+                        Toggle(filter.name, isOn: Binding(get: { filters.contains(filter) }, set: { on in
+                            if on { filters.insert(filter) } else { filters.remove(filter) }
+                        }))
+                    }
+                } label: {
+                    Image(systemName: filters.isEmpty ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill")
+                        .font(.system(size: 20))
+                }
+                .accessibilityLabel("Filter the read list")
+                .accessibilityValue(filters.isEmpty ? "Off" : filters.map(\.name).sorted().joined(separator: ", "))
+                Menu {
                     Picker("Order", selection: $order) {
                         ForEach(ReadListOrder.allCases, id: \.self) { Text($0.name).tag($0) }
                     }
@@ -201,14 +221,62 @@ struct LibraryScreen: View {
                 .accessibilityLabel("Order of the read list")
                 .accessibilityValue(order.name)
             }
+            categoryChips
+            let shown = visibleBooks
+            if shown.isEmpty {
+                Text(query.isEmpty ? "No book of the read list fits the filters." : "No book of the read list has \"\(query)\" in its title.")
+                    .font(Karla.font(14)).foregroundStyle(Palette.textSecondary)
+            }
             LazyVGrid(columns: columns, spacing: 22) {
-                ForEach(app.library.readList(by: order)) { book in
+                ForEach(shown) { book in
                     Button { reading = book } label: { BookTile(book: book, cover: app.cover(of: book)) }
                         .buttonStyle(.plain)
                         .contextMenu { menu(for: book) }
                 }
             }
         }
+    }
+
+    /// The books of the read list in the category, with the search and the filters.
+    private var visibleBooks: [Book] {
+        let words = query.trimmingCharacters(in: .whitespaces)
+        return app.library.readList(in: category, by: order).filter { book in
+            (words.isEmpty || book.title.localizedStandardContains(words) || (book.author ?? "").localizedStandardContains(words))
+                && filters.allSatisfy { $0.keeps(book, app: app) }
+        }
+    }
+
+    /// "All", then one chip for each category, then a chip that edits the categories.
+    private var categoryChips: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                chip("All", selected: category == nil) { category = nil }
+                ForEach(app.library.categories) { item in
+                    chip(item.name, selected: category == item.id) { category = item.id }
+                }
+                Button { editingCategories = true } label: {
+                    Label(app.library.categories.isEmpty ? "Add a category" : "Edit", systemImage: app.library.categories.isEmpty ? "plus" : "pencil")
+                        .font(Karla.font(14, .bold))
+                        .padding(.horizontal, 12)
+                        .frame(minHeight: 34)
+                        .background(Palette.surfaceHigh, in: Capsule())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(app.library.categories.isEmpty ? "Add a category" : "Edit the categories")
+            }
+        }
+        .scrollClipDisabled()
+    }
+
+    private func chip(_ title: String, selected: Bool, action: @escaping () -> Void) -> some View {
+        Button(title, action: action)
+            .font(Karla.font(14, .bold))
+            .padding(.horizontal, 14)
+            .frame(minHeight: 34)
+            .foregroundStyle(selected ? Palette.onAccent : Palette.textPrimary)
+            .background(selected ? Palette.accent : Palette.surfaceHigh, in: Capsule())
+            .buttonStyle(.plain)
+            .accessibilityAddTraits(selected ? .isSelected : [])
     }
 
     private func sectionTitle(_ text: String) -> some View {
@@ -235,6 +303,15 @@ struct LibraryScreen: View {
             if app.downloadedCount(book.id) > 0 {
                 Button { app.downloads.cancel(book.id); app.removeDownloads(book.id) } label: { Label("Remove downloads", systemImage: "xmark.bin") }
             }
+        }
+        if book.listed && !app.library.categories.isEmpty {
+            Menu {
+                ForEach(app.library.categories) { item in
+                    Toggle(item.name, isOn: Binding(get: { app.book(book.id)?.categories.contains(item.id) ?? false }, set: { on in
+                        app.update(book.id) { $0.categories.removeAll { $0 == item.id }; if on { $0.categories.append(item.id) } }
+                    }))
+                }
+            } label: { Label("Categories", systemImage: "tag") }
         }
         if book.listed && book.origin != nil {
             Button { app.update(book.id) { $0.listed = false } } label: { Label("Remove from the read list", systemImage: "bookmark.slash") }
@@ -321,5 +398,82 @@ private struct BookTile: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityValue(book.finished ? "Finished" : "")
+    }
+}
+
+/// A filter of the read list.
+enum LibraryFilter: String, CaseIterable, Hashable {
+    case unread, downloaded, comics, novels
+
+    var name: String {
+        switch self {
+        case .unread: "Unread"
+        case .downloaded: "On the device"
+        case .comics: "Comics"
+        case .novels: "Novels"
+        }
+    }
+
+    @MainActor func keeps(_ book: Book, app: AppModel) -> Bool {
+        switch self {
+        case .unread: !book.finished
+        // A book from a file is on the device. An online book needs a downloaded chapter.
+        case .downloaded: book.origin == nil || app.downloadedCount(book.id) > 0
+        case .comics: book.format != .novel
+        case .novels: book.format == .novel
+        }
+    }
+}
+
+/// Adds, renames, orders, and removes the categories of the read list.
+struct CategoriesSheet: View {
+    @Environment(AppModel.self) private var app
+    @Environment(\.dismiss) private var dismiss
+    @State private var name = ""
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    HStack {
+                        TextField("New category", text: $name).onSubmit(add)
+                        Button("Add", action: add).disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
+                    }
+                }
+                Section {
+                    ForEach(app.library.categories) { item in
+                        TextField("Name", text: Binding(get: { item.name }, set: { new in
+                            app.changeLibrary { library in
+                                if let index = library.categories.firstIndex(where: { $0.id == item.id }) { library.categories[index].name = new }
+                            }
+                        }))
+                    }
+                    .onDelete { offsets in
+                        let ids = offsets.map { app.library.categories[$0].id }
+                        app.changeLibrary { library in ids.forEach { library.removeCategory($0) } }
+                    }
+                    .onMove { from, to in app.changeLibrary { $0.categories.move(fromOffsets: from, toOffset: to) } }
+                } footer: {
+                    if !app.library.categories.isEmpty {
+                        Text("Hold a book of the read list to put it in a category. Swipe a category to remove it. A book stays in the read list when its category goes.")
+                    }
+                }
+            }
+            .asaForm()
+            .asaScreen()
+            .environment(\.editMode, .constant(.active))
+            .navigationTitle("Categories")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
+            }
+        }
+    }
+
+    private func add() {
+        let text = name.trimmingCharacters(in: .whitespaces)
+        guard !text.isEmpty else { return }
+        app.changeLibrary { $0.categories.append(BookCategory(name: text)) }
+        name = ""
     }
 }
