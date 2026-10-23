@@ -80,6 +80,9 @@ Asabunko has no sources in it. Your books stay on your device.
 - Check all online books for new chapters, also in the background with a
   notification, and download the new chapters by themselves
 - Back up and restore the library in one file
+- A Home Screen widget of the books that you read now
+- Share the file of a book: a CBZ, a PDF, or an EPUB
+- English and Japanese
 - Keep the screen on, sort the read list, mark chapters as read, and move
   one book or many books to another source
 - See the storage of the downloads, and remove the chapters that you read

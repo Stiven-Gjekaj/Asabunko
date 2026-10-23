@@ -11,6 +11,22 @@ the decisions.
 A tag such as `v0.1.0` builds the unsigned IPA and attaches it to a release on
 GitHub as `Asabunko.ipa`.
 
+## 2.8.0 (2026-10-24)
+
+Asabunko fits into iOS.
+
+- The app is in Japanese on a device in Japanese.
+- A Home Screen widget shows the books of Continue reading with their
+  covers. A tap opens the book.
+- Hold a book that you imported and choose "Share the file". A comic goes
+  out as a CBZ, a PDF as a PDF, and a novel from an EPUB as an EPUB. Save it
+  to Files, or send it to another app.
+- Asabunko is in the "Open in" list for HTML files too.
+- The device taps lightly at the end of a chapter of a novel, and when a
+  turn stops at the last page of a comic.
+- On an iPad, or on a phone that you turn, a page that fits the screen stays
+  in the middle after the turn.
+
 ## 2.7.0 (2026-10-24)
 
 Your progress goes to your trackers and your servers.

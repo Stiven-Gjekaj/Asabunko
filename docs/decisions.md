@@ -704,3 +704,36 @@ The choices:
   turn. Kavita saves the progress when it serves a page, so it needs no call.
 - The test server acts as AniList, MyAnimeList, and Komga, so the UI tests
   run with no account on a real site.
+
+## 2026-10-24: The platform
+
+- The text of the app is in App/Resources/Localizable.xcstrings. The build
+  writes the text of each Swift file, because SWIFT_EMIT_LOC_STRINGS is on.
+  scripts/strings.py puts each new key into the catalog after a build, and
+  marks the keys that the code does not use now. Japanese is the first
+  language. A text that the code makes from parts, such as an error, stays
+  in English.
+- The widget and the app share the App Group
+  group.io.github.stivengjekaj.asabunko. The app writes the first four books
+  of Continue reading and a small cover of each, at most 300 points high,
+  after each save of the library. The widget reloads only when this list
+  changes. A widget link is asabunko://open/ID.
+- The IPA is not signed, so the build gives the app and the widget an
+  ad-hoc signature with their entitlements. A sideload tool reads the App
+  Group from it when it signs the app. With no App Group, the widget shows a
+  short note and no books.
+- The app keeps the pages of a comic and the files of an EPUB, not the file
+  that the user imported. So a share makes a new file: a CBZ of the pages, or
+  an EPUB from the files of the book with its mimetype first, both with no
+  compression. A PDF goes out as it is. A novel from TXT, FB2, HTML, MOBI, or
+  AZW3 has no file to share.
+- The UI test of Files sends a book through the share sheet into Files, then
+  imports it again with the document picker. So the test makes its own file
+  in Files.
+- A light haptic marks the end of a chapter and a turn past the last page. A
+  page turn has no haptic, because it comes many times in each chapter.
+- On an iPad, each tab of the app uses the same layout as on a phone. The
+  screenshots of LayoutTests on an iPad Pro 13-inch show each tab and the
+  reader in landscape. The reader kept a spread at its old place after a
+  turn of the device. Now a spread that fits the screen goes back to the
+  middle after each new size.
