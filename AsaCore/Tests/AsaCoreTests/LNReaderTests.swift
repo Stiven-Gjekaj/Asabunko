@@ -98,6 +98,19 @@ private let site: [String: (Int, String, String)] = [
         #expect(source.imageRequest(URL(string: "https://quiet.test/c/1.jpg")!).value(forHTTPHeaderField: "Referer") == "https://quiet.test/")
     }
 
+    @Test func givesTheConstantsOfTheAppToAPlugin() async throws {
+        let code = """
+        const { defaultCover } = require('@/types/constants');
+        exports.default = { id: 'c', name: 'C', site: 'https://c.test/', version: '1',
+          async popularNovels() { return [{ name: 'One', path: 'n/1', cover: defaultCover }]; },
+          async searchNovels() { return []; }, async parseNovel(path) { return { path, name: 'One', chapters: [] }; }, async parseChapter() { return ''; } };
+        """
+        let info = SourceInfo(id: "c", name: "C", language: "English", version: "1", icon: nil, code: URL(string: "https://x.test/c.js")!, novels: true)
+        let source = try await LNReaderPlugin(info: info, code: code, fetcher: fixedFetcher([:]))
+        let cover = try #require(try await source.popular(page: 1).items.first?.cover)
+        #expect(cover.absoluteString.contains("coverNotAvailable"))
+    }
+
     @Test func refusesAFileThatIsNotAPlugin() async throws {
         let info = SourceInfo(id: "x", name: "X", language: "", version: "1", icon: nil, code: URL(string: "https://x.test/x.js")!, novels: true)
         await #expect(throws: JSRuntimeError.script("The file is not an LNReader plugin.")) {

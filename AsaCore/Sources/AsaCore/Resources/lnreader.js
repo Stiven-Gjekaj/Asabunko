@@ -75,6 +75,8 @@
       '@libs/isAbsoluteUrl': { isUrlAbsolute },
       '@libs/filterInputs': { FilterTypes },
       '@libs/defaultCover': { defaultCover },
+      // Some plugins take the default cover from the constants of the LNReader app.
+      '@/types/constants': { defaultCover },
       '@libs/aes': lib.aes,
       '@libs/utils': lib.utils,
       '@libs/storage': { storage: globalThis.__storage, localStorage: webStorage, sessionStorage: webStorage },
