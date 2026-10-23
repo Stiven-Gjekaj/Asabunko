@@ -11,6 +11,21 @@ the decisions.
 A tag such as `v0.1.0` builds the unsigned IPA and attaches it to a release on
 GitHub as `Asabunko.ipa`.
 
+## 0.8.0 (2026-10-23)
+
+- Adds Paperback 0.9 extensions. Paste the URL of a repository, such as
+  https://inkdex.github.io/extensions/0.9/stable, into Sources.
+- Open the repository, and install the extensions that you want. A tracker,
+  such as AniList, is not in the list, because it does not give chapters.
+- Each extension shows its popular and latest series from its discover
+  sections, and you can search it.
+- The interceptors of an extension run for each request and for each page,
+  so the referer and the cookies that a site asks for go with them.
+- The state of an extension stays, with its cookies and its settings.
+- An extension that says that a series is a novel adds it to the library as
+  a novel.
+- A site that shows a Cloudflare challenge does not work yet.
+
 ## 0.7.0 (2026-10-23)
 
 - Adds Aidoku sources. Paste the URL of a list of Aidoku sources, such as

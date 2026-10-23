@@ -57,6 +57,8 @@ Asabunko has no sources in it. Your books stay on your device.
   server, find a series, and read it page by page from the server
 - Aidoku sources: install a WebAssembly source from a list and read its
   series
+- Paperback 0.9 extensions: install an extension from a repository and read
+  its series, with its interceptors and its state
 - Read from the right to the left, from the left to the right, or in one
   vertical column. Pinch or double tap to zoom
 - A tap at the edge turns the page. A tap in the middle shows the bars

@@ -357,3 +357,25 @@ The choices:
   Markdown, becomes the HTML of a chapter.
 - Reason: Aidoku Community has about 140 sources for iOS, and the interface
   of aidoku-rs is published under the MIT License.
+
+## 2026-10-23: The Paperback extensions
+
+- A line with "versioning.json", "paperback", or "inkdex" is a repository of
+  Paperback 0.9 extensions. The URL can be the folder or its
+  versioning.json. Each extension is <Id>/index.js. An extension with no
+  chapters or no search, such as a tracker, is not in the list.
+- Each extension runs in its own JavaScript context. The prelude
+  `paperback.js` gives the Application global of the types of the Paperback
+  toolchain, under the MIT License: selectors, interceptors,
+  scheduleRequest, state, and the functions for text, Base64, and MD5.
+- Each interceptor gets the request that the one before it gave. The
+  answers go back through the interceptors in the reverse order.
+- The state is JSON with a tag for each Date, because the cookie store of the
+  extensions keeps dates. It stays in a file next to the code.
+- crypto.subtle has the digests, AES-CBC, and AES-GCM, with CryptoKit and
+  CommonCrypto in Swift.
+- The pages and the covers get the headers of the request interceptors. The
+  response interceptors do not run on the images.
+- executeInWebView and the Cloudflare challenge are not there yet.
+- Reason: the Paperback app is not open source, but the types and the
+  toolchain are. Inkdex has 68 extensions for version 0.9.
