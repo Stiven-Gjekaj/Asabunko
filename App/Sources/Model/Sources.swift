@@ -135,7 +135,18 @@ extension AppModel {
 
     /// The source, loaded one time in each session.
     func load(_ installed: InstalledSource) async throws -> OnlineSource {
-        if let source = LoadedSources.shared.get(installed.id) { return source }
+        let loaded = LoadedSources.shared
+        if let source = loaded.get(installed.id) { return source }
+        if let running = loaded.loading[installed.id] { return try await running.value }
+        let task = Task { try await makeSource(installed) }
+        loaded.loading[installed.id] = task
+        defer { loaded.loading[installed.id] = nil }
+        let source = try await task.value
+        loaded.set(installed.id, source)
+        return source
+    }
+
+    private func makeSource(_ installed: InstalledSource) async throws -> OnlineSource {
         let source: OnlineSource
         switch kind(of: installed) {
         case .lnreader:
@@ -170,7 +181,6 @@ extension AppModel {
         default:
             throw JSRuntimeError.script("Asabunko cannot run this kind of source.")
         }
-        LoadedSources.shared.set(installed.id, source)
         return source
     }
 
