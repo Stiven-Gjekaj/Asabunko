@@ -22,6 +22,20 @@ struct AsabunkoApp: App {
                 }
                 // The last place of the reader goes to the file before iOS can stop the app.
                 .onChange(of: phase) { _, new in if new != .active { app.flush() } }
+                .background(FrameMeterHook())
         }
     }
+}
+
+/// Starts the frame meter in the window of the app when a UI test asks for it.
+private struct FrameMeterHook: UIViewRepresentable {
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        if FrameMeter.isOn {
+            Task { @MainActor in if let window = view.window { FrameMeter.shared.start(in: window) } }
+        }
+        return view
+    }
+
+    func updateUIView(_ view: UIView, context: Context) {}
 }

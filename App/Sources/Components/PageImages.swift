@@ -33,6 +33,8 @@ final class PageImages: @unchecked Sendable {
     /// The downloads that run now, by the name of their file, so that a page that loads before the
     /// user turns to it does not download two times.
     private var running: [String: Task<URL?, Never>] = [:]
+    /// The size in pixels of each page that the app read, so that a page can have its height before its image.
+    private var sizes: [String: CGSize] = [:]
     private let lock = NSLock()
 
     private init() {
@@ -44,6 +46,11 @@ final class PageImages: @unchecked Sendable {
 
     func image(_ url: URL, maxPixels: CGFloat) async -> UIImage? {
         await image(.file(url), maxPixels: maxPixels)
+    }
+
+    /// The image of the page if it is in the memory now, with no wait.
+    func cached(_ source: PageSource, maxPixels: CGFloat) -> UIImage? {
+        cache.object(forKey: "\(source.key)#\(Int(maxPixels))" as NSString)
     }
 
     /// The image of the page with its long side at most `maxPixels`.
@@ -60,8 +67,53 @@ final class PageImages: @unchecked Sendable {
             // A page of HTML in place of an image must not stay in the cache, so the next try loads it again.
             if image == nil { try? FileManager.default.removeItem(at: file) }
         }
-        if let image, let cg = image.cgImage { cache.setObject(image, forKey: key, cost: cg.bytesPerRow * cg.height) }
+        if let image, let cg = image.cgImage {
+            cache.setObject(image, forKey: key, cost: cg.bytesPerRow * cg.height)
+            lock.withLock { if sizes[source.key] == nil { sizes[source.key] = image.size } }
+        }
         return image
+    }
+
+    /// The size of the page if the app read it before.
+    func knownSize(_ source: PageSource) -> CGSize? { lock.withLock { sizes[source.key] } }
+
+    /// The size of the page from the head of its file, with no decode. A page from the network downloads first.
+    func size(_ source: PageSource) async -> CGSize? {
+        if let size = knownSize(source) { return size }
+        let file: URL
+        switch source {
+        case let .file(url): file = url
+        case let .remote(request):
+            guard let downloaded = await download(request) else { return nil }
+            file = downloaded
+        }
+        let size = await Task.detached(priority: .userInitiated) { Self.pixelSize(file) }.value
+        if let size { lock.withLock { sizes[source.key] = size } }
+        return size
+    }
+
+    /// The sizes of many files of the device in one task.
+    func sizes(_ sources: [PageSource]) async -> [Int: CGSize] {
+        let files = sources.enumerated().compactMap { index, source -> (Int, String, URL)? in
+            if case let .file(url) = source { (index, source.key, url) } else { nil }
+        }
+        let found = await Task.detached(priority: .userInitiated) {
+            files.compactMap { index, key, url in Self.pixelSize(url).map { (index, key, $0) } }
+        }.value
+        lock.withLock { for (_, key, size) in found { sizes[key] = size } }
+        return Dictionary(found.map { ($0.0, $0.2) }) { first, _ in first }
+    }
+
+    /// The width and the height of an image, after its orientation.
+    private static func pixelSize(_ url: URL) -> CGSize? {
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, [kCGImageSourceShouldCache: false] as CFDictionary),
+              let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+              let width = properties[kCGImagePropertyPixelWidth] as? CGFloat, let height = properties[kCGImagePropertyPixelHeight] as? CGFloat,
+              width > 0, height > 0
+        else { return nil }
+        // The orientations 5 to 8 turn the image by a quarter.
+        let turned = ((properties[kCGImagePropertyOrientation] as? Int) ?? 1) >= 5
+        return turned ? CGSize(width: height, height: width) : CGSize(width: width, height: height)
     }
 
     /// Loads the next pages before the user turns to them.
@@ -116,7 +168,10 @@ final class PageImages: @unchecked Sendable {
             kCGImageSourceThumbnailMaxPixelSize: max(Int(limit), 1),
         ]
         guard let image = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else { return nil }
-        return UIImage(cgImage: image)
+        // The first draw of an image in a form that the screen cannot use converts it on the main thread.
+        // A tall strip takes some frames for that, so the conversion happens here, on the thread of the decode.
+        let page = UIImage(cgImage: image)
+        return page.preparingForDisplay() ?? page
     }
 
     /// Removes the pages from the network. The caches folder of iOS can also remove them.
