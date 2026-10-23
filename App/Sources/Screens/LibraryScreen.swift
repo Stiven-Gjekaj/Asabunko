@@ -375,7 +375,7 @@ private struct ContinueCard: View {
                 Text(book.title)
                     .font(Karla.font(15, .bold))
                     .lineLimit(3)
-                Text(book.format == .comic || book.format == .pdf ? "Page \(book.page + 1) of \(book.pageCount)" : "Chapter \(book.page + 1) of \(book.pageCount)")
+                Text(book.place)
                     .font(Karla.font(13))
                     .foregroundStyle(Palette.textSecondary)
                 Spacer(minLength: 0)

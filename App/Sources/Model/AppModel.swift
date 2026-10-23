@@ -32,6 +32,8 @@ final class AppModel {
     private var saveTask: Task<Void, Never>?
     /// The novels that the app read, with the date of their file.
     @ObservationIgnored private var novels: [Book.ID: (date: Date?, novel: Novel)] = [:]
+    /// The last shelf that the widget got, so that a save does not read the file of the widget again.
+    @ObservationIgnored var shelf: Shelf?
     /// The adds of online books that run now, so that two taps add one book.
     var adding: [BookOrigin: Task<Book, Error>] = [:]
 
