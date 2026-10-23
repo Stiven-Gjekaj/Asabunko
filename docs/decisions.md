@@ -553,3 +553,18 @@ The choices:
   gRPC calls of LNReader plugins.
 - A second agent tested the source lists again with the new code. The list
   for the owner is in `private/`, which git does not keep.
+
+## 2026-10-23: The dynamic filters of Aidoku
+
+- A source that exports `get_filters` gives its filters as postcard
+  `Vec<Filter>`. The host decodes each filter into the same dictionary as an
+  item of `filters.json`, so one function makes the options of both kinds.
+- The filters of `filters.json` come first, and the filters of `get_filters`
+  after them. A filter with an ID that is already in the list does not come
+  two times.
+- The value of a check filter goes to the source only when the user changed
+  it. The ABI does not tell what 0 means. A range filter does not show yet.
+- The search of Toonkotsu gives no titles, with filters and with none. Its
+  lists work. This is a fault of that source or its site, not of the filters.
+- 10 of the 140 sources of Aidoku Community export `get_filters`. The live
+  test reads the filters of Kagane and searches with one of them.

@@ -10,5 +10,4 @@ release is out. The reason for each choice is in
 
 ## Next
 
-- The dynamic filters of Aidoku, from `get_filters`.
 - The settings of Paperback extensions, which are forms.

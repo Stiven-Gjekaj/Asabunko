@@ -11,6 +11,13 @@ the decisions.
 A tag such as `v0.1.0` builds the unsigned IPA and attaches it to a release on
 GitHub as `Asabunko.ipa`.
 
+## 2.1.0 (2026-10-23)
+
+- Aidoku sources that make their filters in code show them too, after the
+  filters of their package, such as Kagane and CopyManga.
+- A check filter of Aidoku goes to the source only when you change it, as
+  the notes of the Aidoku format tell a host to do.
+
 ## 2.0.0 (2026-10-23)
 
 A release of fixes, speed, and small comforts, after a full review of the app.
