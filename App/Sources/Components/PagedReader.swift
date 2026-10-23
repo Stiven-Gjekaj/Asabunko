@@ -269,6 +269,11 @@ final class PageController: UIViewController, UIScrollViewDelegate {
             let x = rightToLeft ? max(fitted.width - bounds.width, 0) : -scrollView.contentInset.left
             scrollView.contentOffset = CGPoint(x: x, y: -scrollView.contentInset.top)
         }
+        // A side that fits the screen stays in the middle after a new size, such as a turn of the device.
+        var offset = scrollView.contentOffset
+        if fitted.width <= bounds.width { offset.x = -scrollView.contentInset.left }
+        if fitted.height <= bounds.height { offset.y = -scrollView.contentInset.top }
+        scrollView.contentOffset = offset
     }
 
     /// The insets that keep a spread that is smaller than the screen in the middle.
