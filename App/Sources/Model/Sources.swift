@@ -167,6 +167,19 @@ extension AppModel {
             if listed && !book.listed { update(book.id) { $0.listed = true } }
             return self.book(book.id) ?? book
         }
+        // A second tap while the first add runs gets the same book.
+        if let running = adding[origin] {
+            let book = try await running.value
+            if listed && !book.listed { update(book.id) { $0.listed = true } }
+            return self.book(book.id) ?? book
+        }
+        let task = Task { try await addNew(details, origin: origin, from: installed, listed: listed) }
+        adding[origin] = task
+        defer { adding[origin] = nil }
+        return try await task.value
+    }
+
+    private func addNew(_ details: OnlineDetails, origin: BookOrigin, from installed: InstalledSource, listed: Bool) async throws -> Book {
         let source = try await load(installed)
         let id = UUID()
         let folder = folder(of: Book(id: id, title: "", fileName: "", pageCount: 0))

@@ -26,6 +26,8 @@ final class AppModel {
     /// restores a backup or starts a new library.
     private(set) var libraryLocked = false
     private var saveTask: Task<Void, Never>?
+    /// The adds of online books that run now, so that two taps add one book.
+    var adding: [BookOrigin: Task<Book, Error>] = [:]
 
     init(root: URL = AppModel.defaultRoot) {
         self.root = root
