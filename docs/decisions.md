@@ -421,3 +421,15 @@ The choices:
   the web with `ASABUNKO_LIVE=1`.
 - The checks that need a real iPhone are in the roadmap.
 - Reason: the owner asked for the full app up to 1.0.0.
+
+## 2026-10-23: The icon from the banner
+
+- The app icon is the mark of the banner, `logo-full.png`, with no word. This
+  replaces the square logo of "The square logo and a softer red".
+- The mark is taller than it is wide. It fills the width of the icon, and
+  about 3 percent of its height goes out at the top and at the bottom. So no
+  black bar shows at the sides.
+- The red of the icon is the red of the banner, `#FF5866`. The accent of the
+  app does not change.
+- Reason: the owner asked for the mark of the banner as the icon, with no
+  bars at the sides.
