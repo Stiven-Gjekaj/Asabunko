@@ -11,6 +11,16 @@ the decisions.
 A tag such as `v0.1.0` builds the unsigned IPA and attaches it to a release on
 GitHub as `Asabunko.ipa`.
 
+## 1.1.0 (2026-10-23)
+
+- Download the chapters of an online comic or novel, to read with no
+  network. The Downloads menu of a series has "Download all chapters",
+  "Download from this chapter", and "Remove downloads". The library menu of
+  a book has them too.
+- Each chapter shows a mark: downloaded, waiting, or the progress of the
+  download.
+- A downloaded chapter opens from the device first.
+
 ## 1.0.1 (2026-10-23)
 
 - A new app icon: the mark of the logo of the banner. It fills the full

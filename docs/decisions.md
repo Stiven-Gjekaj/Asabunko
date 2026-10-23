@@ -433,3 +433,16 @@ The choices:
   app does not change.
 - Reason: the owner asked for the mark of the banner as the icon, with no
   bars at the sides.
+
+## 2026-10-23: Chapters on the device
+
+- A download writes the pages of a chapter to a `.part` folder. The folder
+  gets its final name and a `.complete` mark only when all pages are there.
+  So a stopped download never looks complete.
+- Each page has three attempts. One queue downloads one chapter at a time.
+- The reader opens the files of a downloaded chapter before it asks the
+  source.
+- The roadmap has no check with a real OPDS or Suwayomi server. The owner
+  does not use a server.
+- Reason: the owner asked for the roadmap tasks that need no work from the
+  owner.
