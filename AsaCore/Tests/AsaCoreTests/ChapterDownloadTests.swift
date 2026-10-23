@@ -85,4 +85,17 @@ final class Counter: @unchecked Sendable {
     private var list: [Int] = []
     func add(_ value: Int) { lock.withLock { list.append(value) } }
     var values: [Int] { lock.withLock { list } }
+
+    @Test func measuresTheFilesOfAFolder() throws {
+        let folder = try temporaryFolder()
+        #expect(FolderSize.bytes(of: folder.appendingPathComponent("none")) == 0)
+        try FileManager.default.createDirectory(at: folder.appendingPathComponent("chapters/0001"), withIntermediateDirectories: true)
+        try Data(count: 10_000).write(to: folder.appendingPathComponent("chapters/0001/1.png"))
+        try Data(count: 5_000).write(to: folder.appendingPathComponent("book.json"))
+        let size = FolderSize.bytes(of: folder)
+        // The file system gives each file whole blocks, so the space is at least the bytes of the files.
+        #expect(size >= 15_000)
+        #expect(size < 15_000 + 64 * 1024)
+        #expect(FolderSize.bytes(of: folder.appendingPathComponent("chapters")) >= 10_000)
+    }
 }

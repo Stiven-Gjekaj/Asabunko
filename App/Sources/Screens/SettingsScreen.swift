@@ -37,6 +37,7 @@ struct SettingsScreen: View {
                             Label("Sources", systemImage: "square.stack.3d.up")
                         }
                     }
+                    NavigationLink { StorageScreen() } label: { Label("Storage", systemImage: "internaldrive") }
                 } footer: {
                     Text("Your catalogs and source lists, and the sources that Search and Discover use.")
                 }

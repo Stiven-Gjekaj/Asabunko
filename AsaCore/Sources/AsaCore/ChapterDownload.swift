@@ -96,3 +96,19 @@ public enum ChapterDownload {
         try? FileManager.default.removeItem(at: folder(of: chapter, in: book))
     }
 }
+
+/// The space that files take on the device.
+public enum FolderSize {
+    /// The bytes of the files in a folder and in its folders. A folder that does not exist takes 0 bytes.
+    public static func bytes(of folder: URL) -> Int64 {
+        guard let files = FileManager.default.enumerator(at: folder, includingPropertiesForKeys: [.totalFileAllocatedSizeKey, .fileSizeKey, .isRegularFileKey])
+        else { return 0 }
+        var total: Int64 = 0
+        for case let file as URL in files {
+            guard let values = try? file.resourceValues(forKeys: [.totalFileAllocatedSizeKey, .fileSizeKey, .isRegularFileKey]), values.isRegularFile == true
+            else { continue }
+            total += Int64(values.totalFileAllocatedSize ?? values.fileSize ?? 0)
+        }
+        return total
+    }
+}

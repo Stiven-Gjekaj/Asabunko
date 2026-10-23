@@ -129,6 +129,19 @@ extension AppModel {
         downloads.touch()
     }
 
+    /// Removes the downloads of the chapters before `end`, which are the chapters that the user read.
+    func removeDownloads(_ id: Book.ID, before end: Int) {
+        guard let book = book(id), let novel = novel(of: book) else { return }
+        for (index, chapter) in novel.chapters.enumerated() where index < end {
+            if book.format == .novel {
+                try? FileManager.default.removeItem(at: folder(of: book).appendingPathComponent(chapter.path))
+            } else {
+                ChapterDownload.remove(chapter, in: folder(of: book))
+            }
+        }
+        downloads.touch()
+    }
+
     /// The number of chapters of a book that downloaded.
     func downloadedCount(_ id: Book.ID) -> Int {
         guard let novel = book(id).flatMap(novel(of:)) else { return 0 }
