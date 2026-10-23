@@ -77,12 +77,15 @@ public struct Book: Codable, Sendable, Identifiable, Equatable {
     public var autoDownload: Bool
     /// The categories of the read list that the book is in.
     public var categories: [UUID]
+    /// The entries of the book on AniList or MyAnimeList.
+    public var tracking: [TrackLink]
 
     public init(
         id: UUID = UUID(), title: String, author: String? = nil, summary: String? = nil,
         format: BookFormat = .comic, fileName: String, pageCount: Int, added: Date = .now,
         lastRead: Date? = nil, page: Int = 0, position: Double = 0, finished: Bool = false, mode: ReadingMode? = nil,
-        origin: BookOrigin? = nil, listed: Bool = true, autoDownload: Bool = false, categories: [UUID] = []
+        origin: BookOrigin? = nil, listed: Bool = true, autoDownload: Bool = false, categories: [UUID] = [],
+        tracking: [TrackLink] = []
     ) {
         self.id = id
         self.title = title
@@ -101,10 +104,11 @@ public struct Book: Codable, Sendable, Identifiable, Equatable {
         self.listed = listed
         self.autoDownload = autoDownload
         self.categories = categories
+        self.tracking = tracking
     }
 
     private enum CodingKeys: String, CodingKey {
-        case id, title, author, summary, format, fileName, pageCount, added, lastRead, page, position, finished, mode, origin, listed, autoDownload, categories
+        case id, title, author, summary, format, fileName, pageCount, added, lastRead, page, position, finished, mode, origin, listed, autoDownload, categories, tracking
     }
 
     /// A field that an older version did not write gets its first value.
@@ -128,6 +132,7 @@ public struct Book: Codable, Sendable, Identifiable, Equatable {
         listed = try c.decodeIfPresent(Bool.self, forKey: .listed) ?? true
         autoDownload = try c.decodeIfPresent(Bool.self, forKey: .autoDownload) ?? false
         categories = try c.decodeIfPresent([UUID].self, forKey: .categories) ?? []
+        tracking = try c.decodeIfPresent([TrackLink].self, forKey: .tracking) ?? []
     }
 
     /// The part of the book that the user read, from 0 to 1.
