@@ -33,6 +33,13 @@ struct LibraryScreen: View {
                 .padding(.bottom, 32)
             }
             .asaScreen()
+            .refreshable {
+                guard app.library.books.contains(where: { $0.origin != nil }) else { return }
+                let result = await app.refreshAll()
+                if result.added > 0 || result.failed > 0 {
+                    app.fault = "\(result.added) new chapter\(result.added == 1 ? "" : "s")." + (result.failed > 0 ? " \(result.failed) books did not update." : "")
+                }
+            }
             .toolbar {
                 if app.library.books.contains(where: { $0.origin != nil }) {
                     ToolbarItem(placement: .topBarLeading) {
