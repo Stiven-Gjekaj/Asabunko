@@ -8,6 +8,10 @@ the comic one at a time with the Page Streaming Extension.
 Under /lnreader/, it serves a list of LNReader plugins with one plugin, and
 under /site/ the web site that the plugin reads.
 
+Under /suwayomi/, it answers the GraphQL queries of a Suwayomi server with
+one source, one series, and one chapter of three pages, with the same user
+name and password as /opds/.
+
 It makes each file in memory.
 
 Usage: python3 scripts/test-server.py [port]
@@ -110,7 +114,42 @@ SITE = {
 }
 
 
+import json
+
+
+def suwayomi(query):
+    """The answer of the small Suwayomi server to a GraphQL query, by a word in it."""
+    if "sources {" in query:
+        return {"sources": {"nodes": [{"id": "0", "name": "Local source", "lang": "localsourcelang"},
+                                       {"id": "777", "name": "Test Comics", "displayName": "Test Comics (EN)", "lang": "en",
+                                        "iconUrl": "/pages/3", "isNsfw": False, "supportsLatest": True}]}}
+    if "fetchSourceManga" in query:
+        return {"fetchSourceManga": {"hasNextPage": False, "mangas": [{"id": 5, "title": "Morning Strip", "thumbnailUrl": "/pages/0"}]}}
+    if "fetchManga" in query:
+        return {"fetchManga": {"manga": {"id": 5, "title": "Morning Strip", "thumbnailUrl": "/pages/0", "author": "Test Artist",
+                                          "artist": "Test Artist", "description": "A strip from the server.", "genre": ["Comedy"], "status": "ONGOING"}},
+                "fetchChapters": {"chapters": [{"id": 51, "name": "Chapter 1", "chapterNumber": 1, "uploadDate": "1790000000000",
+                                                "scanlator": None, "sourceOrder": 0}]}}
+    if "fetchChapterPages" in query:
+        return {"fetchChapterPages": {"pages": ["/suwayomi/api/v1/page/1", "/suwayomi/api/v1/page/2", "/suwayomi/api/v1/page/3"]}}
+    return None
+
+
 class Handler(BaseHTTPRequestHandler):
+    def do_POST(self):
+        if self.path.split("?")[0] != "/suwayomi/api/graphql":
+            self.send_response(404)
+            self.end_headers()
+            return
+        if self.headers.get("Authorization") != AUTH:
+            self.send_response(401)
+            self.end_headers()
+            return
+        body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", "0"))) or b"{}")
+        data = suwayomi(body.get("query", ""))
+        reply = {"data": data} if data is not None else {"errors": [{"message": "unknown query"}]}
+        self.reply(json.dumps(reply).encode(), "application/json")
+
     def do_GET(self):
         path = self.path.split("?")[0]
         host = self.headers.get("Host")
@@ -123,6 +162,12 @@ class Handler(BaseHTTPRequestHandler):
         if path.startswith("/site/") and path[len("/site/"):] in SITE:
             return self.reply(SITE[path[len("/site/"):]].encode(), "text/html; charset=utf-8")
         if path.startswith("/pages/"):
+            return self.reply(page(int(path.rsplit("/", 1)[1])), "image/png")
+        if path.startswith("/suwayomi/api/v1/page/"):
+            if self.headers.get("Authorization") != AUTH:
+                self.send_response(401)
+                self.end_headers()
+                return
             return self.reply(page(int(path.rsplit("/", 1)[1])), "image/png")
         if self.headers.get("Authorization") != AUTH:
             self.send_response(401)
