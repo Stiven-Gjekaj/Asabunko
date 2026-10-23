@@ -15,7 +15,6 @@ release is out. The reason for each choice is in
 - The canvas and js imports of Aidoku, for the sources that draw their pages
   again or run a web view.
 - The filters and the settings of the sources.
-- MOBI and AZW3 books with no DRM.
 
 ## Checks on a real iPhone
 

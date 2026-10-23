@@ -472,3 +472,20 @@ The choices:
 - Discover asks at most 10 sources, so that it opens fast.
 - Reason: the owner asked for search, Discover, and the read list as in
   ZettaStream, with no install button, and with volumes and ranges.
+
+## 2026-10-23: Kindle books
+
+- The importer reads the PalmDB records itself. No library on iOS reads
+  MOBI, and the format is small: PalmDOC compression, the trailing entries
+  of each text record, and the EXTH facts.
+- A KF8 book keeps its text as skeletons and fragments. The importer reads
+  the SKEL and FRAG indexes and puts each fragment into its skeleton, as
+  calibre does. Each skeleton is one chapter.
+- A joint file has a MOBI 6 part and a KF8 part. The importer reads the KF8
+  part, because it keeps the styles.
+- Links to a place in the full text, such as `filepos` and `kindle:pos`, go.
+  The chapter list does the same work.
+- The HUFF/CDIC compression and DRM stop the import with a message. Only
+  books of the Kindle store use them.
+- The checks: unit tests that build MOBI bytes, a UI test that imports a
+  MOBI, and a live test with the AZW3 and MOBI files of Project Gutenberg.

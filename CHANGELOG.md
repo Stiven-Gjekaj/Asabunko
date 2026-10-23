@@ -11,6 +11,15 @@ the decisions.
 A tag such as `v0.1.0` builds the unsigned IPA and attaches it to a release on
 GitHub as `Asabunko.ipa`.
 
+## 1.3.0 (2026-10-23)
+
+- Import MOBI, AZW, and AZW3 books with no DRM from Files. A KF8 book, such
+  as an AZW3, keeps its styles and its images. A joint MOBI file opens its
+  KF8 part.
+- Each part of the book is a chapter, with its title from its heading.
+- A book with DRM, or with the compression of the Kindle store, gives a
+  clear message.
+
 ## 1.2.0 (2026-10-23)
 
 - Search asks all your sources at the same time, as in ZettaStream. A title

@@ -44,7 +44,7 @@ Asabunko has no sources in it. Your books stay on your device.
 - Comics: CBZ, CBR, CB7, and CBT files, ZIP, RAR, 7z, and TAR archives, and
   folders of images. The title, the writer, and the direction come from
   ComicInfo.xml
-- Novels: EPUB, TXT, FB2, and HTML files. The chapters and their titles come
+- Novels: EPUB, MOBI, AZW3, TXT, FB2, and HTML files. The chapters and their titles come
   from the book, or from the headings of a TXT file
 - PDF, page by page or in one column
 - A reader of pages from the right to the left, from the left to the right,
