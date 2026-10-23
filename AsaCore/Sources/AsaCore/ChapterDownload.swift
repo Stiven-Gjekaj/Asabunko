@@ -1,3 +1,4 @@
+import ImageIO
 import Foundation
 
 /// The pages of a chapter of an online series on the device, so that the chapter opens with no network.
@@ -60,7 +61,8 @@ public enum ChapterDownload {
                             break
                         }
                         let (body, response) = try await fetcher(request)
-                        guard (200..<300).contains(response.statusCode), !body.isEmpty else { throw URLError(.badServerResponse) }
+                        // A site can answer 200 with a page of HTML, such as a check or a refusal of hotlinks.
+                        guard (200..<300).contains(response.statusCode), isImage(body) else { throw URLError(.cannotDecodeContentData) }
                         data = body
                         mime = response.value(forHTTPHeaderField: "Content-Type")
                         break
@@ -80,6 +82,12 @@ public enum ChapterDownload {
             try? manager.removeItem(at: staging)
             throw error
         }
+    }
+
+    /// True when the bytes are an image that ImageIO can read.
+    public static func isImage(_ data: Data) -> Bool {
+        guard !data.isEmpty, let source = CGImageSourceCreateWithData(data as CFData, nil) else { return false }
+        return CGImageSourceGetCount(source) > 0 && CGImageSourceGetType(source) != nil
     }
 
     /// Removes the pages of a chapter.

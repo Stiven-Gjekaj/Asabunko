@@ -50,6 +50,8 @@ final class PageImages: @unchecked Sendable {
         case let .remote(request):
             guard let file = await download(request) else { return nil }
             image = await Task.detached(priority: .userInitiated) { Self.decode(file, maxPixels: maxPixels) }.value
+            // A page of HTML in place of an image must not stay in the cache, so the next try loads it again.
+            if image == nil { try? FileManager.default.removeItem(at: file) }
         }
         if let image { cache.setObject(image, forKey: key) }
         return image
