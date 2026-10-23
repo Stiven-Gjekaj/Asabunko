@@ -125,9 +125,21 @@ import Testing
     };
     """
 
-    private func load(_ settings: URL?) async throws -> LNReaderPlugin {
+    private func load(_ settings: URL?, code: String? = nil) async throws -> LNReaderPlugin {
         let info = SourceInfo(id: "opts", name: "Options", language: "English", version: "1.0.0", icon: nil, code: URL(string: "https://x.test/o.js")!, novels: true)
-        return try await LNReaderPlugin(info: info, code: plugin, settings: settings, fetcher: { _ in throw URLError(.notConnectedToInternet) })
+        return try await LNReaderPlugin(info: info, code: code ?? plugin, settings: settings, fetcher: { _ in throw URLError(.notConnectedToInternet) })
+    }
+
+    @Test func aPluginWithASearchFilterSearchesWithTheOtherFilters() async throws {
+        // A plugin in the form of WTR-LAB: its list reads the words of a search from the text filter "search".
+        let code = plugin
+            .replacingOccurrences(of: "filters: {\n", with: "filters: {\n    search: { label: 'Search', type: FilterTypes.TextInput, value: '' },\n")
+            .replacingOccurrences(of: "const name = [filters.order.value,", with: "const name = ['words ' + filters.search.value, filters.order.value,")
+        let source = try await load(nil, code: code)
+        #expect((await source.filterOptions()).map(\.id).first == "search", "The test changed the plugin.")
+        let found = try await source.browse(page: 1, query: "tide", filters: ["order": .select("top")])
+        #expect(found.items.first?.title == "words tide|top|false|||none")
+        #expect(try await source.browse(page: 1, query: "", filters: ["order": .select("top")]).items.first?.title == "words |top|false|||none")
     }
 
     @Test func anLNReaderPluginGetsTheValuesOfTheFilters() async throws {

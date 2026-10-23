@@ -199,10 +199,21 @@ public final class LNReaderPlugin: OnlineSource, @unchecked Sendable {
         }
     }
 
+    /// The names of the text filters that hold the words of a search, such as the filter "search" of WTR-LAB.
+    static let searchFilters: Set<String> = ["search", "keyword", "keywords", "query"]
+
     public func browse(page number: Int, query: String, filters: [String: OptionValue]) async throws -> OnlinePage {
-        // An LNReader search has no filters.
-        guard query.isEmpty else { return try await search(query, page: number) }
         let options = await filterOptions()
+        // `searchNovels` of LNReader has no filters. A plugin with a text filter for the words of a search gets the
+        // words in that filter, and its list does the search with the other filters.
+        var filters = filters
+        if !query.isEmpty {
+            guard let words = options.first(where: { option in
+                if case .text = option.kind { Self.searchFilters.contains(option.id) } else { false }
+            })
+            else { return try await search(query, page: number) }
+            filters[words.id] = .text(query)
+        }
         var values: [String: Any] = [:]
         for option in options { values[option.id] = Self.javaScript(filters[option.id] ?? option.initial, raw: option.raw) }
         let json = String(decoding: try JSONSerialization.data(withJSONObject: values), as: UTF8.self)

@@ -171,4 +171,23 @@ private let site: [String: (Int, String, String)] = [
         #expect(text.count > 200)
         print("LIVE", popular.items[0].title, details.chapters.count, "chapters,", text.count, "characters in the first")
     }
+
+    /// Searches a real plugin with a text filter for the words of a search, and another filter. It runs only with ASABUNKO_LIVE=1.
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["ASABUNKO_LIVE"] == "1"), arguments: ["WTRLAB", "novelbuddy"])
+    func searchesARealPluginWithFilters(id: String) async throws {
+        let session: Fetcher = { request in
+            let (data, response) = try await URLSession.shared.data(for: request)
+            return (data, response as! HTTPURLResponse)
+        }
+        let index = try LNReaderIndex.parse(try await session(URLRequest(url: URL(string: "https://raw.githubusercontent.com/LNReader/lnreader-plugins/plugins/v3.0.0/.dist/plugins.min.json")!)).0)
+        let info = try #require(index.first { $0.id.lowercased() == id.lowercased() }, "The list has \(id).")
+        let code = String(decoding: try await session(URLRequest(url: info.code)).0, as: UTF8.self)
+        let source = try await LNReaderPlugin(info: info, code: code, fetcher: session)
+        let options = await source.filterOptions()
+        let words = try #require(options.first { LNReaderPlugin.searchFilters.contains($0.id) }, "\(id) has a filter for the words.")
+        let plain = try await source.search("sword", page: 1)
+        let filtered = try await source.browse(page: 1, query: "sword", filters: [:])
+        print("LIVE search", id, words.id, "plain", plain.items.prefix(3).map(\.title), "with filters", filtered.items.prefix(3).map(\.title))
+        #expect(!filtered.items.isEmpty, "The list of the plugin does the search.")
+    }
 }
