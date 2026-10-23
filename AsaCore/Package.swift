@@ -11,7 +11,7 @@ let package = Package(
         // libarchive is in the SDK of iOS and of macOS, with no headers.
         // shim.h declares the functions that the app uses.
         .systemLibrary(name: "CArchive", path: "Sources/CArchive"),
-        .target(name: "AsaCore", dependencies: ["CArchive"]),
+        .target(name: "AsaCore", dependencies: ["CArchive"], resources: [.copy("Resources/libraries.js"), .copy("Resources/host.js")]),
         .testTarget(name: "AsaCoreTests", dependencies: ["AsaCore", "CArchive"]),
     ]
 )
