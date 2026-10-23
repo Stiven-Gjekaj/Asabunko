@@ -8,15 +8,6 @@ Each task here is a choice of the owner. A task leaves this list when its
 release is out. The reason for each choice is in
 [docs/decisions.md](docs/decisions.md).
 
-## v2.5: The library
-
-- [#11](https://github.com/Stiven-Gjekaj/Asabunko/issues/11) Put books in categories
-- [#12](https://github.com/Stiven-Gjekaj/Asabunko/issues/12) Filter and search the library
-- [#13](https://github.com/Stiven-Gjekaj/Asabunko/issues/13) Keep a reading history
-- [#14](https://github.com/Stiven-Gjekaj/Asabunko/issues/14) Read without a history
-- [#15](https://github.com/Stiven-Gjekaj/Asabunko/issues/15) Move many books to a new source at one time
-- [#16](https://github.com/Stiven-Gjekaj/Asabunko/issues/16) Manage the storage of downloads
-
 ## v2.6: The reader
 
 - [#17](https://github.com/Stiven-Gjekaj/Asabunko/issues/17) Show two pages on a wide screen

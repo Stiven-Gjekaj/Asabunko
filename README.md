@@ -53,6 +53,8 @@ Asabunko has no sources in it. Your books stay on your device.
   of the chapters
 - A library of two parts: Continue reading, with the page and the progress,
   and the read list of the titles that you bookmark
+- Categories, a search, and filters for the read list, and a history of
+  your reading, with a private mode
 - Discover: a banner and rows of the popular and the latest titles of your
   sources
 - Search: one search in all your sources at the same time. A title that many
@@ -75,8 +77,9 @@ Asabunko has no sources in it. Your books stay on your device.
 - Check all online books for new chapters, also in the background with a
   notification, and download the new chapters by themselves
 - Back up and restore the library in one file
-- Keep the screen on, sort the read list, mark chapters as read, and move a
-  book to another source
+- Keep the screen on, sort the read list, mark chapters as read, and move
+  one book or many books to another source
+- See the storage of the downloads, and remove the chapters that you read
 - Warm dark, paper, or the look of the device
 - The app tells you when a newer version is available
 

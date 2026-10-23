@@ -639,3 +639,21 @@ The choices:
 - "Download only on Wi-Fi" uses the path of NWPathMonitor. A network that
   is expensive is not Wi-Fi.
 
+## 2026-10-23: The library tools
+
+- A book can be in many categories, or in none. "All" shows the full read
+  list. A removed category leaves each book, and the books stay in the read
+  list.
+- The search of the library looks at the title and the author. The filters
+  join with "and".
+- The history keeps one entry for each place of a book on each day: the
+  chapter of a novel or a series, or the comic as one entry. It keeps at
+  most 500 entries, the newest first.
+- A change of the time of the last read is a read. So the history has no
+  calls of its own in the readers. A comic now notes a read when it opens,
+  so a book goes into Continue reading on the first open.
+- Private reading keeps the old time of the last read. So the book does not
+  move in Continue reading, and the history does not change.
+- The move of many books uses the same match as the page of a title: a
+  title of the new source must start with the title of the book. The user
+  sees the matches and can turn off each one before the move.

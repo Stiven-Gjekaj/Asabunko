@@ -11,6 +11,26 @@ the decisions.
 A tag such as `v0.1.0` builds the unsigned IPA and attaches it to a release on
 GitHub as `Asabunko.ipa`.
 
+## 2.5.0 (2026-10-23)
+
+The library has more tools.
+
+- Put the books of the read list in categories. Tap "Add a category" above
+  the read list, and hold a book to choose its categories.
+- Search the library by title or author. Filter the read list to show only
+  the unread books, the books on the device, the comics, or the novels.
+- The Library has a History of the chapters and the books that you opened,
+  the newest first. Remove one entry, or clear all of it.
+- With "Private reading" on in Settings, the books that you read do not go
+  into the history or into Continue reading.
+- A book now goes into Continue reading when you open it, not only when you
+  turn a page.
+- Settings has a Storage page. It shows the downloads of each book and
+  their size, and removes all of them or only the chapters that you read.
+- "Move books to another source" in Settings moves many books at one time.
+  The app finds each title in the new source, and you see the matches
+  before the move.
+
 ## 2.4.0 (2026-10-23)
 
 New chapters come to you.
