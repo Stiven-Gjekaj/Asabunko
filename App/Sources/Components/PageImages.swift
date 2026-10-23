@@ -22,7 +22,13 @@ final class PageImages: @unchecked Sendable {
     static let shared = PageImages()
 
     private let cache = NSCache<NSString, UIImage>()
-    private let folder = URL.cachesDirectory.appendingPathComponent("Pages", isDirectory: true)
+    /// A UI test gives an empty folder in ASABUNKO_ROOT. The pages of that test go in it too.
+    private let folder: URL = {
+        if let path = ProcessInfo.processInfo.environment["ASABUNKO_ROOT"], !path.isEmpty {
+            return URL(fileURLWithPath: path).appendingPathComponent("Caches/Pages", isDirectory: true)
+        }
+        return URL.cachesDirectory.appendingPathComponent("Pages", isDirectory: true)
+    }()
 
     private init() {
         cache.countLimit = 24
