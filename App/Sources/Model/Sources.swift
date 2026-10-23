@@ -46,6 +46,8 @@ extension AppModel {
             return try LNReaderIndex.parse(try await Network.data(for: AppModel.request(link.url, source: link)))
         case .suwayomi:
             return try await SuwayomiServer(base: link.url, fetcher: Self.fetcher(for: link)).sources()
+        case .aidoku:
+            return try AidokuIndex.parse(try await Network.data(for: AppModel.request(link.url, source: link)), url: link.url)
         default:
             return []
         }
@@ -78,6 +80,7 @@ extension AppModel {
 
     func uninstall(_ installed: InstalledSource) {
         try? FileManager.default.removeItem(at: codeFile(of: installed))
+        try? FileManager.default.removeItem(at: codeFile(of: installed).deletingPathExtension().appendingPathExtension("settings.json"))
         LoadedSources.shared.remove(installed.id)
         changeLibrary { $0.installed.removeAll { $0.id == installed.id } }
     }
@@ -94,6 +97,12 @@ extension AppModel {
         case .lnreader:
             let code = try Data(contentsOf: codeFile(of: installed))
             source = try await LNReaderPlugin(info: installed.info, code: String(decoding: code, as: UTF8.self), fetcher: appFetcher)
+        case .aidoku:
+            let file = codeFile(of: installed)
+            let settings = file.deletingPathExtension().appendingPathExtension("settings.json")
+            source = try await Task.detached {
+                try AidokuSource(info: installed.info, package: file, settings: settings, fetcher: appFetcher)
+            }.value
         case .suwayomi:
             guard let link = link(of: installed) else { throw SuwayomiServer.Failure.graphQL("The server is not in the source list.") }
             source = SuwayomiSource(info: installed.info, server: SuwayomiServer(base: link.url, fetcher: Self.fetcher(for: link))) { request in

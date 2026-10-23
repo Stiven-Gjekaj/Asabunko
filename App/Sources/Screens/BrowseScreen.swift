@@ -67,7 +67,7 @@ struct BrowseScreen: View {
     private func destination(_ link: SourceLink) -> some View {
         switch link.kind {
         case .opds: OPDSFeedScreen(source: link, url: link.url, title: link.name ?? link.url.host ?? "Catalog")
-        case .lnreader, .suwayomi: SourceListScreen(link: link)
+        case .lnreader, .suwayomi, .aidoku: SourceListScreen(link: link)
         case nil: DetectScreen(link: link)
         case let .some(kind): ContentUnavailableView(
             "Not in this version", systemImage: "clock",
