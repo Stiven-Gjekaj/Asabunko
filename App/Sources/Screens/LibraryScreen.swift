@@ -79,11 +79,6 @@ struct LibraryScreen: View {
             } message: {
                 Text("The book and its progress leave the library. A file that you imported stays where it is.")
             }
-            .alert("Asabunko", isPresented: Binding(get: { app.fault != nil }, set: { if !$0 { app.fault = nil } })) {
-                Button("OK") { app.fault = nil }
-            } message: {
-                Text(app.fault ?? "")
-            }
         }
     }
 
