@@ -6,6 +6,7 @@ struct RootView: View {
         TabView {
             LibraryScreen().tabItem { Label("Library", systemImage: "books.vertical") }
             DiscoverScreen().tabItem { Label("Discover", systemImage: "sparkles") }
+            SearchScreen().tabItem { Label("Search", systemImage: "magnifyingglass") }
             SettingsScreen().tabItem { Label("Settings", systemImage: "gearshape") }
         }
         .tint(Palette.accent)
