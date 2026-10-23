@@ -123,9 +123,15 @@ struct SettingsScreen: View {
                     guard let backup = pending else { return }
                     pending = nil
                     Task {
-                        let skipped = await app.restore(backup)
-                        message = skipped.isEmpty ? "The backup is restored."
-                            : "The backup is restored. Import these books again, because their files are not on this device:\n\n" + skipped.joined(separator: "\n")
+                        let result = await app.restore(backup)
+                        var text = "The backup is restored."
+                        if !result.skipped.isEmpty {
+                            text += "\n\nImport these books again, because their files are not on this device:\n" + result.skipped.joined(separator: "\n")
+                        }
+                        if !result.sources.isEmpty {
+                            text += "\n\nThese sources did not download. Open Settings, Sources, and install them again when you have a network:\n" + result.sources.joined(separator: "\n")
+                        }
+                        message = text
                     }
                 }
             } message: {

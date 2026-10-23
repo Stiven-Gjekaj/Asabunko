@@ -30,7 +30,8 @@ extension AppModel {
 
     /// Puts the backup in the place of the library. The code of each installed source downloads again.
     /// It gives the titles of the books from files that are not on this device.
-    func restore(_ backup: Backup) async -> [String] {
+    /// The books to import again, and the sources that did not install, such as with no network.
+    func restore(_ backup: Backup) async -> (skipped: [String], sources: [String]) {
         let manager = FileManager.default
         let plan = backup.plan { manager.fileExists(atPath: folder(of: Book(id: $0, title: "", fileName: "", pageCount: 0)).path) }
         for (id, novel) in plan.chapters {
@@ -41,11 +42,12 @@ extension AppModel {
         // A restore is the way out of a library file that did not load.
         unlockLibrary()
         changeLibrary { $0 = plan.library }
+        var failed: [String] = []
         for installed in plan.library.installed {
             guard let link = plan.library.sources.first(where: { $0.id == installed.list }), link.kind != .suwayomi else { continue }
-            try? await install(installed.info, from: link)
+            do { try await install(installed.info, from: link) } catch { failed.append(installed.info.name) }
         }
-        return plan.skipped
+        return (plan.skipped, failed)
     }
 
     /// Asks the source of each online book for new chapters. It gives the number of new chapters.
