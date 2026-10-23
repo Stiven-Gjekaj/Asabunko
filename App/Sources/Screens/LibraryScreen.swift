@@ -17,6 +17,7 @@ struct LibraryScreen: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 28) {
                     greeting
+                    if !app.library.shownUpdates.isEmpty { updatesLink }
                     if app.library.continueReading.isEmpty && app.library.readList.isEmpty {
                         emptyShelf
                     } else {
@@ -88,6 +89,27 @@ struct LibraryScreen: View {
                 Text("The book and its progress leave the library. A file that you imported stays where it is.")
             }
         }
+    }
+
+    /// The new chapters of the checks, in one list.
+    private var updatesLink: some View {
+        NavigationLink {
+            UpdatesScreen { book in reading = book }
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "sparkles.rectangle.stack").font(.system(size: 20)).foregroundStyle(Palette.accent)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Updates").font(Karla.font(16, .bold)).foregroundStyle(Palette.textPrimary)
+                    let count = app.library.shownUpdates.count
+                    Text(count == 1 ? "1 new chapter" : "\(count) new chapters").font(Karla.font(13)).foregroundStyle(Palette.textSecondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right").foregroundStyle(Palette.textSecondary)
+            }
+            .padding(14)
+            .card()
+        }
+        .accessibilityElement(children: .combine)
     }
 
     private var greeting: some View {
