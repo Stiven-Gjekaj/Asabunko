@@ -489,3 +489,22 @@ The choices:
   books of the Kindle store use them.
 - The checks: unit tests that build MOBI bytes, a UI test that imports a
   MOBI, and a live test with the AZW3 and MOBI files of Project Gutenberg.
+
+## 2026-10-23: Filters and settings of the sources
+
+- One model holds the filters and the settings of all kinds of source: a
+  text, a switch, one choice, many choices with an optional exclude, and a
+  sort with an optional ascending order.
+- Aidoku: the filters come from `filters.json` of the package, and the
+  settings from `settings.json`. A search sends the values as postcard
+  `FilterValue` items. A setting goes into the defaults of the source in the
+  form that aidoku-rs reads. The dynamic filters of `get_filters` do not show
+  yet. The sources of Aidoku Community use the static file.
+- LNReader: the filters come from `plugin.filters`, and the list gets the
+  values in `popularNovels`. The settings come from `pluginSettings`. The
+  values go into the storage of the plugin and into a file next to its code.
+  A search of LNReader has no filters.
+- Paperback: the filters come from `getSearchFilters`, and the search gets
+  them in its query. The settings of Paperback are forms with their own
+  layout, so they do not show.
+- Suwayomi gives no filters or settings yet.

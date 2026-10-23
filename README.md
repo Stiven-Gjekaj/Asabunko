@@ -60,6 +60,7 @@ Asabunko has no sources in it. Your books stay on your device.
 - The page of a title compares its sources and shows the source with the
   most chapters. You can choose another source
 - Chapters by volume, or in ranges of 50 for a long series
+- The filters and the settings of each source
 - Sources: paste one URL on each line. The app finds the kind of each source
   and installs the sources of each list
 - OPDS catalogs, such as Komga, Kavita, and Calibre-web: browse, search,

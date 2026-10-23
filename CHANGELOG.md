@@ -11,6 +11,15 @@ the decisions.
 A tag such as `v0.1.0` builds the unsigned IPA and attaches it to a release on
 GitHub as `Asabunko.ipa`.
 
+## 1.4.0 (2026-10-23)
+
+- The filters of a source: open a source in Settings, Sources, and tap the
+  filter button. Aidoku sources, LNReader plugins, and Paperback extensions
+  give their filters: text, choices, many choices with include and exclude,
+  and the order of the list.
+- The settings of a source: tap the gear on the page of a source. Aidoku
+  sources and LNReader plugins keep the values on the device.
+
 ## 1.3.0 (2026-10-23)
 
 - Import MOBI, AZW, and AZW3 books with no DRM from Files. A KF8 book, such
