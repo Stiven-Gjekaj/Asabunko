@@ -100,9 +100,22 @@ final class AppModel {
         library.mode(of: book)
     }
 
+    /// The key of the private reading: while it is on, a read does not go into the history or into Continue reading.
+    static let privateReadingKey = "reading.private"
+
     func update(_ id: Book.ID, _ change: (inout Book) -> Void) {
         guard let index = library.books.firstIndex(where: { $0.id == id }) else { return }
+        let before = library.books[index].lastRead
         change(&library.books[index])
+        // A change of the time of the last read is a read. It goes into the history, one entry for each chapter.
+        let book = library.books[index]
+        if book.lastRead != before, book.lastRead != nil {
+            if UserDefaults.standard.bool(forKey: Self.privateReadingKey) {
+                library.books[index].lastRead = before
+            } else {
+                library.noteVisit(of: id, place: book.format == .novel || book.format == .series ? book.page : 0)
+            }
+        }
         save()
     }
 

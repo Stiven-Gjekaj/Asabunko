@@ -39,6 +39,8 @@ struct ReaderScreen: View {
                 content = .images(app.pages(of: book).map(PageSource.file))
             }
             page = min(book.page, max((content?.count ?? 1) - 1, 0))
+            // To open a book is to read it, so the book goes into the history and into Continue reading.
+            app.update(bookID) { $0.read(page: page) }
         }
         .onChange(of: page) { _, page in
             app.update(bookID) { $0.read(page: page) }

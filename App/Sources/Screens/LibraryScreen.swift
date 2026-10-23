@@ -18,6 +18,7 @@ struct LibraryScreen: View {
                 VStack(alignment: .leading, spacing: 28) {
                     greeting
                     if !app.library.shownUpdates.isEmpty { updatesLink }
+                    if !app.library.shownHistory.isEmpty { historyLink }
                     if app.library.continueReading.isEmpty && app.library.readList.isEmpty {
                         emptyShelf
                     } else {
@@ -95,6 +96,23 @@ struct LibraryScreen: View {
                 Text("The book and its progress leave the library. A file that you imported stays where it is.")
             }
         }
+    }
+
+    /// The chapters that the user opened, the newest first.
+    private var historyLink: some View {
+        NavigationLink {
+            HistoryScreen { book in reading = book }
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "clock.arrow.circlepath").font(.system(size: 20)).foregroundStyle(Palette.accent)
+                Text("History").font(Karla.font(16, .bold)).foregroundStyle(Palette.textPrimary)
+                Spacer()
+                Image(systemName: "chevron.right").foregroundStyle(Palette.textSecondary)
+            }
+            .padding(14)
+            .card()
+        }
+        .accessibilityElement(children: .combine)
     }
 
     /// The new chapters of the checks, in one list.

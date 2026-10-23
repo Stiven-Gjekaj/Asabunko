@@ -13,6 +13,7 @@ struct SettingsScreen: View {
     @State private var message: String?
     @State private var startingOver = false
     @AppStorage(ReaderSettings.keepAwakeKey) private var keepAwake = true
+    @AppStorage(AppModel.privateReadingKey) private var privateReading = false
     @AppStorage(ChapterChecks.enabledKey) private var checks = false
     @AppStorage(ChapterChecks.wifiKey) private var wifiOnly = false
 
@@ -61,10 +62,11 @@ struct SettingsScreen: View {
                         ForEach(ReadingMode.allCases, id: \.self) { Text($0.name).tag($0) }
                     }
                     Toggle("Keep the screen on", isOn: $keepAwake)
+                    Toggle("Private reading", isOn: $privateReading)
                 } header: {
                     Text("Reader")
                 } footer: {
-                    Text("A book uses this mode until you choose a mode for it in the reader. A comic with \"YesAndRightToLeft\" in its ComicInfo.xml opens from the right to the left. With \"Keep the screen on\", the screen does not go dark while a book is open.")
+                    Text("A book uses this mode until you choose a mode for it in the reader. A comic with \"YesAndRightToLeft\" in its ComicInfo.xml opens from the right to the left. With \"Keep the screen on\", the screen does not go dark while a book is open. With \"Private reading\", the books that you read do not go into the history or into Continue reading.")
                 }
                 Section {
                     Button("Save a backup") {
