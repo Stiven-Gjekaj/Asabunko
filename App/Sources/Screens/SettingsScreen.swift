@@ -8,6 +8,10 @@ struct SettingsScreen: View {
     @State private var showFontLicense = false
     @State private var newer: String?
     @AppStorage("browse.adult") private var adult = false
+    @State private var exporting: BackupFile?
+    @State private var restoring = false
+    @State private var pending: Backup?
+    @State private var message: String?
 
     var body: some View {
         NavigationStack {
@@ -25,6 +29,16 @@ struct SettingsScreen: View {
                     Text("Reader")
                 } footer: {
                     Text("A book uses this mode until you choose a mode for it in the reader. A comic with \"YesAndRightToLeft\" in its ComicInfo.xml opens from the right to the left.")
+                }
+                Section {
+                    Button("Save a backup") {
+                        do { exporting = BackupFile(data: try app.backup()) } catch { message = error.localizedDescription }
+                    }
+                    Button("Restore a backup") { restoring = true }
+                } header: {
+                    Text("Backup")
+                } footer: {
+                    Text("The backup is one file with your books, your places, your sources, and the chapters of your online books. It does not hold the files of your books or the passwords of your sources. Keep it in Files or in iCloud Drive.")
                 }
                 Section {
                     Toggle("Show sources for adults", isOn: $adult)
@@ -70,6 +84,45 @@ struct SettingsScreen: View {
             .asaScreen()
             .navigationTitle("Settings")
                         .task { newer = await UpdateCheck.newerVersion() }
+            .fileExporter(
+                isPresented: Binding(get: { exporting != nil }, set: { if !$0 { exporting = nil } }),
+                document: exporting, contentType: .json,
+                defaultFilename: "Asabunko " + Date.now.formatted(.iso8601.year().month().day())
+            ) { _ in exporting = nil }
+            .fileImporter(isPresented: $restoring, allowedContentTypes: [.json]) { result in
+                guard case let .success(url) = result else { return }
+                let access = url.startAccessingSecurityScopedResource()
+                defer { if access { url.stopAccessingSecurityScopedResource() } }
+                do {
+                    pending = try Backup.decode(Data(contentsOf: url))
+                } catch Backup.Failure.newer {
+                    message = "A newer version of Asabunko made this backup. Update the app first."
+                } catch {
+                    message = "This file is not a backup of Asabunko."
+                }
+            }
+            .confirmationDialog(
+                "Restore the backup?",
+                isPresented: Binding(get: { pending != nil }, set: { if !$0 { pending = nil } }),
+                titleVisibility: .visible
+            ) {
+                Button("Restore", role: .destructive) {
+                    guard let backup = pending else { return }
+                    pending = nil
+                    Task {
+                        let skipped = await app.restore(backup)
+                        message = skipped.isEmpty ? "The backup is restored."
+                            : "The backup is restored. Import these books again, because their files are not on this device:\n\n" + skipped.joined(separator: "\n")
+                    }
+                }
+            } message: {
+                Text("The backup takes the place of your library and your sources. Your online books come back, and their chapters download again.")
+            }
+            .alert("Backup", isPresented: Binding(get: { message != nil }, set: { if !$0 { message = nil } })) {
+                Button("OK") { message = nil }
+            } message: {
+                Text(message ?? "")
+            }
         }
     }
 
