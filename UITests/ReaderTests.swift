@@ -22,6 +22,8 @@ final class ReaderTests: XCTestCase {
 
         app = XCUIApplication()
         app.launchEnvironment["ASABUNKO_ROOT"] = folder.appendingPathComponent("library").path
+        // The page layout of the reader is a setting of the device, so another test can leave it changed.
+        app.launchArguments += ["-reader.taps", "edges", "-reader.fit", "screen", "-reader.crop", "NO", "-reader.spreads", "YES", "-reader.shift", "NO"]
         app.launch()
     }
 
