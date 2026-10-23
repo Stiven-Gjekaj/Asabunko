@@ -17,10 +17,12 @@ final class FilesTests: XCTestCase {
 
     func testSharesABookToFilesAndOpensItFromFiles() throws {
         XCTAssertTrue(app.staticTexts["Your shelf is empty"].waitForExistence(timeout: 10))
-        let source = folder.appendingPathComponent("Paper_Lantern.cbz")
+        // Each run has its own name, so Files has no file of an older run with the same name.
+        let name = "Paper Lantern \(Int.random(in: 1000...9999))"
+        let source = folder.appendingPathComponent(name.replacingOccurrences(of: " ", with: "_") + ".cbz")
         try StoredZip.write((1...3).map { ("\($0).jpg", Self.page($0)) }, to: source)
         app.open(source)
-        let book = app.button(containing: "Paper Lantern")
+        let book = app.button(containing: name)
         XCTAssertTrue(book.waitForExistence(timeout: 30))
 
         // The share sheet saves the CBZ of the book in Files, on the device.
@@ -35,22 +37,27 @@ final class FilesTests: XCTestCase {
         if device.waitForExistence(timeout: 5) { device.tap() }
         let done = app.buttons["Save"]
         XCTAssertTrue(done.waitForExistence(timeout: 10))
+        // A tap while the sheet still moves does nothing, so the test taps again while the sheet stays.
+        sleep(1)
         done.tap()
-        // A file of an older run has the same name.
-        let replace = app.buttons["Replace"]
-        if replace.waitForExistence(timeout: 3) { replace.tap() }
+        if done.waitForExistence(timeout: 3), done.isHittable { done.tap() }
+        XCTAssertTrue(done.waitForNonExistence(timeout: 10), "The sheet of Files closes after the save.")
 
         // The book leaves the library, and the import gets it back from Files.
         XCTAssertTrue(book.waitForExistence(timeout: 10))
+        // A hold while the sheet of Files closes opens no menu, so the test holds again.
+        let delete = app.buttons["Delete"]
+        sleep(1)
         book.press(forDuration: 1.2)
-        app.buttons["Delete"].tap()
+        if !delete.waitForExistence(timeout: 3) { book.press(forDuration: 1.2) }
+        delete.tap()
         app.buttons.matching(NSPredicate(format: "label == 'Delete'")).firstMatch.tap()
         XCTAssertTrue(app.staticTexts["Your shelf is empty"].waitForExistence(timeout: 10))
         app.buttons["Import"].tap()
         let browse = app.buttons["Browse"]
         if browse.waitForExistence(timeout: 5) { browse.tap() }
         if device.waitForExistence(timeout: 5) { device.tap() }
-        let file = app.cells.matching(NSPredicate(format: "label CONTAINS 'Paper Lantern'")).firstMatch
+        let file = app.cells.matching(NSPredicate(format: "label CONTAINS %@", name)).firstMatch
         XCTAssertTrue(file.waitForExistence(timeout: 10), "Files shows the saved book.")
         shot("2 Files")
         file.tap()

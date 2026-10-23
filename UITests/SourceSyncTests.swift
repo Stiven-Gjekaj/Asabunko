@@ -2,7 +2,7 @@ import XCTest
 
 /// Saves the source list many times. Each save installs the English sources that are not on the device,
 /// and removes the sources of the lines that the user removed. The other sources do not download again.
-/// The device is in Japanese, so a Japanese source of the list would install if the app used the device languages.
+/// Japanese is a language of the device, so a Japanese source of the list would install if the app used the device languages.
 final class SourceSyncTests: XCTestCase {
     private var app: XCUIApplication!
     private var server = ""
@@ -13,7 +13,9 @@ final class SourceSyncTests: XCTestCase {
         server = url
         app = XCUIApplication()
         app.launchEnvironment["ASABUNKO_ROOT"] = FileManager.default.temporaryDirectory.appendingPathComponent("asabunko-ui-\(UUID().uuidString)").path
-        app.launchArguments += ["-AppleLanguages", "(ja)"]
+        // Japanese is a language of the device, so a list has a source in a language of the device that is not English.
+        // English comes first, so the text of the app stays in English for the taps of the test.
+        app.launchArguments += ["-AppleLanguages", "(en, ja)"]
         app.launch()
     }
 
