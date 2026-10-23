@@ -394,3 +394,30 @@ The choices:
   clipped text as notes, as in ZettaStream. Each other finding fails the test.
 - Reason: `#E34659` had a contrast of 3.8 on the cards of the dark form, which
   is less than the 4.5 of WCAG AA.
+
+## 2026-10-23: The backup
+
+- The backup is one JSON file: the library with the places, the source list
+  with no passwords, the installed sources, and the chapters of each online
+  book. It does not hold the files of the books.
+- A restore puts the backup in the place of the library. An online book
+  comes back with its chapters, which download again. A book from a file
+  comes back only when its files are on the device. The app names the other
+  books, so that the user imports them again.
+- The code of each installed source downloads again after a restore.
+- A backup has a form number. A backup of a newer form does not restore.
+- Reason: the data stays on the device, so the user needs a way to move it
+  to a new phone. The files of the books can be large, and the user has them.
+
+## 2026-10-23: What 1.0.0 has
+
+- 1.0.0 has the functions of 0.1.0 to 0.8.0, with the backup and the check
+  for new chapters.
+- The checks of 1.0.0: 95 unit tests of the core package, in a debug and a
+  release build, and the UI tests of the simulator. The UI tests import and
+  read a manga, an EPUB, and a PDF, change the look, run the accessibility
+  audit, and use each kind of source with the test server of the scripts.
+  Three live unit tests read five real LNReader, Aidoku, and Paperback sources from
+  the web with `ASABUNKO_LIVE=1`.
+- The checks that need a real iPhone are in the roadmap.
+- Reason: the owner asked for the full app up to 1.0.0.

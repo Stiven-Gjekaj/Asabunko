@@ -11,6 +11,22 @@ the decisions.
 A tag such as `v0.1.0` builds the unsigned IPA and attaches it to a release on
 GitHub as `Asabunko.ipa`.
 
+## 1.0.0 (2026-10-23)
+
+- The first full version. It has all functions of 0.1.0 to 0.8.0: comic
+  archives, EPUB, TXT, FB2, HTML, PDF, OPDS catalogs, LNReader plugins,
+  Suwayomi servers, Aidoku sources, and Paperback extensions.
+- Adds a backup in Settings. Save a backup keeps your books, your places,
+  your sources, and the chapters of your online books in one file. Restore a
+  backup puts it in the place of your library. The code of your installed
+  sources downloads again. The app tells you which books from files to
+  import again.
+- The refresh button of the library checks each online book for new
+  chapters, and tells you how many it found.
+- The accent of the dark look is a lighter red, so that text in it is easy
+  to read on each surface.
+- The Add sources row and the Sources button are easier to tap.
+
 ## 0.8.0 (2026-10-23)
 
 - Adds Paperback 0.9 extensions. Paste the URL of a repository, such as

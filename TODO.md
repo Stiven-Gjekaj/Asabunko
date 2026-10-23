@@ -10,10 +10,19 @@ release is out. The reason for each choice is in
 
 ## Next
 
-- 1.0.0: all of these, with a backup of the library.
+- The web view for a Cloudflare challenge, for the Paperback extensions and
+  the Aidoku sources that need it.
+- The canvas and js imports of Aidoku, for the sources that draw their pages
+  again or run a web view.
+- The filters and the settings of the sources.
+- The download of the chapters of an online comic, to read with no network.
+- MOBI and AZW3 books with no DRM.
 
 ## Checks on a real iPhone
 
 - The import of a CBR and of a RAR5 from the Files app. The tests make ZIP,
   7z, and TAR archives, but no tool on the Mac writes a RAR.
 - The import of a large archive, with 500 pages or more.
+- The backup and the restore with the Files app.
+- A real OPDS server, such as Komga, and a real Suwayomi server. The UI tests
+  use the small test server of the scripts.

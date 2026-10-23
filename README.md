@@ -27,46 +27,66 @@ _Your files and the sources of the community, in one warm app_
 
 ## Overview
 
-**Asabunko** is an iPhone and iPad app that reads manga, comics, and light
-novels. "Asa" is the morning and "bunko" is a small paperback library in
-Japanese. The app has a warm dark look and a paper look.
+**Asabunko** is an iPhone and iPad app that reads manga, comics, light
+novels, and web novels. "Asa" is the morning and "bunko" is a small
+paperback library in Japanese. The app has a warm dark look and a paper
+look.
 
-It reads the comics, the novels, and the PDFs in your files. The next
-releases add OPDS servers, and the source lists of LNReader, Aidoku, Paperback, and
-Suwayomi. See [TODO.md](TODO.md).
+It reads the files on your device, and the sources of the community:
+OPDS catalogs, LNReader plugins, Suwayomi servers, Aidoku sources, and
+Paperback extensions. You paste the URLs of your sources, one on each line,
+as in ZettaStream.
 
 Asabunko has no sources in it. Your books stay on your device.
 
 ## Features
 
-- Import CBZ, CBR, CB7, and CBT files, ZIP, RAR, 7z, and TAR archives, and
-  folders of images from Files, or with "Open in Asabunko"
-- The title, the writer, and the direction come from ComicInfo.xml
-- Import EPUB, TXT, FB2, and HTML novels. The chapters and their titles come
+- Comics: CBZ, CBR, CB7, and CBT files, ZIP, RAR, 7z, and TAR archives, and
+  folders of images. The title, the writer, and the direction come from
+  ComicInfo.xml
+- Novels: EPUB, TXT, FB2, and HTML files. The chapters and their titles come
   from the book, or from the headings of a TXT file
-- Read a novel one chapter at a time, with your font, size, spacing, and
-  margins
-- Import a PDF and read it page by page or in one column
-- Sources: paste one URL on each line, as in ZettaStream. The app finds the
-  kind of each source
-- OPDS catalogs, such as Komga, Kavita, and Calibre-web: browse, search,
-  read a comic page by page from the server, or download a book
-- Web novels with LNReader plugins: install a plugin from a list, find a
-  novel, and read its chapters, which download as you read
-- Suwayomi servers, which run the extensions of Mihon: show a source of the
-  server, find a series, and read it page by page from the server
-- Aidoku sources: install a WebAssembly source from a list and read its
-  series
-- Paperback 0.9 extensions: install an extension from a repository and read
-  its series, with its interceptors and its state
-- Read from the right to the left, from the left to the right, or in one
-  vertical column. Pinch or double tap to zoom
-- A tap at the edge turns the page. A tap in the middle shows the bars
+- PDF, page by page or in one column
+- A reader of pages from the right to the left, from the left to the right,
+  or in one vertical column, with zoom
+- A reader of novels with your font, size, spacing, and margins, and a list
+  of the chapters
 - Continue reading: the books that you read now, with the page and the
   progress
-- Mark a book as read or as unread
+- Sources: paste one URL on each line. The app finds the kind of each source
+- OPDS catalogs, such as Komga, Kavita, and Calibre-web: browse, search,
+  read a comic page by page from the server, or download a book
+- Web novels with LNReader plugins, which download each chapter as you read
+- Suwayomi servers, which run the extensions of Mihon
+- Aidoku sources, which run as WebAssembly on the device
+- Paperback 0.9 extensions, with their interceptors and their state
+- Check all online books for new chapters
+- Back up and restore the library in one file
 - Warm dark, paper, or the look of the device
 - The app tells you when a newer version is available
+
+See [TODO.md](TODO.md) for the next functions.
+
+## Add sources
+
+1. Open Browse, and tap the Sources button.
+2. Paste the URLs, one on each line, and tap Save. Some examples:
+
+```
+https://komga.example.com/opds/v1.2/catalog
+https://raw.githubusercontent.com/LNReader/lnreader-plugins/plugins/v3.0.0/.dist/plugins.min.json
+https://aidoku-community.github.io/sources/index.min.json
+https://inkdex.github.io/extensions/0.9/stable
+http://192.168.1.20:4567
+```
+
+3. For a server with an account, write `https://user:password@host/...`. The
+   password goes to the Keychain. The list shows only the user name.
+4. Open a list, and install the sources that you want. They show under
+   Installed.
+
+You choose your sources, and you are responsible for them and for what you
+read.
 
 ## Install
 
