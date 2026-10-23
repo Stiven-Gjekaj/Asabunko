@@ -58,8 +58,21 @@ struct PageReader: View {
     var subtitle: String?
     @Environment(\.dismiss) private var dismiss
     @State private var bars = true
+    @State private var wide = false
+    @AppStorage(PageLayout.fitKey) private var fit = PageFit.screen
+    @AppStorage(PageLayout.cropKey) private var crop = false
+    @AppStorage(PageLayout.spreadsKey) private var twoPages = true
+    @AppStorage(PageLayout.shiftKey) private var shift = false
+    @AppStorage(PageLayout.tapsKey) private var taps = TapZones.edges
 
     private var count: Int { content?.count ?? 0 }
+    private var layout: PageLayout { PageLayout(fit: fit, crop: crop, spreads: twoPages, shift: shift) }
+
+    /// The spreads of the paged reader. The vertical reader and a PDF have one page in each spread.
+    private var spreads: [[Int]] {
+        guard case let .images(pages) = content, mode != .vertical else { return (0..<count).map { [$0] } }
+        return pageSpreads(pages, layout: layout, wide: wide)
+    }
 
     var body: some View {
         ZStack {
@@ -77,11 +90,14 @@ struct PageReader: View {
                 case .vertical:
                     VerticalReader(pages: pages, page: $page, onTap: toggleBars).ignoresSafeArea()
                 case .leftToRight, .rightToLeft:
-                    PagedReader(pages: pages, rightToLeft: mode == .rightToLeft, page: $page, onTap: tap).ignoresSafeArea()
+                    PagedReader(pages: pages, spreads: spreads, rightToLeft: mode == .rightToLeft, layout: layout, page: $page, onTap: tap)
+                        .ignoresSafeArea()
                 }
             }
             if bars { chrome.transition(.opacity) }
         }
+        // Two pages show side by side when the screen is wider than it is tall.
+        .onGeometryChange(for: Bool.self) { $0.size.width > $0.size.height } action: { wide = $0 }
         .statusBarHidden(!bars)
         .readerAwake()
         .persistentSystemOverlays(bars ? .automatic : .hidden)
@@ -98,8 +114,16 @@ struct PageReader: View {
 
     private func step(_ delta: Int) -> KeyPress.Result {
         guard count > 0 else { return .ignored }
-        page = min(max(page + delta, 0), count - 1)
+        turn(by: delta)
         return .handled
+    }
+
+    /// Goes by one spread. A spread of two pages counts as one turn.
+    private func turn(by delta: Int) {
+        let spreads = spreads
+        let next = Spreads.index(of: page, in: spreads) + delta
+        guard spreads.indices.contains(next) else { return }
+        page = representative(of: next, in: spreads)
     }
 
     private func toggleBars() {
@@ -119,10 +143,16 @@ struct PageReader: View {
         case .middle:
             toggleBars()
         case .left, .right:
-            // The left edge goes back in a western comic and forward in a manga.
-            let forward = (zone == .right) != (mode == .rightToLeft)
-            let next = page + (forward ? 1 : -1)
-            if (0..<count).contains(next) { page = next }
+            switch taps {
+            case .off:
+                toggleBars()
+            case .forward:
+                turn(by: 1)
+            case .edges:
+                // The left edge goes back in a western comic and forward in a manga.
+                let forward = (zone == .right) != (mode == .rightToLeft)
+                turn(by: forward ? 1 : -1)
+            }
         }
     }
 
@@ -141,6 +171,7 @@ struct PageReader: View {
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
+                if mode != .vertical, case .images = content { pageMenu }
                 modeMenu
             }
             .padding(.horizontal, 10)
@@ -160,7 +191,7 @@ struct PageReader: View {
                     .accessibilityLabel("Page")
                     .accessibilityValue("\(page + 1) of \(count)")
                 }
-                Text("\(page + 1) of \(count)")
+                Text(pageLabel)
                     .font(Karla.font(13, .medium))
                     .foregroundStyle(Palette.textSecondary)
                     .monospacedDigit()
@@ -169,6 +200,32 @@ struct PageReader: View {
             .padding(.vertical, 12)
             .background(.ultraThinMaterial)
         }
+    }
+
+    /// "3 of 20", or "2-3 of 20" for a spread of two pages.
+    private var pageLabel: String {
+        let pages = spreads.first { $0.contains(page) } ?? [page]
+        let first = (pages.first ?? page) + 1, last = (pages.last ?? page) + 1
+        return first == last ? "\(first) of \(count)" : "\(first)-\(last) of \(count)"
+    }
+
+    /// The fit, the crop, the pairs of pages, and the taps of the paged reader.
+    private var pageMenu: some View {
+        Menu {
+            Picker("Fit", selection: $fit) {
+                ForEach(PageFit.allCases, id: \.self) { Text($0.name).tag($0) }
+            }
+            Toggle("Crop the borders", isOn: $crop)
+            Toggle("Two pages on a wide screen", isOn: $twoPages)
+            if twoPages { Toggle("Move the pairs by one page", isOn: $shift) }
+            Picker("Taps at the edges", selection: $taps) {
+                ForEach(TapZones.allCases, id: \.self) { Text($0.name).tag($0) }
+            }
+        } label: {
+            Image(systemName: "rectangle.split.2x1").font(.system(size: 17, weight: .semibold))
+                .frame(width: 40, height: 40)
+        }
+        .accessibilityLabel("Page layout")
     }
 
     private var modeMenu: some View {
