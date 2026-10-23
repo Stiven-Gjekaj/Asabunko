@@ -13,6 +13,10 @@ struct ChapterView: UIViewRepresentable {
     let onTap: () -> Void
     /// A link to another file of the book.
     let onLink: (URL) -> Void
+    /// The calls of the reader to the page, for the speech, the search, and the marks.
+    var control: ChapterControl?
+    /// The page loaded and has its style.
+    var onReady: () -> Void = {}
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
@@ -22,7 +26,15 @@ struct ChapterView: UIViewRepresentable {
         let controller = configuration.userContentController
         controller.add(context.coordinator, contentWorld: .defaultClient, name: "reader")
         controller.addUserScript(WKUserScript(source: Self.script, injectionTime: .atDocumentEnd, forMainFrameOnly: true, in: .defaultClient))
-        let view = WKWebView(frame: .zero, configuration: configuration)
+        controller.addUserScript(WKUserScript(source: ChapterControl.script, injectionTime: .atDocumentEnd, forMainFrameOnly: true, in: .defaultClient))
+        let view = ChapterWebView(frame: .zero, configuration: configuration)
+        control?.view = view
+        view.onHighlight = { [weak control] in
+            Task { @MainActor in
+                guard let control, let words = await control.selection() else { return }
+                control.onHighlight?(words, context.coordinator.position)
+            }
+        }
         view.navigationDelegate = context.coordinator
         view.isOpaque = false
         view.backgroundColor = .clear
@@ -72,6 +84,8 @@ struct ChapterView: UIViewRepresentable {
     @MainActor
     final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
         var parent: ChapterView
+        /// The last place that the page reported.
+        var position: Double = 0
 
         init(_ parent: ChapterView) { self.parent = parent }
 
@@ -81,7 +95,7 @@ struct ChapterView: UIViewRepresentable {
         }
 
         func applyStyle(in view: WKWebView, keepPlace: Bool) {
-            let css = parent.css.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "`", with: "\\`")
+            let css = (parent.css + ChapterControl.css).replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "`", with: "\\`")
             let js = """
             (function () {
               const max = document.documentElement.scrollHeight - window.innerHeight;
@@ -95,8 +109,9 @@ struct ChapterView: UIViewRepresentable {
               });
             })();
             """
-            view.evaluateJavaScript(js, in: nil, in: .defaultClient) { _ in
+            view.evaluateJavaScript(js, in: nil, in: .defaultClient) { [weak self] _ in
                 UIView.animate(withDuration: 0.2) { view.alpha = 1 }
+                if !keepPlace { self?.parent.onReady() }
             }
         }
 
@@ -125,7 +140,10 @@ struct ChapterView: UIViewRepresentable {
 
         func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
             guard let body = message.body as? [String: Any] else { return }
-            if let position = body["position"] as? Double { parent.onPosition(position) }
+            if let position = body["position"] as? Double {
+                self.position = position
+                parent.onPosition(position)
+            }
             if body["tap"] != nil { parent.onTap() }
         }
     }

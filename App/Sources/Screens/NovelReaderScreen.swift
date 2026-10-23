@@ -23,6 +23,17 @@ struct NovelReaderScreen: View {
     /// The file of the chapter that shows. A chapter of an online novel downloads first.
     @State private var file: URL?
     @State private var fault: String?
+    @StateObject private var speaker = Speaker()
+    @State private var control = ChapterControl()
+    /// True while the speech goes on into the next chapter.
+    @State private var speakNext = false
+    /// Words to show when the chapter opens, from a search or a highlight.
+    @State private var pendingFind: String?
+    @State private var showSearch = false
+    @State private var showMarks = false
+    @State private var searchWords = ""
+    @State private var results: [SearchResult] = []
+    @State private var missing = 0
 
     private var book: Book? { app.book(bookID) }
     private var folder: URL? { book.map(app.folder(of:)) }
@@ -51,7 +62,9 @@ struct NovelReaderScreen: View {
                         if value >= 0.995, !bars { withAnimation { bars = true } }
                     },
                     onTap: { withAnimation(.easeOut(duration: 0.2)) { bars.toggle() } },
-                    onLink: { url in open(url, in: novel, folder: folder) }
+                    onLink: { url in open(url, in: novel, folder: folder) },
+                    control: control,
+                    onReady: { Task { await ready() } }
                 )
                 .ignoresSafeArea()
                 .id(chapter)
@@ -73,6 +86,21 @@ struct NovelReaderScreen: View {
             await loadChapter()
         }
         .onChange(of: chapter) { Task { await loadChapter() } }
+        .onAppear {
+            speaker.onSentence = { index in Task { await control.markSentence(index) } }
+            speaker.onEnd = {
+                guard let novel, chapter + 1 < novel.chapters.count else { return }
+                speakNext = true
+                go(to: chapter + 1)
+            }
+            control.onHighlight = { words, place in
+                app.changeLibrary { $0.marks.append(BookMark(book: bookID, chapter: chapter, position: place, text: words, kind: .highlight)) }
+                Task { await showSavedMarks() }
+            }
+        }
+        .onDisappear { speaker.stop() }
+        .sheet(isPresented: $showSearch) { searchSheet }
+        .sheet(isPresented: $showMarks) { marksSheet }
         .sheet(isPresented: $showChapters) { chapterList }
         .sheet(isPresented: $showStyle) { styleSheet.presentationDetents([.medium]) }
     }
@@ -90,6 +118,45 @@ struct NovelReaderScreen: View {
             if novel.chapters.indices.contains(index + 1) { _ = try? await app.chapterFile(of: book, index: index + 1) }
         } catch {
             if index == chapter { fault = error.localizedDescription }
+        }
+    }
+
+    /// The chapter shows: its marks show, a word of a search shows, and the speech goes on.
+    private func ready() async {
+        await showSavedMarks()
+        if let words = pendingFind {
+            pendingFind = nil
+            _ = await control.find(words)
+        }
+        if speakNext {
+            speakNext = false
+            await startSpeech()
+        }
+    }
+
+    private func showSavedMarks() async {
+        let texts = app.library.marks(of: bookID).filter { $0.chapter == chapter && $0.kind == .highlight }.map(\.text)
+        await control.showMarks(texts)
+    }
+
+    private func startSpeech() async {
+        let sentences = await control.sentences()
+        speaker.start(sentences, language: Locale.preferredLanguages.first)
+    }
+
+    private func toggleSpeech() {
+        if speaker.speaking {
+            speaker.stop()
+            Task { await control.clearSentence() }
+        } else {
+            Task { await startSpeech() }
+        }
+    }
+
+    private func addBookmark() {
+        Task {
+            let words = await control.visibleText()
+            app.changeLibrary { $0.marks.append(BookMark(book: bookID, chapter: chapter, position: position, text: words.isEmpty ? title(of: chapter) : words, kind: .bookmark)) }
         }
     }
 
@@ -127,6 +194,19 @@ struct NovelReaderScreen: View {
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
+                Button { toggleSpeech() } label: {
+                    Image(systemName: speaker.speaking ? "stop.circle" : "speaker.wave.2").font(.system(size: 17, weight: .semibold)).frame(width: 44, height: 44)
+                }
+                .accessibilityLabel(speaker.speaking ? "Stop reading aloud" : "Read aloud")
+                .accessibilityValue(speaker.speaking ? "Sentence \(speaker.index + 1) of \(speaker.count)" : "")
+                Button { showSearch = true } label: {
+                    Image(systemName: "magnifyingglass").font(.system(size: 17, weight: .semibold)).frame(width: 44, height: 44)
+                }
+                .accessibilityLabel("Search the book")
+                Button { showMarks = true } label: {
+                    Image(systemName: "bookmark").font(.system(size: 17, weight: .semibold)).frame(width: 44, height: 44)
+                }
+                .accessibilityLabel("Marks")
                 Button { showChapters = true } label: {
                     Image(systemName: "list.bullet").font(.system(size: 17, weight: .semibold)).frame(width: 44, height: 44)
                 }
@@ -203,6 +283,104 @@ struct NovelReaderScreen: View {
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) { Button("Done") { showChapters = false } }
             }
+            .asaScreen()
+        }
+    }
+
+    /// One place in the book where the words of a search are.
+    struct SearchResult: Identifiable {
+        let id = UUID()
+        let chapter: Int
+        let snippet: String
+    }
+
+    /// Searches the chapters that are on the device. The text of a chapter is its HTML with no tags.
+    private func search() {
+        guard let novel, let folder else { return }
+        let words = searchWords.trimmingCharacters(in: .whitespaces)
+        guard words.count >= 2 else { results = []; return }
+        var found: [SearchResult] = []
+        var absent = 0
+        for (index, item) in novel.chapters.enumerated() {
+            guard let html = try? String(contentsOf: folder.appendingPathComponent(item.path), encoding: .utf8) else { absent += 1; continue }
+            let text = html.replacingOccurrences(of: "<[^>]+>", with: " ", options: .regularExpression)
+                .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+            guard let range = text.range(of: words, options: [.caseInsensitive, .diacriticInsensitive]) else { continue }
+            let before = text[..<range.lowerBound].suffix(40), after = text[range.upperBound...].prefix(60)
+            found.append(SearchResult(chapter: index, snippet: "…" + before + text[range] + after + "…"))
+            if found.count >= 100 { break }
+        }
+        results = found
+        missing = absent
+    }
+
+    private var searchSheet: some View {
+        NavigationStack {
+            List {
+                Section {
+                    ForEach(results) { result in
+                        Button {
+                            pendingFind = searchWords.trimmingCharacters(in: .whitespaces)
+                            showSearch = false
+                            if result.chapter == chapter { Task { await ready() } } else { go(to: result.chapter) }
+                        } label: {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(title(of: result.chapter)).font(Karla.font(15, .bold)).foregroundStyle(Palette.textPrimary)
+                                Text(result.snippet).font(Karla.font(13)).foregroundStyle(Palette.textSecondary).lineLimit(2)
+                            }
+                        }
+                    }
+                } footer: {
+                    if missing > 0 { Text("\(missing) chapters are not on the device, so the search does not read them.") }
+                }
+            }
+            .asaForm()
+            .searchable(text: $searchWords, placement: .navigationBarDrawer(displayMode: .always), prompt: "Words in the book")
+            .onSubmit(of: .search) { search() }
+            .onChange(of: searchWords) { search() }
+            .navigationTitle("Search")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { showSearch = false } } }
+            .asaScreen()
+        }
+    }
+
+    private var marksSheet: some View {
+        NavigationStack {
+            List {
+                Section {
+                    Button { addBookmark() } label: { Label("Add a bookmark here", systemImage: "bookmark.fill") }
+                } footer: {
+                    Text("Select words in the chapter and choose Highlight to keep them.")
+                }
+                Section("In this book") {
+                    ForEach(app.library.marks(of: bookID)) { mark in
+                        Button {
+                            showMarks = false
+                            if mark.kind == .highlight { pendingFind = mark.text }
+                            if mark.chapter == chapter && mark.kind == .highlight { Task { await ready() } } else { go(to: mark.chapter, at: mark.position) }
+                        } label: {
+                            HStack(alignment: .top, spacing: 10) {
+                                Image(systemName: mark.kind == .highlight ? "highlighter" : "bookmark.fill").foregroundStyle(Palette.accent)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(mark.text).font(Karla.font(15)).foregroundStyle(Palette.textPrimary).lineLimit(3)
+                                    Text(title(of: mark.chapter)).font(Karla.font(12)).foregroundStyle(Palette.textSecondary)
+                                }
+                            }
+                        }
+                        .accessibilityLabel((mark.kind == .highlight ? "Highlight: " : "Bookmark: ") + mark.text)
+                    }
+                    .onDelete { offsets in
+                        let ids = Set(offsets.map { app.library.marks(of: bookID)[$0].id })
+                        app.changeLibrary { $0.marks.removeAll { ids.contains($0.id) } }
+                        Task { await showSavedMarks() }
+                    }
+                }
+            }
+            .asaForm()
+            .navigationTitle("Marks")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { showMarks = false } } }
             .asaScreen()
         }
     }

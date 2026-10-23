@@ -65,6 +65,43 @@ final class ReaderToolsTests: XCTestCase {
         XCTAssertEqual(XCTWaiter.wait(for: [wide], timeout: 5), .completed, "The page fills the width of the screen.")
     }
 
+    func testReadsANovelAloudSearchesItAndKeepsABookmark() throws {
+        let book = folder.appendingPathComponent("Quiet_Mornings.epub")
+        try StoredZip.write(NovelBook.epub, to: book)
+        XCTAssertTrue(app.staticTexts["Your shelf is empty"].waitForExistence(timeout: 10))
+        app.open(book)
+        let tile = app.button(containing: "Quiet Mornings")
+        XCTAssertTrue(tile.waitForExistence(timeout: 15))
+        tile.tap()
+        XCTAssertTrue(app.staticTexts["Chapter 1 of 3"].waitForExistence(timeout: 10))
+
+        // The speech goes from one sentence to the next.
+        app.buttons["Read aloud"].tap()
+        let stop = app.buttons["Stop reading aloud"]
+        XCTAssertTrue(stop.waitForExistence(timeout: 10), "The speech starts.")
+        let next = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value BEGINSWITH 'Sentence 2 of'"), object: stop)
+        XCTAssertEqual(XCTWaiter.wait(for: [next], timeout: 30), .completed, "The reader goes to the next sentence.")
+        shot("2 Read aloud")
+        stop.tap()
+
+        // The search finds words of the second chapter.
+        app.buttons["Search the book"].tap()
+        let field = app.searchFields["Words in the book"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5))
+        field.tap()
+        field.typeText("rain on")
+        let result = app.button(containing: "Soft Rain")
+        XCTAssertTrue(result.waitForExistence(timeout: 5), "The search finds the chapter.")
+        result.tap()
+        XCTAssertTrue(app.staticTexts["Chapter 2 of 3"].waitForExistence(timeout: 10))
+
+        // A bookmark stays in the list of the marks.
+        app.buttons["Marks"].tap()
+        app.buttons["Add a bookmark here"].tap()
+        XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Bookmark:'")).firstMatch.waitForExistence(timeout: 5))
+        shot("3 Marks")
+    }
+
     private static func page(_ number: Int) -> Data {
         let size = CGSize(width: 600, height: 900)
         let image = UIGraphicsImageRenderer(size: size).image { context in
