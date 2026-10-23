@@ -25,7 +25,9 @@ final class CatalogTests: XCTestCase {
         box.typeText(url.replacingOccurrences(of: "http://", with: "http://asa:morning@"))
         app.buttons["Save"].tap()
         XCTAssertTrue(app.staticTexts["Saved 1 source."].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["asa at http://127.0.0.1:8765/..."].exists, "The list shows the user name and no password.")
+        // The row shows the scheme, the host, and the port of the URL.
+        let origin = url.components(separatedBy: "/").prefix(3).joined(separator: "/")
+        XCTAssertTrue(app.staticTexts["asa at \(origin)/..."].exists, "The list shows the user name and no password.")
         shot("0 Sources")
         app.navigationBars.buttons.element(boundBy: 0).tap()
     }
