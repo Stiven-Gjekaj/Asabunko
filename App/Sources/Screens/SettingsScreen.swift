@@ -22,7 +22,7 @@ struct SettingsScreen: View {
                     }
                 }
                 Section {
-                    Picker("Reading mode", selection: Binding(get: { app.library.defaultMode }, set: app.setDefaultMode)) {
+                    Picker("Reading mode", selection: Binding(get: { app.library.defaultMode }, set: { app.setDefaultMode($0) })) {
                         ForEach(ReadingMode.allCases, id: \.self) { Text($0.name).tag($0) }
                     }
                 } header: {
