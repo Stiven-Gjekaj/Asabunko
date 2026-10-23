@@ -31,6 +31,8 @@ public final class LNReaderPlugin: OnlineSource, @unchecked Sendable {
     private let runtime: JSRuntime
     private let paged: Bool
     private let imageHeaders: [String: String]
+    /// The file of the values of the settings, or nil to keep them only in memory.
+    private let settingsFile: URL?
 
     private struct Loaded: Decodable {
         let id: String
@@ -41,10 +43,16 @@ public final class LNReaderPlugin: OnlineSource, @unchecked Sendable {
         let imageHeaders: [String: String]
     }
 
-    public init(info: SourceInfo, code: String, fetcher: @escaping Fetcher) async throws {
+    public init(info: SourceInfo, code: String, settings: URL? = nil, fetcher: @escaping Fetcher) async throws {
         runtime = try JSRuntime(name: "lnreader.\(info.id)", fetcher: fetcher)
+        settingsFile = settings
         guard let url = Bundle.module.url(forResource: "lnreader", withExtension: "js") else { throw JSRuntimeError.script("No lnreader.js") }
         try runtime.evaluate(try String(contentsOf: url, encoding: .utf8), url: "lnreader.js")
+        // The plugin reads its settings from the storage, so the saved values go in first.
+        if let saved = settings.flatMap({ try? Data(contentsOf: $0) }) {
+            _ = try await runtime.invoke("(json) => { const v = JSON.parse(json); for (const k of Object.keys(v)) __storage.set(k, v[k]); return true; }",
+                                         [String(decoding: saved, as: UTF8.self)])
+        }
         let loaded = try await runtime.invoke(Loaded.self, "__loadPlugin", [code])
         self.info = info
         self.site = loaded.site.flatMap { URL(lenient: $0) }
@@ -141,5 +149,104 @@ public final class LNReaderPlugin: OnlineSource, @unchecked Sendable {
         var request = URLRequest(url: url)
         for (key, value) in imageHeaders { request.setValue(value, forHTTPHeaderField: key) }
         return request
+    }
+
+    // MARK: Filters and settings
+
+    /// The options of the plugin from a list of the JavaScript glue.
+    private func specs(_ function: String) async -> [[String: Any]] {
+        guard let data = try? await runtime.invoke(function), let list = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else { return [] }
+        return list
+    }
+
+    private static func choices(_ spec: [String: Any]) -> [SourceOption.Choice] {
+        (spec["options"] as? [[String: Any]] ?? []).map { SourceOption.Choice(label: $0["label"] as? String ?? "", value: $0["value"] as? String ?? "") }
+    }
+
+    public func filterOptions() async -> [SourceOption] {
+        await specs("__filterSpec").compactMap { spec in
+            guard let key = spec["key"] as? String, let type = spec["type"] as? String else { return nil }
+            let title = spec["label"] as? String ?? key
+            let value = spec["value"]
+            let choices = Self.choices(spec)
+            switch type {
+            case "Text": return SourceOption(id: key, title: title, kind: .text(placeholder: nil), initial: .text(value as? String ?? ""), raw: type)
+            case "Switch": return SourceOption(id: key, title: title, kind: .toggle, initial: .toggle(value as? Bool ?? false), raw: type)
+            case "Picker":
+                guard !choices.isEmpty else { return nil }
+                return SourceOption(id: key, title: title, kind: .select(choices), initial: .select((value as? String) ?? choices[0].value), raw: type)
+            case "Checkbox":
+                return SourceOption(id: key, title: title, kind: .multi(choices, excludable: false),
+                                    initial: .multi(included: value as? [String] ?? [], excluded: []), raw: type)
+            case "XCheckbox":
+                let both = value as? [String: Any]
+                return SourceOption(id: key, title: title, kind: .multi(choices, excludable: true),
+                                    initial: .multi(included: both?["include"] as? [String] ?? [], excluded: both?["exclude"] as? [String] ?? []), raw: type)
+            default: return nil
+            }
+        }
+    }
+
+    /// The value of an option in the form that a plugin reads.
+    private static func javaScript(_ value: OptionValue, raw: String) -> Any {
+        switch value {
+        case let .text(text): text
+        case let .toggle(on): on
+        case let .select(choice): choice
+        case let .multi(included, excluded): raw == "XCheckbox" ? ["include": included, "exclude": excluded] as [String: Any] : included
+        case let .sort(index, _): index
+        }
+    }
+
+    public func browse(page number: Int, query: String, filters: [String: OptionValue]) async throws -> OnlinePage {
+        // An LNReader search has no filters.
+        guard query.isEmpty else { return try await search(query, page: number) }
+        let options = await filterOptions()
+        var values: [String: Any] = [:]
+        for option in options { values[option.id] = Self.javaScript(filters[option.id] ?? option.initial, raw: option.raw) }
+        let json = String(decoding: try JSONSerialization.data(withJSONObject: values), as: UTF8.self)
+        return page(try await runtime.invoke([Item].self, "__browse", [number, json]))
+    }
+
+    public func settingOptions() async -> [SourceOption] {
+        await specs("__settingSpec").compactMap { spec in
+            guard let key = spec["key"] as? String else { return nil }
+            let type = spec["type"] as? String ?? "Text"
+            let title = spec["label"] as? String ?? key
+            let choices = Self.choices(spec)
+            switch type {
+            case "Switch": return SourceOption(id: key, title: title, kind: .toggle, initial: .toggle(false), raw: type)
+            case "Select" where !choices.isEmpty: return SourceOption(id: key, title: title, kind: .select(choices), initial: .select(choices[0].value), raw: type)
+            case "CheckboxGroup": return SourceOption(id: key, title: title, kind: .multi(choices, excludable: false), initial: .multi(included: [], excluded: []), raw: type)
+            default: return SourceOption(id: key, title: title, kind: .text(placeholder: nil), initial: .text(""), raw: type)
+            }
+        }
+    }
+
+    public func settingValues() async -> [String: OptionValue] {
+        var values: [String: OptionValue] = [:]
+        for spec in await specs("__settingSpec") {
+            guard let key = spec["key"] as? String else { continue }
+            switch spec["value"] {
+            case let on as Bool: values[key] = .toggle(on)
+            case let list as [String]: values[key] = .multi(included: list, excluded: [])
+            case let text as String: values[key] = (spec["type"] as? String) == "Select" ? .select(text) : .text(text)
+            case let number as NSNumber: values[key] = .text(number.stringValue)
+            default: break
+            }
+        }
+        return values
+    }
+
+    public func setSetting(_ id: String, _ value: OptionValue) async {
+        let raw = (await settingOptions()).first { $0.id == id }?.raw ?? ""
+        let javaScript = Self.javaScript(value, raw: raw)
+        guard let json = try? JSONSerialization.data(withJSONObject: [id: javaScript]) else { return }
+        _ = try? await runtime.invoke("(json) => { const v = JSON.parse(json); for (const k of Object.keys(v)) __storage.set(k, v[k]); return true; }",
+                                      [String(decoding: json, as: UTF8.self)])
+        guard let settingsFile else { return }
+        var saved = (try? Data(contentsOf: settingsFile)).flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] } ?? [:]
+        saved[id] = javaScript
+        if let data = try? JSONSerialization.data(withJSONObject: saved) { try? data.write(to: settingsFile, options: .atomic) }
     }
 }

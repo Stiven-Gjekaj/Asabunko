@@ -61,6 +61,9 @@
   const FilterTypes = { TextInput: 'Text', Picker: 'Picker', CheckboxGroup: 'Checkbox', Switch: 'Switch', ExcludableCheckboxGroup: 'XCheckbox' };
   const defaultCover = 'https://github.com/LNReader/lnreader-plugins/blob/main/icons/src/coverNotAvailable.jpg?raw=true';
 
+  // The settings of the plugin live here. The app writes the saved values before it loads the plugin.
+  globalThis.__storage = new Storage();
+
   globalThis.__loadPlugin = function (code) {
     const packages = {
       'cheerio': lib.cheerio,
@@ -74,7 +77,7 @@
       '@libs/defaultCover': { defaultCover },
       '@libs/aes': lib.aes,
       '@libs/utils': lib.utils,
-      '@libs/storage': { storage: new Storage(), localStorage: webStorage, sessionStorage: webStorage },
+      '@libs/storage': { storage: globalThis.__storage, localStorage: webStorage, sessionStorage: webStorage },
     };
     const require = (name) => {
       if (!(name in packages)) throw new Error('The plugin asks for ' + name + ', which Asabunko does not have.');
@@ -93,6 +96,33 @@
     const values = {};
     for (const key of Object.keys(filters)) values[key] = { type: filters[key].type, value: filters[key].value };
     return values;
+  };
+
+  const choices = (options) => (options || []).map((o) => ({ label: String(o.label), value: String(o.value) }));
+
+  // The filters of the plugin, for the filter screen of the app.
+  globalThis.__filterSpec = function () {
+    const filters = (globalThis.plugin && globalThis.plugin.filters) || {};
+    return Object.keys(filters).map((key) => ({ key, label: filters[key].label || key, type: filters[key].type,
+      value: filters[key].value, options: choices(filters[key].options) }));
+  };
+
+  // The list of the plugin with the values of the user in place of the first values.
+  globalThis.__browse = function (page, json) {
+    const values = JSON.parse(json);
+    const filters = __filters();
+    for (const key of Object.keys(values)) if (filters[key]) filters[key].value = values[key];
+    return globalThis.plugin.popularNovels(page, { showLatestNovels: false, filters });
+  };
+
+  // The settings of the plugin, with their values in the storage.
+  globalThis.__settingSpec = function () {
+    const settings = (globalThis.plugin && globalThis.plugin.pluginSettings) || {};
+    return Object.keys(settings).map((key) => {
+      const saved = globalThis.__storage.get(key);
+      return { key, label: settings[key].label || key, type: settings[key].type || 'Text',
+        value: saved === undefined ? settings[key].value : saved, options: choices(settings[key].options) };
+    });
   };
 
   // A path of the site as a full URL.
