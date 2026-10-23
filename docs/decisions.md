@@ -679,3 +679,28 @@ The choices:
   the result says how many chapters it did not read.
 - A bookmark keeps the chapter and the place in it. A highlight also keeps
   its words. Both go into the library file and into a backup.
+
+## 2026-10-24: Tracking
+
+- AniList and MyAnimeList need a registered client for each app. Asabunko
+  is open source and has no server, so it cannot keep a client secret. The
+  user registers a client and pastes its ID. The redirect URI is
+  asabunko://anilist or asabunko://myanimelist.
+- AniList uses the implicit grant, which gives the token in the fragment of
+  the redirect. MyAnimeList uses PKCE with the plain method, the only method
+  that it takes. The sign-in runs in ASWebAuthenticationSession.
+- The tokens are in the Keychain of the device and are not in a backup. The
+  client IDs are settings.
+- The number for a tracker is the number of the chapters before the open
+  one, or all chapters of a finished book. Only a number that goes up goes
+  out, because a tracker counts the chapters read. A failed call tries again
+  at the next change of the book.
+- A stream of an OPDS server opens at pse:lastRead. The app reads it as the
+  number of the last page, from 0. If a server counts from 1, the book opens
+  one page after the last page that the user saw, which loses nothing.
+- Komga keeps the progress with a PATCH of /api/v1/books/{id}/read-progress,
+  with the page from 1. The app finds the book in the path of the stream and
+  keeps the base path of the server. The call goes one second after the last
+  turn. Kavita saves the progress when it serves a page, so it needs no call.
+- The test server acts as AniList, MyAnimeList, and Komga, so the UI tests
+  run with no account on a real site.

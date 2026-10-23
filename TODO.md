@@ -8,11 +8,6 @@ Each task here is a choice of the owner. A task leaves this list when its
 release is out. The reason for each choice is in
 [docs/decisions.md](docs/decisions.md).
 
-## v2.7: Tracking
-
-- [#23](https://github.com/Stiven-Gjekaj/Asabunko/issues/23) Track the progress with AniList and MyAnimeList
-- [#24](https://github.com/Stiven-Gjekaj/Asabunko/issues/24) Send the progress to Komga and Kavita
-
 ## v2.8: The platform
 
 - [#25](https://github.com/Stiven-Gjekaj/Asabunko/issues/25) Translate the app

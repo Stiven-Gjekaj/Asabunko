@@ -69,7 +69,9 @@ Asabunko has no sources in it. Your books stay on your device.
 - Sources: paste one URL on each line. The app finds the kind of each source
   and installs the sources of each list
 - OPDS catalogs, such as Komga, Kavita, and Calibre-web: browse, search,
-  read a comic page by page from the server, or download a book
+  read a comic page by page from the server at your last page, or download
+  a book
+- Track your progress on AniList and MyAnimeList
 - Web novels with LNReader plugins, which download each chapter as you read
 - Suwayomi servers, which run the extensions of Mihon
 - Aidoku sources, which run as WebAssembly on the device

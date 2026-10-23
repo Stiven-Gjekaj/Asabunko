@@ -11,6 +11,22 @@ the decisions.
 A tag such as `v0.1.0` builds the unsigned IPA and attaches it to a release on
 GitHub as `Asabunko.ipa`.
 
+## 2.7.0 (2026-10-24)
+
+Your progress goes to your trackers and your servers.
+
+- Sign in to AniList or MyAnimeList in Settings, Trackers. Asabunko has no
+  client on these sites, so you register a client with the redirect URI
+  that the page shows, and paste its ID.
+- Hold a book in the Library and choose Track. The app searches the tracker
+  with the title of the book, and you choose the entry.
+- Each time the number of chapters that you read goes up, the tracker gets
+  it. A finished book is complete on the tracker. Private reading sends
+  nothing.
+- A comic that you read from a Komga or Kavita catalog opens at the last
+  page that the server keeps. Each new page goes back to Komga. Kavita keeps
+  the page when it gives it to the app.
+
 ## 2.6.0 (2026-10-23)
 
 The reader does more.
