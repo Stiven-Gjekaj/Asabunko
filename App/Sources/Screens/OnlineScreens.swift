@@ -211,6 +211,9 @@ struct OnlineSeriesScreen: View {
     @State private var adding = false
     @State private var reading: Book?
     @State private var newestFirst = false
+    @AppStorage("series.byVolume") private var byVolume = false
+    /// The range of chapters that the list shows, such as 1-50, when the series has many chapters.
+    @State private var range: Int?
 
     /// One series of one source. The page also looks for the title in the other sources.
     init(installed: InstalledSource, series: OnlineSeries) {
@@ -317,10 +320,24 @@ struct OnlineSeriesScreen: View {
         }
     }
 
+    /// The chapters, by volume or in ranges of 50, so that a long series needs little scrolling.
+    @ViewBuilder
     private func chapterList(_ details: OnlineDetails) -> some View {
+        let titles = details.chapters.map(\.title)
+        let volumes = ChapterGroups.volumes(titles)
+        let ranges = ChapterGroups.ranges(count: titles.count)
+        let shownVolumes = byVolume ? volumes : nil
         Section {
-            ForEach(newestFirst ? Array(details.chapters.indices.reversed()) : Array(details.chapters.indices), id: \.self) { index in
-                chapterRow(index, details).listRowBackground(Palette.surface)
+            if volumes != nil {
+                Picker("Show", selection: $byVolume) {
+                    Text("Chapters").tag(false)
+                    Text("Volumes").tag(true)
+                }
+                .pickerStyle(.segmented)
+                .listRowBackground(Color.clear)
+            }
+            if shownVolumes == nil && ranges.count > 1 {
+                rangeChips(ranges)
             }
         } header: {
             HStack {
@@ -329,6 +346,73 @@ struct OnlineSeriesScreen: View {
                 Button(newestFirst ? "Oldest first" : "Newest first") { newestFirst.toggle() }.font(Karla.font(13, .bold))
             }
         }
+        if let shownVolumes {
+            ForEach(newestFirst ? shownVolumes.reversed() : shownVolumes) { volume in
+                Section {
+                    DisclosureGroup {
+                        ForEach(newestFirst ? volume.chapters.reversed() : volume.chapters, id: \.self) { index in
+                            chapterRow(index, details)
+                        }
+                    } label: {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(volume.name).font(Karla.font(16, .bold))
+                                Text(volume.chapters.count == 1 ? "1 chapter" : "\(volume.chapters.count) chapters")
+                                    .font(Karla.font(12)).foregroundStyle(Palette.textSecondary)
+                            }
+                            Spacer()
+                            Button("Read") { Task { await open(chapter: start(of: volume), details: details) } }
+                                .font(Karla.font(14, .bold))
+                                .buttonStyle(.borderless)
+                                .accessibilityLabel("Read \(volume.name)")
+                        }
+                    }
+                    .listRowBackground(Palette.surface)
+                }
+            }
+        } else {
+            let shown = ranges.isEmpty ? 0..<0 : ranges[min(range ?? defaultRange(ranges), ranges.count - 1)]
+            Section {
+                ForEach(newestFirst ? Array(shown.reversed()) : Array(shown), id: \.self) { index in
+                    chapterRow(index, details).listRowBackground(Palette.surface)
+                }
+            }
+        }
+    }
+
+    /// The chips of the ranges, such as 1-50 and 51-100.
+    private func rangeChips(_ ranges: [Range<Int>]) -> some View {
+        let selected = min(range ?? defaultRange(ranges), ranges.count - 1)
+        let order = newestFirst ? Array(ranges.indices.reversed()) : Array(ranges.indices)
+        return ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(order, id: \.self) { index in
+                    Button(ChapterGroups.name(of: ranges[index])) { range = index }
+                        .font(Karla.font(14, .bold))
+                        .padding(.horizontal, 14)
+                        .frame(minHeight: 36)
+                        .foregroundStyle(index == selected ? Palette.onAccent : Palette.textPrimary)
+                        .background(index == selected ? Palette.accent : Palette.surfaceHigh, in: Capsule())
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Chapters \(ChapterGroups.name(of: ranges[index]))")
+                        .accessibilityAddTraits(index == selected ? .isSelected : [])
+                }
+            }
+        }
+        .listRowBackground(Color.clear)
+        .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
+    }
+
+    /// The range of the chapter that the user reads, or the first range.
+    private func defaultRange(_ ranges: [Range<Int>]) -> Int {
+        guard let book, book.lastRead != nil else { return newestFirst ? ranges.count - 1 : 0 }
+        return ranges.firstIndex { $0.contains(book.page) } ?? 0
+    }
+
+    /// The first chapter of a volume that the user did not read, or its first chapter.
+    private func start(of volume: ChapterGroups.Volume) -> Int {
+        guard let book, book.lastRead != nil else { return volume.chapters[0] }
+        return volume.chapters.first { $0 >= book.page } ?? volume.chapters[0]
     }
 
     private func chapterRow(_ index: Int, _ details: OnlineDetails) -> some View {
