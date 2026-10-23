@@ -7,6 +7,7 @@ struct LibraryScreen: View {
     @State private var importing = false
     @State private var reading: Book?
     @State private var deleting: Book?
+    @State private var updating = false
 
     private let columns = [GridItem(.adaptive(minimum: 104, maximum: 160), spacing: 16, alignment: .top)]
 
@@ -27,6 +28,23 @@ struct LibraryScreen: View {
             }
             .asaScreen()
             .toolbar {
+                if app.library.books.contains(where: { $0.origin != nil }) {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button {
+                            updating = true
+                            Task {
+                                let result = await app.refreshAll()
+                                updating = false
+                                app.fault = result.added == 0 && result.failed == 0 ? "No new chapters."
+                                    : "\(result.added) new chapter\(result.added == 1 ? "" : "s")." + (result.failed > 0 ? " \(result.failed) books did not update." : "")
+                            }
+                        } label: {
+                            if updating { ProgressView() } else { Image(systemName: "arrow.clockwise") }
+                        }
+                        .disabled(updating)
+                        .accessibilityLabel("Check for new chapters")
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { importing = true } label: { Image(systemName: "plus") }
                         .accessibilityLabel("Import")
@@ -54,7 +72,7 @@ struct LibraryScreen: View {
                     deleting = nil
                 }
             } message: {
-                Text("The book and its progress leave the library. The file that you imported stays where it is.")
+                Text("The book and its progress leave the library. A file that you imported stays where it is.")
             }
             .alert("Asabunko", isPresented: Binding(get: { app.fault != nil }, set: { if !$0 { app.fault = nil } })) {
                 Button("OK") { app.fault = nil }
