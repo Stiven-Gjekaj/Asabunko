@@ -285,6 +285,18 @@ struct OnlineSeriesScreen: View {
         return app.library.book(from: BookOrigin(list: installed.list, source: installed.info.id, series: series.id))
     }
 
+    /// The book of this title in the library when it reads from another source than the chosen one.
+    private var bookOfOtherSource: (book: Book, source: String)? {
+        guard book == nil else { return nil }
+        for hit in hits where hit != chosen {
+            guard let other = app.library.installed.first(where: { $0.id == hit.source }),
+                  let found = app.library.book(from: BookOrigin(list: other.list, source: other.info.id, series: hit.series.id))
+            else { continue }
+            return (found, other.info.name)
+        }
+        return nil
+    }
+
     var body: some View {
         List {
             Section {
@@ -334,6 +346,21 @@ struct OnlineSeriesScreen: View {
                     }
                     .buttonStyle(.borderless)
                     .listRowBackground(Color.clear)
+                    if let other = bookOfOtherSource, let installed {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Your book reads from \(other.source).").font(Karla.font(14)).foregroundStyle(Palette.textSecondary)
+                            Button("Move my book to \(installed.info.name)") {
+                                do {
+                                    try app.move(other.book, to: installed, details: details)
+                                } catch {
+                                    app.fault = "The book did not move: \(error.localizedDescription)"
+                                }
+                            }
+                            .font(Karla.font(15, .bold))
+                            .buttonStyle(.borderless)
+                        }
+                        .listRowBackground(Palette.surface)
+                    }
                     if let summary = details.summary {
                         Text(summary).font(Karla.font(15)).listRowBackground(Color.clear)
                     }

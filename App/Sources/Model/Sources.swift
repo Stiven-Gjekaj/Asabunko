@@ -237,6 +237,28 @@ extension AppModel {
         return book
     }
 
+    /// Moves a book of the library to another source of the same title. The place of the user goes to the
+    /// chapter with the same number in the new source. The chapters of the old source leave the device.
+    func move(_ book: Book, to installed: InstalledSource, details: OnlineDetails) throws {
+        let folder = folder(of: book)
+        let old = novel(of: book)
+        downloads.cancel(book.id)
+        var fresh = Novel(title: old?.title ?? book.title, author: details.author ?? old?.author, summary: details.summary ?? old?.summary, chapters: [])
+        fresh.merge(details.chapters)
+        try? FileManager.default.removeItem(at: folder.appendingPathComponent("chapters"))
+        try FileManager.default.createDirectory(at: folder.appendingPathComponent("chapters"), withIntermediateDirectories: true)
+        try fresh.save(to: folder)
+        let place = ChapterGroups.place(of: book.page, from: (old?.chapters ?? []).map { $0.title ?? "" }, in: details.chapters.map(\.title))
+        update(book.id) { moved in
+            moved.origin = BookOrigin(list: installed.list, source: installed.info.id, series: details.series.id)
+            moved.fileName = installed.info.name
+            moved.pageCount = fresh.chapters.count
+            if moved.lastRead != nil { moved.page = place; moved.position = 0 }
+            moved.finished = false
+        }
+        downloads.touch()
+    }
+
     /// Asks the source for new chapters of a book. It gives the number of new chapters.
     @discardableResult
     func refresh(_ book: Book) async throws -> Int {
