@@ -626,7 +626,7 @@ struct OnlineSeriesScreen: View {
         source = nil
         guard let installed else { return }
         source = try? await app.load(installed)
-        if let book { try? await app.refresh(book) }
+        if let book { _ = try? await app.refresh(book) }
     }
 
     /// Asks each source for the title at the same time. The source of a book in the library wins,
