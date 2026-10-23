@@ -11,6 +11,22 @@ the decisions.
 A tag such as `v0.1.0` builds the unsigned IPA and attaches it to a release on
 GitHub as `Asabunko.ipa`.
 
+## 1.5.0 (2026-10-23)
+
+- Aidoku sources that draw their pages work: the canvas module draws with
+  CoreGraphics, and a source can put the parts of a page in order again or
+  decrypt it. MANGA Plus reads now.
+- The js module of Aidoku runs scripts in JavaScriptCore, and in a web view
+  for the sources that need a page of the site.
+- A site behind the browser check of Cloudflare shows a banner. Open the
+  page, pass the check one time, and the source loads again by itself.
+- The tests read RAR 4 and RAR 5 archives, and import and read a comic of
+  600 pages in 4 seconds on the simulator.
+- An OPDS catalog gives its Kindle files, such as the MOBI files of Project
+  Gutenberg.
+- LNReader plugins that take the constants of the LNReader app load, such as
+  Novel Fire.
+
 ## 1.4.0 (2026-10-23)
 
 - The filters of a source: open a source in Settings, Sources, and tap the

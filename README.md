@@ -61,6 +61,8 @@ Asabunko has no sources in it. Your books stay on your device.
   most chapters. You can choose another source
 - Chapters by volume, or in ranges of 50 for a long series
 - The filters and the settings of each source
+- Aidoku sources that draw or decrypt their pages, such as MANGA Plus
+- The browser check of a site, such as Cloudflare, in a web view
 - Sources: paste one URL on each line. The app finds the kind of each source
   and installs the sources of each list
 - OPDS catalogs, such as Komga, Kavita, and Calibre-web: browse, search,

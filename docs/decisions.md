@@ -508,3 +508,26 @@ The choices:
   them in its query. The settings of Paperback are forms with their own
   layout, so they do not show.
 - Suwayomi gives no filters or settings yet.
+
+## 2026-10-23: Canvas, js, and the browser check
+
+- The canvas module of Aidoku draws in a CoreGraphics bitmap with its
+  origin at the top left, as in aidoku-rs. An image keeps the bytes of its
+  download, because a source such as MANGA Plus reads the bytes, decrypts
+  them, and makes a new image of them.
+- A source with `process_page_image` gets each page before the reader. The
+  host downloads the pages at the same time, the source draws them one at a
+  time, and the reader gets PNG files. A download of the chapter copies
+  these files.
+- The js module runs `context_*` in JavaScriptCore. `webview_*` runs in a
+  web view with no window. The queue of the source waits while the main
+  thread works.
+- A browser check, such as the challenge of Cloudflare, shows a banner, not
+  a sheet, so that the app does not open a page that the user did not ask
+  for. After the check, the cookies of the site go to the cookie store of
+  the session, and the screens with a fault load again.
+- The checks on a real iPhone are now tests on the simulator: the RAR files
+  of the tests of libarchive, and a CBZ of 600 pages. The UI test of the
+  backup through the Files picker is not stable yet, so it stays in the
+  roadmap. The owner has no server, so the real server check left the list
+  before.
