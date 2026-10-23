@@ -8,6 +8,10 @@ the comic one at a time with the Page Streaming Extension.
 Under /lnreader/, it serves a list of LNReader plugins with one plugin, and
 under /site/ the web site that the plugin reads.
 
+Under /aidoku/, it serves a list of Aidoku sources with one source. The source
+is a small WebAssembly module that this script writes. It gives one series of
+one chapter of two pages, from /pages/.
+
 Under /suwayomi/, it answers the GraphQL queries of a Suwayomi server with
 one source, one series, and one chapter of three pages, with the same user
 name and password as /opds/.
@@ -18,6 +22,7 @@ Usage: python3 scripts/test-server.py [port]
 """
 import base64
 import io
+import json
 import struct
 import sys
 import zipfile
@@ -114,7 +119,76 @@ SITE = {
 }
 
 
-import json
+
+def postcard_string(text):
+    data = text.encode()
+    return leb(len(data)) + data
+
+
+def leb(value):
+    out = b""
+    while True:
+        byte = value & 0x7F
+        value >>= 7
+        if value:
+            out += bytes([byte | 0x80])
+        else:
+            return out + bytes([byte])
+
+
+def sleb(value):
+    out = b""
+    while True:
+        byte = value & 0x7F
+        value >>= 7
+        if (value == 0 and not byte & 0x40) or (value == -1 and byte & 0x40):
+            return out + bytes([byte])
+        out += bytes([byte | 0x80])
+
+
+def aidoku_wasm(host):
+    """A WebAssembly module that answers as the register_source! macro of aidoku-rs, with fixed results."""
+    cover = f"http://{host}/pages/2"
+    some = lambda data: b"\x01" + data
+    none = b"\x00"
+    manga_head = postcard_string("m1") + postcard_string("Aidoku Sunrise") + some(postcard_string(cover))
+    search = leb(1) + manga_head + none * 5 + b"\x00\x00\x00\x00" + none + none + b"\x00"
+    chapter = postcard_string("c1") + some(postcard_string("Opening")) + some(struct.pack("<f", 1.0)) + none * 6 + b"\x00"
+    update = (manga_head + none + some(leb(1) + postcard_string("Wasm Artist")) + some(postcard_string("A comic from WebAssembly."))
+              + none + none + b"\x01\x00\x00\x00" + none + some(leb(1) + chapter))
+    page = lambda n: b"\x00" + postcard_string(f"http://{host}/pages/{n}") + none + none + b"\x00" + none
+    pages = leb(2) + page(1) + page(3)
+    results = [(1024, search), (4096, update), (8192, pages)]
+
+    def section(sid, body):
+        return bytes([sid]) + leb(len(body)) + body
+
+    def vec(items):
+        return leb(len(items)) + b"".join(items)
+
+    i32 = b"\x7f"
+    types = vec([b"\x60" + vec([]) + vec([]), b"\x60" + vec([i32]) + vec([]),
+                 b"\x60" + vec([i32, i32, i32]) + vec([i32]), b"\x60" + vec([i32, i32]) + vec([i32])])
+    functions = vec([leb(0), leb(1), leb(2), leb(2), leb(3)])
+    memory = vec([b"\x00" + leb(1)])
+    names = ["start", "free_result", "get_search_manga_list", "get_manga_update", "get_page_list"]
+    exports = vec([postcard_string("memory") + b"\x02" + leb(0)] + [postcard_string(n) + b"\x00" + leb(i) for i, n in enumerate(names)])
+    body = lambda code: leb(len(b"\x00" + code)) + b"\x00" + code
+    returns = lambda offset: b"\x41" + sleb(offset) + b"\x0b"
+    code = vec([body(b"\x0b"), body(b"\x0b")] + [body(returns(offset)) for offset, _ in results])
+    data = vec([b"\x00\x41" + sleb(offset) + b"\x0b" + leb(len(payload) + 8) + struct.pack("<ii", len(payload) + 8, 0) + payload
+                for offset, payload in results])
+    return (b"\x00asm\x01\x00\x00\x00" + section(1, types) + section(3, functions) + section(5, memory)
+            + section(7, exports) + section(10, code) + section(11, data))
+
+
+def aidoku_package(host):
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as archive:
+        archive.writestr("Payload/main.wasm", aidoku_wasm(host))
+        archive.writestr("Payload/source.json", json.dumps({"info": {"id": "en.test", "name": "Test Aidoku", "version": 1,
+                                                                    "url": f"http://{host}", "languages": ["en"]}}))
+    return buffer.getvalue()
 
 
 def suwayomi(query):
@@ -153,6 +227,12 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         path = self.path.split("?")[0]
         host = self.headers.get("Host")
+        if path == "/aidoku/index.min.json":
+            index = {"name": "Test list", "sources": [{"id": "en.test", "name": "Test Aidoku", "version": 1, "iconURL": "../pages/3",
+                                                        "downloadURL": "sources/en.test-v1.aix", "languages": ["en"], "contentRating": 0}]}
+            return self.reply(json.dumps(index).encode(), "application/json")
+        if path == "/aidoku/sources/en.test-v1.aix":
+            return self.reply(aidoku_package(host), "application/zip")
         if path == "/lnreader/plugins.min.json":
             index = f'[{{"id":"quiet","name":"Quiet Novels","site":"http://{host}/site/","lang":"English","version":"1.0.0",' \
                     f'"url":"http://{host}/lnreader/quiet[test].js","iconUrl":"http://{host}/pages/2"}}]'
