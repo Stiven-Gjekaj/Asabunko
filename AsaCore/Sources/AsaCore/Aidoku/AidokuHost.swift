@@ -13,11 +13,16 @@ final class AidokuDefaults: @unchecked Sendable {
         values = initial.merging(saved) { _, saved in saved }
     }
 
+    /// The source reads the values on its queue, and the settings screen reads them on the main thread.
+    private let lock = NSLock()
+
     subscript(key: String) -> Data? {
-        get { values[key] }
+        get { lock.withLock { values[key] } }
         set {
-            values[key] = newValue
-            if let file, let data = try? JSONEncoder().encode(values) { try? data.write(to: file, options: .atomic) }
+            lock.withLock {
+                values[key] = newValue
+                if let file, let data = try? JSONEncoder().encode(values) { try? data.write(to: file, options: .atomic) }
+            }
         }
     }
 }

@@ -125,6 +125,27 @@ public protocol OnlineSource: AnyObject, Sendable {
     func content(of chapter: OnlineChapter, in series: OnlineSeries) async throws -> ChapterContent
     /// The request of an image of the source, such as a cover, with the headers that the source needs.
     func imageRequest(_ url: URL) -> URLRequest
+    /// The filters of the list of the source. Empty when the source has none.
+    func filterOptions() async -> [SourceOption]
+    /// A page of the list with filters. With a query, the list is a search.
+    func browse(page: Int, query: String, filters: [String: OptionValue]) async throws -> OnlinePage
+    /// The settings of the source. Empty when the source has none.
+    func settingOptions() async -> [SourceOption]
+    /// The value of each setting now.
+    func settingValues() async -> [String: OptionValue]
+    /// Keeps a new value of a setting.
+    func setSetting(_ id: String, _ value: OptionValue) async
+}
+
+/// A source with no filters and no settings.
+extension OnlineSource {
+    public func filterOptions() async -> [SourceOption] { [] }
+    public func browse(page: Int, query: String, filters: [String: OptionValue]) async throws -> OnlinePage {
+        query.isEmpty ? try await popular(page: page) : try await search(query, page: page)
+    }
+    public func settingOptions() async -> [SourceOption] { [] }
+    public func settingValues() async -> [String: OptionValue] { [:] }
+    public func setSetting(_ id: String, _ value: OptionValue) async {}
 }
 
 extension URL {

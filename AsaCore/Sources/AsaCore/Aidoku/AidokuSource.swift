@@ -85,14 +85,16 @@ struct AidokuPackage {
     let wasm: Data
     let manifest: Manifest
     let settings: Data?
+    let filters: Data?
 
     init(_ file: URL) throws {
-        var wasm: Data?, manifest: Data?, settings: Data?
+        var wasm: Data?, manifest: Data?, settings: Data?, filters: Data?
         try ArchiveReader.forEachFile(in: file) { entry, read in
             switch entry.path.hasPrefix("Payload/") ? String(entry.path.dropFirst(8)) : entry.path {
             case "main.wasm": wasm = try read()
             case "source.json": manifest = try read()
             case "settings.json": settings = try read()
+            case "filters.json": filters = try read()
             default: break
             }
         }
@@ -100,6 +102,7 @@ struct AidokuPackage {
         self.wasm = wasm
         self.manifest = try JSONDecoder().decode(Manifest.self, from: manifest)
         self.settings = settings
+        self.filters = filters
     }
 
     /// The first values of the settings: the languages, the base URL, and the default of each setting of settings.json.
@@ -140,6 +143,8 @@ public final class AidokuSource: OnlineSource, @unchecked Sendable {
     private let host: AidokuHost
     private let listings: [Aidoku.Listing]
     private let baseURL: URL?
+    private let filterList: [SourceOption]
+    private let settingList: [SourceOption]
     /// The full data of each series and chapter that the source gave, because a source can need more than the key.
     private var known: [String: Aidoku.Manga] = [:]
     private var chapters: [String: Aidoku.Chapter] = [:]
@@ -158,6 +163,29 @@ public final class AidokuSource: OnlineSource, @unchecked Sendable {
         }
         self.listings = listings
         self.baseURL = (package.manifest.info.urls?.first ?? package.manifest.info.url).flatMap { URL(string: $0) }
+        filterList = AidokuOptions.filters(package.filters)
+        settingList = AidokuOptions.settings(package.settings)
+    }
+
+    public func filterOptions() async -> [SourceOption] { filterList }
+
+    public func browse(page number: Int, query: String, filters: [String: OptionValue]) async throws -> OnlinePage {
+        try await browse(query.isEmpty ? nil : query, page: number, filters: AidokuOptions.encode(filters, filters: filterList))
+    }
+
+    public func settingOptions() async -> [SourceOption] { settingList }
+
+    public func settingValues() async -> [String: OptionValue] {
+        var values: [String: OptionValue] = [:]
+        for setting in settingList {
+            values[setting.id] = host.defaults[setting.id].flatMap { AidokuOptions.decodeSetting($0, of: setting) } ?? setting.initial
+        }
+        return values
+    }
+
+    public func setSetting(_ id: String, _ value: OptionValue) async {
+        guard let setting = settingList.first(where: { $0.id == id }) else { return }
+        host.defaults[id] = AidokuOptions.encodeSetting(value, of: setting)
     }
 
     /// The listing for popular series, and the listing for the latest ones, by their names.
@@ -193,10 +221,9 @@ public final class AidokuSource: OnlineSource, @unchecked Sendable {
         return try page(try await run { [host] in try host.call("get_manga_list", [bytes, Int32(number)]) })
     }
 
-    private func browse(_ query: String?, page number: Int) async throws -> OnlinePage {
-        // The query is raw UTF-8, and the filters are an empty list.
+    /// The search of the source. The query is raw UTF-8. With no filters, the list of filters is empty.
+    private func browse(_ query: String?, page number: Int, filters: Data = Data([0x00])) async throws -> OnlinePage {
         let query = Data((query ?? "").utf8)
-        let filters = Data([0x00])
         return try page(try await run { [host] in try host.call("get_search_manga_list", [query, Int32(number), filters]) })
     }
 
