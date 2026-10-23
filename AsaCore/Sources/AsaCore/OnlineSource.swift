@@ -39,14 +39,17 @@ public struct OnlineDetails: Codable, Sendable, Equatable {
     public var status: String?
     public var genres: [String]
     public var chapters: [OnlineChapter]
+    /// True when the source says that the series is a novel, nil when it does not say.
+    public var isNovel: Bool?
 
-    public init(series: OnlineSeries, author: String? = nil, summary: String? = nil, status: String? = nil, genres: [String] = [], chapters: [OnlineChapter] = []) {
+    public init(series: OnlineSeries, author: String? = nil, summary: String? = nil, status: String? = nil, genres: [String] = [], chapters: [OnlineChapter] = [], isNovel: Bool? = nil) {
         self.series = series
         self.author = author
         self.summary = summary
         self.status = status
         self.genres = genres
         self.chapters = chapters
+        self.isNovel = isNovel
     }
 }
 
