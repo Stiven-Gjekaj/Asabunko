@@ -379,3 +379,18 @@ The choices:
 - executeInWebView and the Cloudflare challenge are not there yet.
 - Reason: the Paperback app is not open source, but the types and the
   toolchain are. Inkdex has 68 extensions for version 0.9.
+
+## 2026-10-23: The contrast of the accent
+
+- The accent in the dark form is `#EE6271`, a lighter form of the red of the
+  logo. This replaces `#E34659` of "The square logo and a softer red" for the
+  accent. The icon keeps `#E34659`.
+- The contrast of each text colour on each background, by WCAG 2:
+  - paper: the text 12.5 or more, the grey text 5.2 or more, the accent 4.8
+    or more, and the text on the accent 5.6.
+  - warm dark: the text 12.7 or more, the grey text 5.6 or more, the accent
+    4.8 or more, and the text on the accent 6.0.
+- The accessibility audit of the UI tests counts a contrast finding and a
+  clipped text as notes, as in ZettaStream. Each other finding fails the test.
+- Reason: `#E34659` had a contrast of 3.8 on the cards of the dark form, which
+  is less than the 4.5 of WCAG AA.

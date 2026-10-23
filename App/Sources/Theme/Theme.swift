@@ -8,10 +8,10 @@ enum Palette {
     static let surface = dynamic(dark: 0x211C17, light: 0xFBF7EE)
     static let surfaceHigh = dynamic(dark: 0x2C251F, light: 0xEFE6D6)
     static let outline = dynamic(dark: 0x3A3129, light: 0xE2D6C2)
-    static let accent = dynamic(dark: 0xE34659, light: 0xB8303F)
+    static let accent = dynamic(dark: 0xEE6271, light: 0xB8303F)
     static let onAccent = dynamic(dark: 0x1E0A0E, light: 0xFFF8EE)
     static let textPrimary = dynamic(dark: 0xF3EADF, light: 0x2B231C)
-    static let textSecondary = dynamic(dark: 0xA89B8C, light: 0x7A6B5B)
+    static let textSecondary = dynamic(dark: 0xA89B8C, light: 0x6A5C4E)
     static let danger = dynamic(dark: 0xE5746A, light: 0xB23A30)
     /// The space around a page in the reader. It is darker than the background, so that the page stands out.
     static let readerBackground = dynamic(dark: readerDark, light: readerLight)
@@ -84,7 +84,7 @@ enum Appearance: String, CaseIterable, Identifiable {
 
     var name: String {
         switch self {
-        case .system: "Same as the device"
+        case .system: "Device"
         case .dark: "Warm dark"
         case .paper: "Paper"
         }

@@ -12,7 +12,8 @@ is the morning and "bunko" is a small paperback library in Japanese.
 
 | Name | Hex | Use |
 | --- | --- | --- |
-| Red | `#E34659` | The sun, the clouds, and the tag, softer than the `#F82838` of the source. The accent of the app in the dark form. |
+| Red | `#E34659` | The sun, the clouds, and the tag, softer than the `#F82838` of the source. |
+| Light red | `#EE6271` | The accent of the app in the dark form. It has a contrast of 4.5 or more on each dark surface. |
 | Deep red | `#B8303F` | The accent of the app on paper, for contrast. |
 | Cream | `#FBF4ED` | The lines of the girl, the book, and the word. |
 | Black | `#000000` | The background of the icon. |
