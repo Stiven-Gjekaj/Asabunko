@@ -15,7 +15,8 @@ final class CatalogTests: XCTestCase {
         app = XCUIApplication()
         app.launchEnvironment["ASABUNKO_ROOT"] = folder.path
         app.launch()
-        app.tabBars.buttons["Browse"].tap()
+        app.tabBars.buttons["Settings"].tap()
+        app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Sources'")).firstMatch.tap()
         app.buttons["Add sources"].tap()
         let box = app.textViews["Source list"]
         XCTAssertTrue(box.waitForExistence(timeout: 5))

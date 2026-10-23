@@ -28,26 +28,15 @@ final class DownloadTests: XCTestCase {
     }
 
     func testReadsADownloadedChapterWithNoNetwork() throws {
-        app.tabBars.buttons["Browse"].tap()
-        app.buttons["Add sources"].tap()
-        let box = app.textViews["Source list"]
-        XCTAssertTrue(box.waitForExistence(timeout: 5))
-        box.tap()
-        box.typeText(server + "/aidoku/index.min.json")
-        app.buttons["Save"].tap()
-        app.navigationBars.buttons.element(boundBy: 0).tap()
-        app.buttons.matching(NSPredicate(format: "label CONTAINS '127.0.0.1'")).firstMatch.tap()
-        XCTAssertTrue(app.buttons["Install"].waitForExistence(timeout: 10))
-        app.buttons["Install"].tap()
-        XCTAssertTrue(app.buttons["Remove"].waitForExistence(timeout: 10))
-        app.navigationBars.buttons.element(boundBy: 0).tap()
-        app.buttons.matching(NSPredicate(format: "label CONTAINS 'Test Aidoku'")).firstMatch.tap()
-        let series = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Aidoku Sunrise'")).firstMatch
+        app.saveSourceLine(server + "/aidoku/index.min.json")
+        app.waitForInstalled(1)
+        app.search("sunrise")
+        let series = app.button(containing: "Aidoku Sunrise")
         XCTAssertTrue(series.waitForExistence(timeout: 10))
         series.tap()
 
-        XCTAssertTrue(app.buttons["Add to library"].waitForExistence(timeout: 10))
-        app.buttons["Add to library"].tap()
+        XCTAssertTrue(app.buttons["Add to the read list"].waitForExistence(timeout: 10))
+        app.buttons["Add to the read list"].tap()
         XCTAssertTrue(app.buttons["Downloads"].waitForExistence(timeout: 10))
         app.buttons["Downloads"].tap()
         app.buttons["Download all chapters"].tap()

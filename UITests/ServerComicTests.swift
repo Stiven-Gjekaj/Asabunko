@@ -16,24 +16,12 @@ final class ServerComicTests: XCTestCase {
     }
 
     func testReadsAComicOfASuwayomiServer() throws {
-        app.tabBars.buttons["Browse"].tap()
-        app.buttons["Add sources"].tap()
-        let box = app.textViews["Source list"]
-        XCTAssertTrue(box.waitForExistence(timeout: 5))
-        box.tap()
-        box.typeText(server.replacingOccurrences(of: "http://", with: "http://asa:morning@") + "/suwayomi")
-        app.buttons["Save"].tap()
-        app.navigationBars.buttons.element(boundBy: 0).tap()
-
-        app.buttons.matching(NSPredicate(format: "label CONTAINS '127.0.0.1'")).firstMatch.tap()
-        XCTAssertTrue(app.buttons["Show"].waitForExistence(timeout: 10), "The server gives its sources with the password.")
-        XCTAssertFalse(app.staticTexts["Local source"].exists)
+        app.saveSourceLine(server.replacingOccurrences(of: "http://", with: "http://asa:morning@") + "/suwayomi")
+        app.waitForInstalled(1)
+        XCTAssertFalse(app.staticTexts["Local source"].exists, "The local source of the server has no language of the device.")
         shot("1 Server sources")
-        app.buttons["Show"].tap()
-        XCTAssertTrue(app.buttons["Hide"].waitForExistence(timeout: 5))
-        app.navigationBars.buttons.element(boundBy: 0).tap()
 
-        app.buttons.matching(NSPredicate(format: "label CONTAINS 'Test Comics (EN)'")).firstMatch.tap()
+        app.button(containing: "Test Comics (EN)").tap()
         let series = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Morning Strip'")).firstMatch
         XCTAssertTrue(series.waitForExistence(timeout: 10))
         series.tap()

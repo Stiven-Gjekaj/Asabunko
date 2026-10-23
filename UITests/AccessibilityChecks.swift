@@ -30,6 +30,7 @@ final class AccessibilityChecks: XCTestCase {
     }
 
     func testLibrary() throws { try audit("Library") }
-    func testBrowse() throws { try audit("Browse") }
+    func testDiscover() throws { try audit("Discover") }
+    func testSearch() throws { try audit("Search") }
     func testSettings() throws { try audit("Settings") }
 }

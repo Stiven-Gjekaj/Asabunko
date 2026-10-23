@@ -15,28 +15,16 @@ final class PaperbackTests: XCTestCase {
         app.launch()
     }
 
-    func testInstallsAPaperbackExtensionAndReadsAChapter() throws {
-        app.tabBars.buttons["Browse"].tap()
-        app.buttons["Add sources"].tap()
-        let box = app.textViews["Source list"]
-        XCTAssertTrue(box.waitForExistence(timeout: 5))
-        box.tap()
-        box.typeText(server + "/paperback/versioning.json")
-        app.buttons["Save"].tap()
-        app.navigationBars.buttons.element(boundBy: 0).tap()
-
+    func testDiscoversAPaperbackTitleAndReadsAChapter() throws {
+        app.saveSourceLine(server + "/paperback/versioning.json")
         XCTAssertTrue(app.staticTexts["Paperback extensions"].waitForExistence(timeout: 5))
-        app.buttons.matching(NSPredicate(format: "label CONTAINS '127.0.0.1'")).firstMatch.tap()
-        let install = app.buttons["Install"]
-        XCTAssertTrue(install.waitForExistence(timeout: 10))
-        install.tap()
-        XCTAssertTrue(app.buttons["Remove"].waitForExistence(timeout: 10))
-        app.navigationBars.buttons.element(boundBy: 0).tap()
+        app.waitForInstalled(1)
 
-        app.buttons.matching(NSPredicate(format: "label CONTAINS 'Quiet Paper'")).firstMatch.tap()
-        let series = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Paper Moon'")).firstMatch
-        XCTAssertTrue(series.waitForExistence(timeout: 10), "The extension gives its discover section.")
-        shot("1 Paperback extension")
+        app.tabBars.buttons["Discover"].tap()
+        let series = app.button(containing: "Paper Moon")
+        XCTAssertTrue(series.waitForExistence(timeout: 15), "Discover shows the popular titles of the extension.")
+        XCTAssertTrue(app.staticTexts["Popular comics"].exists)
+        shot("1 Discover with a Paperback extension")
         series.tap()
         let chapter = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Ch. 1: Lanterns'")).firstMatch
         XCTAssertTrue(chapter.waitForExistence(timeout: 10))

@@ -1,7 +1,7 @@
 import XCTest
 
-/// Pastes the Aidoku list of scripts/test-server.py, installs its WebAssembly source, and reads a
-/// chapter of it. Give the URL of the server in TEST_RUNNER_SERVER_URL.
+/// Pastes the Aidoku list of scripts/test-server.py, which installs its WebAssembly source. Then it
+/// searches the source and reads a chapter. Give the URL of the server in TEST_RUNNER_SERVER_URL.
 final class AidokuTests: XCTestCase {
     private var app: XCUIApplication!
     private var server = ""
@@ -16,27 +16,15 @@ final class AidokuTests: XCTestCase {
     }
 
     func testInstallsAnAidokuSourceAndReadsAChapter() throws {
-        app.tabBars.buttons["Browse"].tap()
-        app.buttons["Add sources"].tap()
-        let box = app.textViews["Source list"]
-        XCTAssertTrue(box.waitForExistence(timeout: 5))
-        box.tap()
-        box.typeText(server + "/aidoku/index.min.json")
-        app.buttons["Save"].tap()
-        app.navigationBars.buttons.element(boundBy: 0).tap()
-
+        app.saveSourceLine(server + "/aidoku/index.min.json")
         XCTAssertTrue(app.staticTexts["Aidoku sources"].waitForExistence(timeout: 5), "The kind of the line comes from its URL.")
-        app.buttons.matching(NSPredicate(format: "label CONTAINS '127.0.0.1'")).firstMatch.tap()
-        let install = app.buttons["Install"]
-        XCTAssertTrue(install.waitForExistence(timeout: 10))
-        install.tap()
-        XCTAssertTrue(app.buttons["Remove"].waitForExistence(timeout: 10), "The package downloads.")
-        app.navigationBars.buttons.element(boundBy: 0).tap()
+        app.waitForInstalled(1)
+        XCTAssertTrue(app.button(containing: "Test Aidoku").exists, "The package downloads.")
 
-        app.buttons.matching(NSPredicate(format: "label CONTAINS 'Test Aidoku'")).firstMatch.tap()
-        let series = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Aidoku Sunrise'")).firstMatch
-        XCTAssertTrue(series.waitForExistence(timeout: 10), "The WebAssembly source gives its series.")
-        shot("1 Aidoku source")
+        app.search("sunrise")
+        let series = app.button(containing: "Aidoku Sunrise")
+        XCTAssertTrue(series.waitForExistence(timeout: 10), "The WebAssembly source gives its series to the search.")
+        shot("1 Search in the Aidoku source")
         series.tap()
         let chapter = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Ch. 1: Opening'")).firstMatch
         XCTAssertTrue(chapter.waitForExistence(timeout: 10))
