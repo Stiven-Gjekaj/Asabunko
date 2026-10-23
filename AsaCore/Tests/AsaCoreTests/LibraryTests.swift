@@ -131,4 +131,39 @@ import Testing
         #expect(old.updates.isEmpty)
         #expect(old.books[0].autoDownload == false)
     }
+
+    @Test func keepsTheCategoriesOfTheReadList() throws {
+        let reading = BookCategory(name: "Reading"), hold = BookCategory(name: "On hold")
+        var a = Book(title: "A", fileName: "a", pageCount: 1, added: Date(timeIntervalSince1970: 2))
+        a.categories = [reading.id]
+        let b = Book(title: "B", fileName: "b", pageCount: 1, added: Date(timeIntervalSince1970: 1), categories: [reading.id, hold.id])
+        var library = Library(books: [a, b])
+        library.categories = [reading, hold]
+        #expect(library.readList(in: nil, by: .added).map(\.title) == ["A", "B"])
+        #expect(library.readList(in: hold.id, by: .added).map(\.title) == ["B"])
+        library.removeCategory(reading.id)
+        #expect(library.categories == [hold])
+        #expect(library.books.map(\.categories) == [[], [hold.id]], "A removed category leaves each book.")
+        let read = try JSONDecoder().decode(Library.self, from: try JSONEncoder().encode(library))
+        #expect(read.categories == [hold])
+        #expect(read.books[1].categories == [hold.id])
+    }
+
+    @Test func keepsOneEntryOfTheHistoryForEachPlaceOnADay() {
+        let book = Book(title: "A", fileName: "a", pageCount: 9)
+        var library = Library(books: [book])
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "UTC")!
+        let day = Date(timeIntervalSince1970: 86_400 * 100)
+        library.noteVisit(of: book.id, place: 1, at: day, calendar: calendar)
+        library.noteVisit(of: book.id, place: 2, at: day.addingTimeInterval(60), calendar: calendar)
+        library.noteVisit(of: book.id, place: 1, at: day.addingTimeInterval(120), calendar: calendar)
+        #expect(library.history.map(\.place) == [1, 2], "The second visit of chapter 1 takes the place of the first one.")
+        library.noteVisit(of: book.id, place: 1, at: day.addingTimeInterval(86_400), calendar: calendar)
+        #expect(library.history.map(\.place) == [1, 1, 2], "A visit on another day is a new entry.")
+        for place in 0..<(Library.historyLimit + 5) { library.noteVisit(of: book.id, place: 1000 + place, at: day, calendar: calendar) }
+        #expect(library.history.count == Library.historyLimit)
+        library.books = []
+        #expect(library.shownHistory.isEmpty)
+    }
 }

@@ -75,12 +75,14 @@ public struct Book: Codable, Sendable, Identifiable, Equatable {
     public var listed: Bool
     /// True when each new chapter that a check finds downloads with no question.
     public var autoDownload: Bool
+    /// The categories of the read list that the book is in.
+    public var categories: [UUID]
 
     public init(
         id: UUID = UUID(), title: String, author: String? = nil, summary: String? = nil,
         format: BookFormat = .comic, fileName: String, pageCount: Int, added: Date = .now,
         lastRead: Date? = nil, page: Int = 0, position: Double = 0, finished: Bool = false, mode: ReadingMode? = nil,
-        origin: BookOrigin? = nil, listed: Bool = true, autoDownload: Bool = false
+        origin: BookOrigin? = nil, listed: Bool = true, autoDownload: Bool = false, categories: [UUID] = []
     ) {
         self.id = id
         self.title = title
@@ -98,10 +100,11 @@ public struct Book: Codable, Sendable, Identifiable, Equatable {
         self.origin = origin
         self.listed = listed
         self.autoDownload = autoDownload
+        self.categories = categories
     }
 
     private enum CodingKeys: String, CodingKey {
-        case id, title, author, summary, format, fileName, pageCount, added, lastRead, page, position, finished, mode, origin, listed, autoDownload
+        case id, title, author, summary, format, fileName, pageCount, added, lastRead, page, position, finished, mode, origin, listed, autoDownload, categories
     }
 
     /// A field that an older version did not write gets its first value.
@@ -124,6 +127,7 @@ public struct Book: Codable, Sendable, Identifiable, Equatable {
         // Before the read list, the user added each book on purpose.
         listed = try c.decodeIfPresent(Bool.self, forKey: .listed) ?? true
         autoDownload = try c.decodeIfPresent(Bool.self, forKey: .autoDownload) ?? false
+        categories = try c.decodeIfPresent([UUID].self, forKey: .categories) ?? []
     }
 
     /// The part of the book that the user read, from 0 to 1.
@@ -167,6 +171,30 @@ public enum ReadListOrder: String, CaseIterable, Sendable {
     }
 }
 
+/// A category of the read list, such as "Reading" or "On hold".
+public struct BookCategory: Codable, Sendable, Equatable, Identifiable, Hashable {
+    public var id: UUID
+    public var name: String
+
+    public init(id: UUID = UUID(), name: String) {
+        self.id = id
+        self.name = name
+    }
+}
+
+/// One time that the user opened a chapter or a page of a book.
+public struct HistoryEntry: Codable, Sendable, Equatable, Identifiable {
+    public var id: UUID
+    public var book: UUID
+    /// The chapter of a novel or a series, or the page of a comic, from 0.
+    public var place: Int
+    public var date: Date
+
+    public init(id: UUID = UUID(), book: UUID, place: Int, date: Date) {
+        self.id = id; self.book = book; self.place = place; self.date = date
+    }
+}
+
 /// A new chapter that a check found.
 public struct ChapterUpdate: Codable, Sendable, Equatable, Identifiable {
     public var id: UUID
@@ -195,6 +223,11 @@ public struct Library: Codable, Sendable, Equatable {
     public var updates: [ChapterUpdate]
     /// The list of updates keeps at most this number of chapters.
     public static let updateLimit = 300
+    /// The categories of the read list, in the order of the user.
+    public var categories: [BookCategory]
+    /// The chapters and the books that the user opened, the newest first.
+    public var history: [HistoryEntry]
+    public static let historyLimit = 500
 
     public init(books: [Book] = [], defaultMode: ReadingMode = .rightToLeft, sources: [SourceLink] = []) {
         self.form = Self.currentForm
@@ -203,9 +236,11 @@ public struct Library: Codable, Sendable, Equatable {
         self.sources = sources
         self.installed = []
         self.updates = []
+        self.categories = []
+        self.history = []
     }
 
-    private enum CodingKeys: String, CodingKey { case form, books, defaultMode, sources, installed, updates }
+    private enum CodingKeys: String, CodingKey { case form, books, defaultMode, sources, installed, updates, categories, history }
 
     /// A list that an older version did not write is empty.
     public init(from decoder: Decoder) throws {
@@ -216,6 +251,35 @@ public struct Library: Codable, Sendable, Equatable {
         sources = try c.decodeIfPresent([SourceLink].self, forKey: .sources) ?? []
         installed = try c.decodeIfPresent([InstalledSource].self, forKey: .installed) ?? []
         updates = try c.decodeIfPresent([ChapterUpdate].self, forKey: .updates) ?? []
+        categories = try c.decodeIfPresent([BookCategory].self, forKey: .categories) ?? []
+        history = try c.decodeIfPresent([HistoryEntry].self, forKey: .history) ?? []
+    }
+
+    /// Keeps a visit of a book in the history. A visit of the same place of the same book on the same day
+    /// takes the place of the older one, so that the turns of the pages of one chapter give one entry.
+    public mutating func noteVisit(of book: UUID, place: Int, at date: Date = .now, calendar: Calendar = .current) {
+        history.removeAll { $0.book == book && $0.place == place && calendar.isDate($0.date, inSameDayAs: date) }
+        history.insert(HistoryEntry(book: book, place: place, date: date), at: 0)
+        if history.count > Self.historyLimit { history.removeLast(history.count - Self.historyLimit) }
+    }
+
+    /// The history of the books that are in the library.
+    public var shownHistory: [HistoryEntry] {
+        let ids = Set(books.map(\.id))
+        return history.filter { ids.contains($0.book) }
+    }
+
+    /// The books of a category of the read list. With nil, all books of the read list.
+    public func readList(in category: UUID?, by order: ReadListOrder) -> [Book] {
+        let list = readList(by: order)
+        guard let category else { return list }
+        return list.filter { $0.categories.contains(category) }
+    }
+
+    /// Removes a category, and takes it off each book.
+    public mutating func removeCategory(_ id: UUID) {
+        categories.removeAll { $0.id == id }
+        for index in books.indices { books[index].categories.removeAll { $0 == id } }
     }
 
     /// Keeps the new chapters of a book at the top of the updates. A chapter that is in the list already does not come two times.
