@@ -24,6 +24,20 @@ import Testing
         #expect(library.continueReading.map(\.title) == ["New", "Old"])
     }
 
+    @Test func aBookFindsItsSourceWhenItsListComesBack() {
+        let old = UUID(), new = UUID()
+        let info = SourceInfo(id: "en.sea", name: "Sea", language: "en", version: "1", icon: nil, code: URL(string: "https://x.test/s.aix")!, novels: false)
+        var library = Library(books: [
+            Book(title: "Lost", fileName: "Sea", pageCount: 1, origin: BookOrigin(list: old, source: "en.sea", series: "s1")),
+            Book(title: "Other", fileName: "Hill", pageCount: 1, origin: BookOrigin(list: old, source: "en.hill", series: "h1")),
+        ], sources: [SourceLink(id: new, url: URL(string: "https://x.test/index.min.json")!)])
+        library.installed = [InstalledSource(list: new, info: info)]
+        #expect(library.relinkOrphans() == 1)
+        #expect(library.books[0].origin?.list == new)
+        #expect(library.books[1].origin?.list == old, "A book with no installed source keeps its old list.")
+        #expect(library.relinkOrphans() == 0)
+    }
+
     @Test func keepsACopyOfALibraryThatTheAppCannotRead() throws {
         let url = try temporaryFolder().appendingPathComponent("library.json")
         try Data(#"{"form":1,"books":[{"id":"bad"}]}"#.utf8).write(to: url)

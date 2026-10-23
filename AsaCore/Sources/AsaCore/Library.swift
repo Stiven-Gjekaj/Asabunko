@@ -196,6 +196,23 @@ public struct Library: Codable, Sendable, Equatable {
         books.first { $0.origin == origin }
     }
 
+    /// Links each book of a list that left the source list to an installed source with the same ID.
+    /// A line that the user removes and adds again gets a new ID, and its books find their source again.
+    /// - Returns: the number of books that found their source.
+    @discardableResult
+    public mutating func relinkOrphans() -> Int {
+        let lists = Set(sources.map(\.id))
+        var linked = 0
+        for index in books.indices {
+            guard let origin = books[index].origin, !lists.contains(origin.list),
+                  let match = installed.first(where: { $0.info.id == origin.source && lists.contains($0.list) })
+            else { continue }
+            books[index].origin?.list = match.list
+            linked += 1
+        }
+        return linked
+    }
+
     /// The books of the read list, the newest first.
     public var readList: [Book] {
         recentlyAdded.filter(\.listed)

@@ -209,6 +209,8 @@ final class AppModel {
             let picked = SourceLanguages.pick(infos, preferred: Locale.preferredLanguages, adult: adult).filter { !isInstalled($0, from: link) }
             await installAll(picked, from: link)
         }
+        // A book of a line that the user removed and added again finds its source.
+        changeLibrary { $0.relinkOrphans() }
         if !failed.isEmpty { fault = "Asabunko could not read " + failed.joined(separator: ", ") + "." }
     }
 
