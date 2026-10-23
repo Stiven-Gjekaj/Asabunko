@@ -39,24 +39,41 @@ final class AidokuScript {
 }
 
 /// A web view of the js module. It has no window. The source queue waits while the main thread works.
-final class AidokuWebView: NSObject, WKNavigationDelegate, @unchecked Sendable {
+/// The class is not a navigation delegate itself, because a delegate is on the main actor and the
+/// source makes the web view on its own queue.
+final class AidokuWebView: @unchecked Sendable {
     private var view: WKWebView!
+    private var delegate: LoadDelegate!
     private let loaded = DispatchSemaphore(value: 0)
     private var loading = false
     private let lock = NSLock()
 
-    override init() {
-        super.init()
+    init() {
         Self.onMain {
             let configuration = WKWebViewConfiguration()
             configuration.websiteDataStore = .default()
-            view = WKWebView(frame: CGRect(x: 0, y: 0, width: 390, height: 844), configuration: configuration)
-            view.navigationDelegate = self
+            let view = WKWebView(frame: CGRect(x: 0, y: 0, width: 390, height: 844), configuration: configuration)
+            let delegate = LoadDelegate { [weak self] in self?.finish() }
+            view.navigationDelegate = delegate
+            self.view = view
+            self.delegate = delegate
         }
     }
 
-    static func onMain<T>(_ body: () -> T) -> T {
-        Thread.isMainThread ? body() : DispatchQueue.main.sync(execute: body)
+    /// Runs the body on the main thread, and waits for it on another thread.
+    static func onMain<T>(_ body: @MainActor () -> T) -> T {
+        // The value only moves to the waiting thread, so a box is enough.
+        let box = ValueBox<T>()
+        if Thread.isMainThread {
+            MainActor.assumeIsolated { box.value = body() }
+        } else {
+            DispatchQueue.main.sync { MainActor.assumeIsolated { box.value = body() } }
+        }
+        return box.value!
+    }
+
+    private final class ValueBox<T>: @unchecked Sendable {
+        var value: T?
     }
 
     private func start() {
@@ -79,16 +96,25 @@ final class AidokuWebView: NSObject, WKNavigationDelegate, @unchecked Sendable {
         return loaded.wait(timeout: .now() + timeout) == .success
     }
 
-    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) { finish() }
-    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) { finish() }
-    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) { finish() }
-
     private func finish() {
         let wasLoading = lock.withLock { () -> Bool in
             defer { loading = false }
             return loading
         }
         if wasLoading { loaded.signal() }
+    }
+
+    /// Tells the web view of the js module when a load ends, with or without a fault.
+    private final class LoadDelegate: NSObject, WKNavigationDelegate {
+        let done: () -> Void
+
+        init(done: @escaping () -> Void) {
+            self.done = done
+        }
+
+        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) { done() }
+        func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) { done() }
+        func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) { done() }
     }
 
     /// The result of a script in the page as text.

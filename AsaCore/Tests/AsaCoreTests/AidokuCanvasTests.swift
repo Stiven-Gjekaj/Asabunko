@@ -15,9 +15,15 @@ private func drawingSource() throws -> Data {
       (import "js" "context_create" (func $js (result i32)))
       (import "js" "context_eval" (func $eval (param i32 i32 i32) (result i32)))
       (import "js" "context_eval_async" (func $evalAsync (param i32 i32 i32) (result i32)))
+      (import "js" "webview_create" (func $web (result i32)))
+      (import "js" "webview_load_html" (func $html (param i32 i32 i32 i32 i32) (result i32)))
+      (import "js" "webview_wait_for_load" (func $wait (param i32) (result i32)))
+      (import "js" "webview_eval" (func $webEval (param i32 i32 i32) (result i32)))
       (memory (export "memory") 1)
       (data (i32.const 16) "[1, 2, 3].map((n) => n * 2).join('-')")
       (data (i32.const 64) "Promise.resolve(40).then((n) => n + 2)")
+      (data (i32.const 128) "<p id=\"x\">Tide</p>")
+      (data (i32.const 192) "document.getElementById('x').textContent")
       (func (export "start"))
       (func (export "free_result") (param i32))
       ;; Puts the right half of the image on the left, and the left half on the right.
@@ -29,7 +35,14 @@ private func drawingSource() throws -> Data {
         (call $image (local.get $ctx)))
       (func (export "width") (param $img i32) (result f32) (call $width (local.get $img)))
       (func (export "script") (result i32) (call $eval (call $js) (i32.const 16) (i32.const 37)))
-      (func (export "promise") (result i32) (call $evalAsync (call $js) (i32.const 64) (i32.const 38))))
+      (func (export "promise") (result i32) (call $evalAsync (call $js) (i32.const 64) (i32.const 38)))
+      ;; A web view on the queue of the source: load a page, wait for it, and read it with a script.
+      (func (export "page") (result i32)
+        (local $view i32)
+        (local.set $view (call $web))
+        (drop (call $html (local.get $view) (i32.const 128) (i32.const 18) (i32.const 0) (i32.const 0)))
+        (drop (call $wait (local.get $view)))
+        (call $webEval (local.get $view) (i32.const 192) (i32.const 40))))
     """#))
 }
 
@@ -81,6 +94,23 @@ private func redBlue() -> CGImage {
             }
         }
         #expect(texts == ["2-4-6", "42"])
+    }
+
+    /// A source makes its web view on its own queue. The web view must not need the main actor there.
+    @Test func makesAndReadsAWebViewOnTheQueueOfTheSource() async throws {
+        let host = try host()
+        let text = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<String, Error>) in
+            host.queue.async {
+                do {
+                    let rid = AidokuHost.i32(try host.invoke("page", [])[0])
+                    guard case let .bytes(data)? = host.item(rid) else { return continuation.resume(returning: "no result \(rid)") }
+                    continuation.resume(returning: String(decoding: data, as: UTF8.self))
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
+        #expect(text == "Tide")
     }
 
     @Test func readsAPathOfTheCanvasModule() throws {
