@@ -13,6 +13,8 @@ final class AppModel {
     private(set) var importing: (done: Int, total: Int)?
     /// The downloads of the chapters of online series.
     let downloads = Downloads()
+    /// The install of the sources of new lines: the sources that installed, of all of them.
+    private(set) var sourceSetup: (done: Int, total: Int)?
 
     private let root: URL
     private var libraryFile: URL { root.appendingPathComponent("library.json") }
@@ -140,9 +142,74 @@ final class AppModel {
         let kept = Set(lines.map(\.link.id))
         for old in library.sources where !kept.contains(old.id) { Keychain.setPassword(nil, for: old.id) }
         for line in lines where line.password != nil { Keychain.setPassword(line.password, for: line.link.id) }
+        let added = lines.map(\.link).filter { link in !library.sources.contains { $0.id == link.id } }
         library.sources = lines.map(\.link)
+        // The sources of a line that the user removed go too.
+        for installed in library.installed where !kept.contains(installed.list) { uninstall(installed) }
         save()
+        if !added.isEmpty { Task { await setUp(added) } }
         return library.sources
+    }
+
+    /// Finds the kind of each new line and installs the sources of each list, with no question.
+    /// Only the sources in the languages of the device go in. The user removes a source in Settings.
+    func setUp(_ links: [SourceLink]) async {
+        var failed: [String] = []
+        for var link in links {
+            if link.kind == nil {
+                guard let kind = await detect(link) else {
+                    failed.append(link.shortAddress)
+                    continue
+                }
+                learn(link.id, kind: kind, name: nil)
+                link.kind = kind
+            }
+            guard link.kind != .opds else { continue }
+            let infos: [SourceInfo]
+            do {
+                infos = try await sources(in: link)
+            } catch {
+                failed.append(link.name ?? link.shortAddress)
+                continue
+            }
+            let adult = UserDefaults.standard.bool(forKey: "browse.adult")
+            let picked = SourceLanguages.pick(infos, preferred: Locale.preferredLanguages, adult: adult).filter { !isInstalled($0, from: link) }
+            await installAll(picked, from: link)
+        }
+        if !failed.isEmpty { fault = "Asabunko could not read " + failed.joined(separator: ", ") + "." }
+    }
+
+    /// Installs some sources at the same time, and counts them.
+    private func installAll(_ infos: [SourceInfo], from link: SourceLink) async {
+        guard !infos.isEmpty else { return }
+        sourceSetup = (0, infos.count)
+        defer { sourceSetup = nil }
+        let total = infos.count
+        // Four installs run at the same time.
+        for start in stride(from: 0, to: total, by: 4) {
+            let part = Array(infos[start..<min(start + 4, total)])
+            await withTaskGroup(of: Void.self) { group in
+                for info in part {
+                    group.addTask { await self.installQuietly(info, from: link) }
+                }
+            }
+            sourceSetup = (min(start + 4, total), total)
+        }
+    }
+
+    /// Installs a source. A source that does not install stays out, and the others go on.
+    private func installQuietly(_ info: SourceInfo, from link: SourceLink) async {
+        do { try await install(info, from: link) } catch {}
+    }
+
+    /// The kind of a line from its content. A Paperback repository can be a folder with a versioning.json in it.
+    private func detect(_ link: SourceLink) async -> SourceKind? {
+        if let data = try? await Network.data(for: AppModel.request(link.url, source: link)), let kind = SourceKind.detect(data) { return kind }
+        guard link.url.pathExtension.isEmpty,
+              let data = try? await Network.data(for: AppModel.request(link.url.appendingPathComponent("versioning.json"), source: link)),
+              SourceKind.detect(data) == .paperback
+        else { return nil }
+        return .paperback
     }
 
     /// Keeps the kind and the name that the app found when it read a source.
