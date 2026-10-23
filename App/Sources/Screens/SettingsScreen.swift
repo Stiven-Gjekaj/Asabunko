@@ -39,6 +39,7 @@ struct SettingsScreen: View {
                     }
                     NavigationLink { MoveBooksScreen() } label: { Label("Move books to another source", systemImage: "arrow.left.arrow.right") }
                     NavigationLink { StorageScreen() } label: { Label("Storage", systemImage: "internaldrive") }
+                    NavigationLink { TrackersScreen() } label: { Label("Trackers", systemImage: "chart.line.uptrend.xyaxis") }
                 } footer: {
                     Text("Your catalogs and source lists, and the sources that Search and Discover use.")
                 }

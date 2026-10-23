@@ -106,6 +106,7 @@ final class AppModel {
     func update(_ id: Book.ID, _ change: (inout Book) -> Void) {
         guard let index = library.books.firstIndex(where: { $0.id == id }) else { return }
         let before = library.books[index].lastRead
+        let place = (library.books[index].page, library.books[index].finished)
         change(&library.books[index])
         // A change of the time of the last read is a read. It goes into the history, one entry for each chapter.
         let book = library.books[index]
@@ -116,6 +117,8 @@ final class AppModel {
                 library.noteVisit(of: id, place: book.format == .novel || book.format == .series ? book.page : 0)
             }
         }
+        // A new place goes to the trackers of the book, except in private reading.
+        if (book.page, book.finished) != place, !UserDefaults.standard.bool(forKey: Self.privateReadingKey) { sendProgress(of: id) }
         save()
     }
 

@@ -13,6 +13,7 @@ struct LibraryScreen: View {
     @State private var filters: Set<LibraryFilter> = []
     @State private var category: UUID?
     @State private var editingCategories = false
+    @State private var tracking: Book?
 
     private let columns = [GridItem(.adaptive(minimum: 104, maximum: 160), spacing: 16, alignment: .top)]
 
@@ -43,6 +44,7 @@ struct LibraryScreen: View {
             .asaScreen()
             .searchable(text: $query, prompt: "Search the library")
             .sheet(isPresented: $editingCategories) { CategoriesSheet() }
+            .sheet(item: $tracking) { book in TrackSheet(bookID: book.id) }
             .refreshable {
                 guard app.library.books.contains(where: { $0.origin != nil }) else { return }
                 let result = await app.refreshAll()
@@ -313,6 +315,7 @@ struct LibraryScreen: View {
                 }
             } label: { Label("Categories", systemImage: "tag") }
         }
+        Button { tracking = book } label: { Label("Track", systemImage: "chart.line.uptrend.xyaxis") }
         if book.listed && book.origin != nil {
             Button { app.update(book.id) { $0.listed = false } } label: { Label("Remove from the read list", systemImage: "bookmark.slash") }
         } else if !book.listed {

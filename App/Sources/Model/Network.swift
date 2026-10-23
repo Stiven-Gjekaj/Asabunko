@@ -34,13 +34,18 @@ enum Network {
     }
 }
 
-/// The passwords of the servers. They stay on this device and are not in a backup.
+/// The passwords of the servers and the tokens of the trackers. They stay on this device and are not in a backup.
 enum Keychain {
     private static let service = "io.github.stivengjekaj.asabunko.servers"
 
-    static func password(for id: UUID) -> String? {
+    static func password(for id: UUID) -> String? { secret(id.uuidString) }
+
+    static func setPassword(_ password: String?, for id: UUID) { setSecret(password, for: id.uuidString) }
+
+    /// A secret of the app with a name, such as the token of a tracker.
+    static func secret(_ account: String) -> String? {
         let query: [CFString: Any] = [
-            kSecClass: kSecClassGenericPassword, kSecAttrService: service, kSecAttrAccount: id.uuidString,
+            kSecClass: kSecClassGenericPassword, kSecAttrService: service, kSecAttrAccount: account,
             kSecReturnData: true, kSecMatchLimit: kSecMatchLimitOne,
         ]
         var item: CFTypeRef?
@@ -48,8 +53,8 @@ enum Keychain {
         return String(data: data, encoding: .utf8)
     }
 
-    static func setPassword(_ password: String?, for id: UUID) {
-        let query: [CFString: Any] = [kSecClass: kSecClassGenericPassword, kSecAttrService: service, kSecAttrAccount: id.uuidString]
+    static func setSecret(_ password: String?, for account: String) {
+        let query: [CFString: Any] = [kSecClass: kSecClassGenericPassword, kSecAttrService: service, kSecAttrAccount: account]
         SecItemDelete(query as CFDictionary)
         guard let password, !password.isEmpty else { return }
         var add = query
