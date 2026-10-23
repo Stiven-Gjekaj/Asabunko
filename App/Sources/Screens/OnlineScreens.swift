@@ -261,7 +261,7 @@ struct OnlineSeriesScreen: View {
                     }
                 } header: {
                     HStack {
-                        Text("\(details.chapters.count) chapters")
+                        Text(details.chapters.count == 1 ? "1 chapter" : "\(details.chapters.count) chapters")
                         Spacer()
                         Button(newestFirst ? "Oldest first" : "Newest first") { newestFirst.toggle() }.font(Karla.font(13, .bold))
                     }
