@@ -137,6 +137,9 @@ struct OnlineSourceScreen: View {
                 }
                 if let fault {
                     ContentUnavailableView("The source did not answer", systemImage: "wifi.exclamationmark", description: Text(fault))
+                    Button("Try again") { Task { await loadPage(1) } }
+                        .buttonStyle(PillButtonStyle())
+                        .frame(maxWidth: .infinity)
                 } else if items.isEmpty && !loading {
                     ContentUnavailableView("Nothing here", systemImage: "tray", description: Text(searching.isEmpty ? "The source gave no books." : "No results for \"\(searching)\"."))
                 }
@@ -165,6 +168,7 @@ struct OnlineSourceScreen: View {
         .onSubmit(of: .search) { searching = query; Task { await loadPage(1) } }
         .onChange(of: query) { _, text in if text.isEmpty && !searching.isEmpty { searching = ""; Task { await loadPage(1) } } }
         .onChange(of: list) { Task { await loadPage(1) } }
+        .refreshable { await loadPage(1) }
         .onChange(of: BrowserChecks.shared.passes) { if fault != nil { Task { await loadPage(1) } } }
         .toolbar {
             if !filters.isEmpty {
