@@ -45,15 +45,28 @@ final class DiscoverFeed {
         }
     }
 
+    /// The load that runs now. A new load stops it, such as when more sources install.
+    private var current: Task<Void, Never>?
+    private var generation = 0
+
     func load(_ app: AppModel, force: Bool = false) async {
         let installed = Array(app.library.installed.prefix(Self.sourceLimit))
-        guard force || installed.map(\.id) != loadedFor, !loading else { return }
+        guard force || installed.map(\.id) != loadedFor else { return }
+        current?.cancel()
+        generation += 1
+        let mine = generation
         loading = true
-        defer { loading = false }
-        loadedFor = installed.map(\.id)
+        let task = Task { await fetch(app, installed) }
+        current = task
+        await task.value
+        if mine == generation { loading = false }
+    }
+
+    private func fetch(_ app: AppModel, _ installed: [InstalledSource]) async {
         guard !installed.isEmpty else {
             rows = []
             featured = []
+            loadedFor = []
             return
         }
 
@@ -87,7 +100,10 @@ final class DiscoverFeed {
         for (source, items) in popular where popular.count > 1 {
             next.append(Row(id: "source:" + source.id, title: "Popular on \(source.info.name)", items: items))
         }
+        // A load that a newer load stopped does not write its rows.
+        guard !Task.isCancelled else { return }
         rows = next
+        loadedFor = installed.map(\.id)
 
         // The banner shows the first titles of the mix, with their summary and their genres.
         let top = Array(mixed(popular, limit: 5))
@@ -97,7 +113,7 @@ final class DiscoverFeed {
                 guard let source = installed.first(where: { $0.id == item.hit.source }) else { continue }
                 group.addTask { (index, await self.details(of: item, in: source, app: app)) }
             }
-            for await (index, details) in group where featured.indices.contains(index) {
+            for await (index, details) in group where featured.indices.contains(index) && !Task.isCancelled {
                 featured[index].details = details
             }
         }
