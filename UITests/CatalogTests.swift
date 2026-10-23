@@ -1,6 +1,6 @@
 import XCTest
 
-/// Pastes the OPDS server of scripts/opds-test-server.py into the source list, signs in, searches, streams a comic,
+/// Pastes the OPDS server of scripts/test-server.py into the source list, signs in, searches, streams a comic,
 /// and downloads it. Start the server first, and give its URL in TEST_RUNNER_OPDS_URL.
 /// With no URL, the test is skipped.
 final class CatalogTests: XCTestCase {

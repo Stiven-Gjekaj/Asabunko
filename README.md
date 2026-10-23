@@ -131,7 +131,7 @@ The UI test of the catalogs needs the small OPDS server of the scripts. Start
 it, and give its URL to the test:
 
 ```
-python3 scripts/opds-test-server.py 8765 &
+python3 scripts/test-server.py 8765 &
 TEST_RUNNER_OPDS_URL=http://127.0.0.1:8765/opds/catalog xcodebuild -project Asabunko.xcodeproj -scheme Asabunko -destination 'platform=iOS Simulator,name=iPhone 17' test
 ```
 

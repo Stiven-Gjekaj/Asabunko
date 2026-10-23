@@ -5,7 +5,7 @@ It asks for the user "asa" with the password "morning". It serves a catalog,
 an OpenSearch search, one comic as a CBZ, and the pages of the comic one at a
 time with the Page Streaming Extension. It makes each file in memory.
 
-Usage: python3 scripts/opds-test-server.py [port]
+Usage: python3 scripts/test-server.py [port]
 """
 import base64
 import io
