@@ -24,6 +24,20 @@ import Testing
         #expect(library.continueReading.map(\.title) == ["New", "Old"])
     }
 
+    @Test func theReadListHoldsOnlyListedBooksTheNewestFirst() {
+        let old = Book(title: "Old", fileName: "o", pageCount: 1, added: Date(timeIntervalSince1970: 100))
+        let new = Book(title: "New", fileName: "n", pageCount: 1, added: Date(timeIntervalSince1970: 200))
+        let opened = Book(title: "Opened", fileName: "p", pageCount: 1, added: Date(timeIntervalSince1970: 300), listed: false)
+        #expect(Library(books: [old, opened, new]).readList.map(\.title) == ["New", "Old"])
+    }
+
+    @Test func aBookOfAnOlderVersionIsInTheReadList() throws {
+        let json = #"{"id":"6F9619FF-8B86-D011-B42D-00C04FC964FF","title":"A","format":"comic","fileName":"a","pageCount":1,"added":"2026-01-01T00:00:00Z","page":0,"finished":false}"#
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        #expect(try decoder.decode(Book.self, from: Data(json.utf8)).listed)
+    }
+
     @Test func usesTheModeOfTheLibraryWhenABookHasNone() {
         let book = Book(title: "A", fileName: "a", pageCount: 1)
         var library = Library(books: [book], defaultMode: .vertical)

@@ -71,12 +71,14 @@ public struct Book: Codable, Sendable, Identifiable, Equatable {
     public var mode: ReadingMode?
     /// The online source of the book, or nil for a book from a file.
     public var origin: BookOrigin?
+    /// True when the book is in the read list. A series that the user only opened is not.
+    public var listed: Bool
 
     public init(
         id: UUID = UUID(), title: String, author: String? = nil, summary: String? = nil,
         format: BookFormat = .comic, fileName: String, pageCount: Int, added: Date = .now,
         lastRead: Date? = nil, page: Int = 0, position: Double = 0, finished: Bool = false, mode: ReadingMode? = nil,
-        origin: BookOrigin? = nil
+        origin: BookOrigin? = nil, listed: Bool = true
     ) {
         self.id = id
         self.title = title
@@ -92,10 +94,11 @@ public struct Book: Codable, Sendable, Identifiable, Equatable {
         self.finished = finished
         self.mode = mode
         self.origin = origin
+        self.listed = listed
     }
 
     private enum CodingKeys: String, CodingKey {
-        case id, title, author, summary, format, fileName, pageCount, added, lastRead, page, position, finished, mode, origin
+        case id, title, author, summary, format, fileName, pageCount, added, lastRead, page, position, finished, mode, origin, listed
     }
 
     /// A field that an older version did not write gets its first value.
@@ -115,6 +118,8 @@ public struct Book: Codable, Sendable, Identifiable, Equatable {
         finished = try c.decode(Bool.self, forKey: .finished)
         mode = try c.decodeIfPresent(ReadingMode.self, forKey: .mode)
         origin = try c.decodeIfPresent(BookOrigin.self, forKey: .origin)
+        // Before the read list, the user added each book on purpose.
+        listed = try c.decodeIfPresent(Bool.self, forKey: .listed) ?? true
     }
 
     /// The part of the book that the user read, from 0 to 1.
@@ -189,6 +194,11 @@ public struct Library: Codable, Sendable, Equatable {
     /// The book of a series or a novel of a source, when the library has it.
     public func book(from origin: BookOrigin) -> Book? {
         books.first { $0.origin == origin }
+    }
+
+    /// The books of the read list, the newest first.
+    public var readList: [Book] {
+        recentlyAdded.filter(\.listed)
     }
 
     /// All books, the newest first.
