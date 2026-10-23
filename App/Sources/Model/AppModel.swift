@@ -26,6 +26,8 @@ final class AppModel {
     /// restores a backup or starts a new library.
     private(set) var libraryLocked = false
     private var saveTask: Task<Void, Never>?
+    /// The novels that the app read, with the date of their file.
+    @ObservationIgnored private var novels: [Book.ID: (date: Date?, novel: Novel)] = [:]
     /// The adds of online books that run now, so that two taps add one book.
     var adding: [BookOrigin: Task<Book, Error>] = [:]
 
@@ -75,8 +77,15 @@ final class AppModel {
         ComicImporter.pages(in: folder(of: book))
     }
 
+    /// The chapters of a novel or a series. The novel stays in memory until its file changes, because
+    /// the library and the chapter lists ask for it in each redraw, and a long series has a large file.
     func novel(of book: Book) -> Novel? {
-        try? Novel.load(from: folder(of: book))
+        let file = folder(of: book).appendingPathComponent(Novel.fileName)
+        let date = (try? FileManager.default.attributesOfItem(atPath: file.path)[.modificationDate]) as? Date
+        if let cached = novels[book.id], cached.date == date { return cached.novel }
+        guard let novel = try? Novel.load(from: folder(of: book)) else { return nil }
+        novels[book.id] = (date, novel)
+        return novel
     }
 
     func book(_ id: Book.ID) -> Book? {

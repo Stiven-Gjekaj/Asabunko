@@ -642,7 +642,7 @@ struct OnlineSeriesScreen: View {
     private func open(chapter index: Int, details: OnlineDetails) async {
         guard let book = await add(details, listed: false) else { return }
         // The chapter of the source is at the same place in the book, because the book has all of them in order.
-        let position = (try? Novel.load(from: app.folder(of: book)))?.chapters.firstIndex { $0.remote == details.chapters[index].id } ?? index
+        let position = app.novel(of: book)?.chapters.firstIndex { $0.remote == details.chapters[index].id } ?? index
         app.update(book.id) { $0.read(chapter: position, position: 0) }
         reading = app.book(book.id)
     }
