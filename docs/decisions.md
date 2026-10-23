@@ -302,3 +302,31 @@ The choices:
 - Reason: WasmKit, the WebAssembly runtime of the Aidoku sources, needs iOS
   18 from version 0.3.0. iOS 18 runs on the same iPhones and iPads as iOS 17,
   from the iPhone XS, so no device is lost.
+
+## 2026-10-23: The order of the releases of the sources
+
+- 0.6.0 is Suwayomi, 0.7.0 is Aidoku, and 0.8.0 is Paperback. This replaces
+  the order of "Version numbers", which had Aidoku, Paperback, and then
+  Suwayomi.
+- Reason: the client of Suwayomi was ready first. Each release still adds one
+  large function.
+
+## 2026-10-23: The Suwayomi servers
+
+- A line with "suwayomi", "tachidesk", or the port 4567 is a Suwayomi server.
+  The app sends GraphQL to /api/graphql.
+- The sources of the server are the sources of its extensions. The local
+  source of the server is not there. The user shows the sources that they
+  want, with no download, because they run on the server.
+- The password of the line goes to the server for each request and for each
+  page of the server, and not to another host.
+- The chapters come from the oldest to the newest, in the reverse of the
+  order of the source.
+- Reason: Mihon extensions are Android code, which iOS cannot run. A Suwayomi
+  server runs them and gives them to the app.
+
+## 2026-10-23: The sources for adults
+
+- A list can mark a source for adults. The app hides these sources until the
+  user turns on "Show sources for adults" in Settings.
+- Reason: a calm default. The user decides.

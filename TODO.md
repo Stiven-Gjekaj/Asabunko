@@ -10,9 +10,8 @@ release is out. The reason for each choice is in
 
 ## Next
 
-- 0.6.0: Aidoku sources, in a WebAssembly runtime.
-- 0.7.0: Paperback 0.9 extensions, in JavaScriptCore.
-- 0.8.0: Suwayomi servers, for the extensions of Mihon.
+- 0.7.0: Aidoku sources, in a WebAssembly runtime.
+- 0.8.0: Paperback 0.9 extensions, in JavaScriptCore.
 - 1.0.0: all of these, with a backup of the library.
 
 ## Checks on a real iPhone

@@ -11,6 +11,21 @@ the decisions.
 A tag such as `v0.1.0` builds the unsigned IPA and attaches it to a release on
 GitHub as `Asabunko.ipa`.
 
+## 0.6.0 (2026-10-23)
+
+- Adds Suwayomi servers, which run the extensions of Mihon on a computer.
+  Paste the URL of the server, such as http://192.168.1.20:4567, into
+  Sources. For a server with an account, write
+  http://user:password@host:4567.
+- Open the server, and show the sources that you want. Each source has its
+  popular and latest series, and its search.
+- Add a series to the library, or open a chapter to add it and read it. The
+  pages come from the server.
+- At the last page of a chapter, the buttons go to the previous chapter,
+  the list of chapters, and the next chapter.
+- Settings has a switch for the sources that a list marks for adults. They
+  stay hidden until you turn it on.
+
 ## 0.5.0 (2026-10-23)
 
 - Adds web novels with LNReader plugins. Paste the URL of a list of

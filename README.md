@@ -53,6 +53,8 @@ Asabunko has no sources in it. Your books stay on your device.
   read a comic page by page from the server, or download a book
 - Web novels with LNReader plugins: install a plugin from a list, find a
   novel, and read its chapters, which download as you read
+- Suwayomi servers, which run the extensions of Mihon: show a source of the
+  server, find a series, and read it page by page from the server
 - Read from the right to the left, from the left to the right, or in one
   vertical column. Pinch or double tap to zoom
 - A tap at the edge turns the page. A tap in the middle shows the bars
