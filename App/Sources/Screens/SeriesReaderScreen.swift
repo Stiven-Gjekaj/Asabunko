@@ -65,17 +65,20 @@ struct SeriesReaderScreen: View {
         }
         fault = nil
         content = nil
+        // A tap on Next before the pages come starts a newer load. The older answer must not show.
+        let asked = chapter
         do {
             let source = try await app.load(installed)
             let result = try await source.content(
                 of: OnlineChapter(id: remote, title: novel.chapters[chapter].title ?? ""), in: OnlineSeries(id: origin.series, title: book.title)
             )
+            guard asked == chapter else { return }
             guard case let .pages(requests) = result else { throw JSRuntimeError.badAnswer("The chapter has no pages.") }
             let pages = requests.map(PageSource.remote)
             page = min(Int((place * Double(max(pages.count - 1, 0))).rounded()), max(pages.count - 1, 0))
             content = .images(pages)
         } catch {
-            fault = error.localizedDescription
+            if asked == chapter { fault = error.localizedDescription }
         }
     }
 

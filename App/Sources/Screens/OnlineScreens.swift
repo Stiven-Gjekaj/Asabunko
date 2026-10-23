@@ -122,6 +122,7 @@ struct OnlineSourceScreen: View {
     @State private var applied: [String: OptionValue] = [:]
     @State private var showFilters = false
     @State private var hasSettings = false
+    @State private var generation = 0
 
     enum Listing: String, CaseIterable { case popular = "Popular", latest = "Latest" }
 
@@ -204,8 +205,11 @@ struct OnlineSourceScreen: View {
 
     private func loadPage(_ number: Int) async {
         guard let source else { return }
+        // A new search or list makes the answer of an older load old, so it must not go into the list.
+        generation += 1
+        let mine = generation
         loading = true
-        defer { loading = false }
+        defer { if mine == generation { loading = false } }
         if number == 1 { items = [] }
         do {
             let result: OnlinePage
@@ -218,13 +222,14 @@ struct OnlineSourceScreen: View {
             } else {
                 result = try await source.popular(page: number)
             }
+            guard mine == generation else { return }
             let known = Set(items.map(\.id))
             items += result.items.filter { !known.contains($0.id) }
             hasMore = result.hasMore && !result.items.allSatisfy { known.contains($0.id) }
             page = number
             fault = nil
         } catch {
-            fault = error.localizedDescription
+            if mine == generation { fault = error.localizedDescription }
         }
     }
 }
