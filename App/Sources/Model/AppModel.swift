@@ -19,6 +19,8 @@ final class AppModel {
     private(set) var sourceSetup: (done: Int, total: Int)?
     /// The update of the sources after the last save of the source list.
     @ObservationIgnored private var setUpTask: Task<Void, Never>?
+    /// A book that a screen must open, such as the book of a notification that the user tapped.
+    var openRequest: Book.ID?
 
     private let root: URL
     private var libraryFile: URL { root.appendingPathComponent("library.json") }

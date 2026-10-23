@@ -52,24 +52,37 @@ extension AppModel {
 
     /// Asks the source of each online book for new chapters. It gives the number of new chapters.
     /// Four books ask their sources at the same time, so a large library does not take minutes.
-    func refreshAll() async -> (added: Int, failed: Int) {
+    /// With `readListOnly`, only the books of the read list ask, as in a check in the background.
+    func refreshAll(readListOnly: Bool = false) async -> (added: Int, failed: Int, found: [(book: Book, added: Int)]) {
         var added = 0, failed = 0
-        let books = library.books.filter { $0.origin != nil }
+        var found: [(book: Book, added: Int)] = []
+        let books = library.books.filter { $0.origin != nil && (!readListOnly || $0.listed) }
         for start in stride(from: 0, to: books.count, by: 4) {
-            await withTaskGroup(of: Int?.self) { group in
+            await withTaskGroup(of: (Book, Int?).self) { group in
                 for book in books[start..<min(start + 4, books.count)] {
-                    group.addTask { await self.refreshCounted(book) }
+                    group.addTask { (book, await self.refreshCounted(book)) }
                 }
-                for await result in group {
-                    if let result { added += result } else { failed += 1 }
+                for await (book, result) in group {
+                    guard let result else { failed += 1; continue }
+                    added += result
+                    if result > 0 { found.append((book, result)) }
                 }
             }
         }
-        return (added, failed)
+        return (added, failed, found)
     }
 
     /// The number of new chapters of a book, or nil when its source did not answer.
     private func refreshCounted(_ book: Book) async -> Int? {
         do { return try await refresh(book) } catch { return nil }
+    }
+
+    /// The check of iOS in the background: the books of the read list ask for new chapters, and the user gets
+    /// a notification for each book with new chapters. Then the app asks for the next check.
+    func backgroundCheck() async {
+        let result = await refreshAll(readListOnly: true)
+        flush()
+        await ChapterChecks.notify(result.found)
+        ChapterChecks.schedule()
     }
 }

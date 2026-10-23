@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import UserNotifications
 
 @main
 struct AsabunkoApp: App {
@@ -21,9 +22,19 @@ struct AsabunkoApp: App {
                     Task { await app.importItems([url]) }
                 }
                 // The last place of the reader goes to the file before iOS can stop the app.
-                .onChange(of: phase) { _, new in if new != .active { app.flush() } }
+                .onChange(of: phase) { _, new in
+                    if new != .active { app.flush() }
+                    if new == .background { ChapterChecks.schedule() }
+                }
                 .background(FrameMeterHook())
+                .task {
+                    NotificationHandler.shared.app = app
+                    UNUserNotificationCenter.current().delegate = NotificationHandler.shared
+                    // A UI test runs the check of the background at the start, because the simulator has no background tasks.
+                    if ProcessInfo.processInfo.environment["ASABUNKO_CHECK_NOW"] == "1" { await app.backgroundCheck() }
+                }
         }
+        .backgroundTask(.appRefresh(ChapterChecks.identifier)) { await app.backgroundCheck() }
     }
 }
 

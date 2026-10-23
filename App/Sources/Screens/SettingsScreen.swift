@@ -13,6 +13,7 @@ struct SettingsScreen: View {
     @State private var message: String?
     @State private var startingOver = false
     @AppStorage(ReaderSettings.keepAwakeKey) private var keepAwake = true
+    @AppStorage(ChapterChecks.enabledKey) private var checks = false
 
     var body: some View {
         NavigationStack {
@@ -36,6 +37,17 @@ struct SettingsScreen: View {
                     }
                 } footer: {
                     Text("Your catalogs and source lists, and the sources that Search and Discover use.")
+                }
+                Section {
+                    Toggle("Check in the background", isOn: Binding(get: { checks }, set: { on in
+                        checks = on
+                        ChapterChecks.schedule()
+                        if on { Task { if !(await ChapterChecks.askForNotifications()) { message = "Turn on the notifications of Asabunko in the Settings app to know about new chapters." } } }
+                    }))
+                } header: {
+                    Text("New chapters")
+                } footer: {
+                    Text("The books of your read list check for new chapters some times each day, when iOS lets the app run. A notification tells you about new chapters.")
                 }
                 Section("Look") {
                     Picker("Appearance", selection: $appearance) {

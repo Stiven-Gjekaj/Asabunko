@@ -69,6 +69,12 @@ struct LibraryScreen: View {
                 guard case let .success(urls) = result else { return }
                 Task { await app.importItems(urls) }
             }
+            // A notification of new chapters opens its book.
+            .onChange(of: app.openRequest, initial: true) { _, id in
+                guard let id, let book = app.book(id) else { return }
+                app.openRequest = nil
+                reading = book
+            }
             .fullScreenCover(item: $reading) { book in
                 switch book.format {
                 case .comic, .pdf: ReaderScreen(bookID: book.id)
