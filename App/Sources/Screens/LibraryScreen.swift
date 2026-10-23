@@ -175,6 +175,12 @@ struct LibraryScreen: View {
                 app.update(book.id) { $0.finished = true; $0.lastRead = .now }
             } label: { Label("Mark as read", systemImage: "checkmark") }
         }
+        if book.origin != nil {
+            Button { app.downloadChapters(book.id) } label: { Label("Download all chapters", systemImage: "arrow.down.circle") }
+            if app.downloadedCount(book.id) > 0 {
+                Button { app.downloads.cancel(book.id); app.removeDownloads(book.id) } label: { Label("Remove downloads", systemImage: "xmark.bin") }
+            }
+        }
         Button(role: .destructive) { deleting = book } label: { Label("Delete", systemImage: "trash") }
     }
 

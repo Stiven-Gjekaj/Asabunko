@@ -228,6 +228,14 @@ struct OnlineSeriesScreen: View {
                     HStack(spacing: 10) {
                         if let book {
                             Button(book.lastRead == nil ? "Start reading" : "Continue") { reading = book }.buttonStyle(PillButtonStyle())
+                            Menu {
+                                Button { app.downloadChapters(book.id) } label: { Label("Download all chapters", systemImage: "arrow.down.circle") }
+                                Button { app.downloadChapters(book.id, from: book.page) } label: { Label("Download from this chapter", systemImage: "arrow.down.to.line") }
+                                Button(role: .destructive) { app.downloads.cancel(book.id); app.removeDownloads(book.id) } label: { Label("Remove downloads", systemImage: "trash") }
+                            } label: {
+                                Image(systemName: "arrow.down.circle").font(.system(size: 22)).frame(width: 44, height: 44)
+                            }
+                            .accessibilityLabel("Downloads")
                         } else {
                             Button(adding ? "Adding" : "Add to library") { Task { await add(details, open: false) } }
                                 .buttonStyle(PillButtonStyle()).disabled(adding)
@@ -255,6 +263,7 @@ struct OnlineSeriesScreen: View {
                                 }
                                 Spacer()
                                 if isCurrent(index) { Image(systemName: "bookmark.fill").foregroundStyle(Palette.accent) }
+                                downloadMark(index)
                             }
                         }
                         .listRowBackground(Palette.surface)
@@ -281,6 +290,31 @@ struct OnlineSeriesScreen: View {
             default: SeriesReaderScreen(bookID: book.id)
             }
         }
+    }
+
+    /// The state of the download of a chapter: on the device, downloading, or waiting.
+    @ViewBuilder
+    private func downloadMark(_ index: Int) -> some View {
+        let _ = app.downloads.changes
+        if let book, let position = position(of: index, in: book) {
+            if app.downloads.isActive(book.id, position) {
+                if let progress = app.downloads.progress, progress.total > 0 {
+                    ProgressView(value: Double(progress.done), total: Double(progress.total)).frame(width: 36).accessibilityLabel("Downloading")
+                } else {
+                    ProgressView().accessibilityLabel("Downloading")
+                }
+            } else if app.downloads.isWaiting(book.id, position) {
+                Image(systemName: "clock").foregroundStyle(Palette.textSecondary).accessibilityLabel("Waiting to download")
+            } else if app.isDownloaded(book.id, index: position) {
+                Image(systemName: "checkmark.circle.fill").foregroundStyle(Palette.accent).accessibilityLabel("Downloaded")
+            }
+        }
+    }
+
+    /// The place of a chapter of the source in the book.
+    private func position(of index: Int, in book: Book) -> Int? {
+        guard let details, details.chapters.indices.contains(index) else { return nil }
+        return app.novel(of: book)?.chapters.firstIndex { $0.remote == details.chapters[index].id }
     }
 
     private func isCurrent(_ index: Int) -> Bool {
