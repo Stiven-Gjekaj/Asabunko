@@ -7,6 +7,7 @@ struct SettingsScreen: View {
     @AppStorage(Appearance.key) private var appearance = Appearance.system
     @State private var showFontLicense = false
     @State private var newer: String?
+    @AppStorage("browse.adult") private var adult = false
 
     var body: some View {
         NavigationStack {
@@ -24,6 +25,13 @@ struct SettingsScreen: View {
                     Text("Reader")
                 } footer: {
                     Text("A book uses this mode until you choose a mode for it in the reader. A comic with \"YesAndRightToLeft\" in its ComicInfo.xml opens from the right to the left.")
+                }
+                Section {
+                    Toggle("Show sources for adults", isOn: $adult)
+                } header: {
+                    Text("Sources")
+                } footer: {
+                    Text("A list marks some sources for adults. Asabunko hides them until you turn this on.")
                 }
                 Section {
                     if let newer {
