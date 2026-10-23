@@ -87,6 +87,12 @@ public struct SearchResults: Sendable {
 
 /// Chooses the source of a title.
 public enum SourceChoice {
+    /// The number of different chapters. Some sources give one chapter two or more times,
+    /// once for each group that translated it. A chapter with no number counts one time.
+    public static func distinctChapters(_ chapters: [OnlineChapter]) -> Int {
+        Set(chapters.compactMap(\.number)).count + chapters.filter { $0.number == nil }.count
+    }
+
     /// The source with the most chapters. When two sources have the same number, the first one wins.
     /// A source with no answer has nil.
     public static func best(_ chapters: [(source: String, count: Int?)]) -> String? {

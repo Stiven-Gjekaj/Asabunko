@@ -464,7 +464,10 @@ struct OnlineSeriesScreen: View {
     /// "Name · 12 chapters", or why the source has no number.
     private func line(_ hit: SearchHit) -> String {
         let name = app.library.installed.first { $0.id == hit.source }?.info.name ?? "Source"
-        if let details = answers[hit.source] { return "\(name) · \(details.chapters.count == 1 ? "1 chapter" : "\(details.chapters.count) chapters")" }
+        if let details = answers[hit.source] {
+            let count = SourceChoice.distinctChapters(details.chapters)
+            return "\(name) · \(count == 1 ? "1 chapter" : "\(count) chapters")"
+        }
         if faults[hit.source] != nil { return "\(name) · no answer" }
         return "\(name) · loading"
     }
@@ -517,7 +520,7 @@ struct OnlineSeriesScreen: View {
         await ask(hits)
         comparing = false
         if !userChose && !hits.contains(where: hasBook), hits.count > 1,
-           let best = SourceChoice.best(hits.map { ($0.source, answers[$0.source]?.chapters.count) }),
+           let best = SourceChoice.best(hits.map { ($0.source, answers[$0.source].map { SourceChoice.distinctChapters($0.chapters) }) }),
            let hit = hits.first(where: { $0.source == best }) {
             chosen = hit
         }

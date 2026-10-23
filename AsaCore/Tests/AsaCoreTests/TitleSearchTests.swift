@@ -56,4 +56,13 @@ import Testing
         #expect(TitleMix.roundRobin([a, b], limit: 2).map(\.series.id) == ["1", "2"])
         #expect(TitleMix.roundRobin([]).isEmpty)
     }
+
+    @Test func aChapterOfTwoGroupsCountsOneTime() {
+        let chapters = [
+            OnlineChapter(id: "1a", title: "Ch. 1", number: 1, group: "A"), OnlineChapter(id: "1b", title: "Ch. 1", number: 1, group: "B"),
+            OnlineChapter(id: "2", title: "Ch. 2", number: 2), OnlineChapter(id: "x", title: "Extra"), OnlineChapter(id: "y", title: "Extra 2"),
+        ]
+        #expect(SourceChoice.distinctChapters(chapters) == 4)
+        #expect(SourceChoice.distinctChapters([]) == 0)
+    }
 }
