@@ -19,6 +19,12 @@ Under /suwayomi/, it answers the GraphQL queries of a Suwayomi server with
 one source, one series, and one chapter of three pages, with the same user
 name and password as /opds/.
 
+Under /cf/, each path of the server is behind a browser check, as a site
+behind Cloudflare. The page of the check sets the cookie of a passed check.
+
+/control/offline makes the server refuse the pages, and /control/online
+gives them again.
+
 It makes each file in memory.
 
 Usage: python3 scripts/test-server.py [port]
@@ -270,6 +276,22 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         path = self.path.split("?")[0]
         host = self.headers.get("Host")
+        # Under /cf/, the server acts as a site behind the browser check of Cloudflare. The page of the
+        # check sets the cookie of a passed check and loads again. With the cookie, the path works.
+        if path.startswith("/cf/"):
+            if "cf_clearance=passed" not in (self.headers.get("Cookie") or ""):
+                page = (b"<!DOCTYPE html><html><head><title>Just a moment...</title></head><body>"
+                        b"<p>Checking your browser.</p><script src=\"/cdn-cgi/challenge-platform/h/b/orchestrate\"></script>"
+                        b"<script>document.cookie = 'cf_clearance=passed; path=/'; setTimeout(function () { location.reload(); }, 300);</script>"
+                        b"</body></html>")
+                self.send_response_only(503)
+                self.send_header("Server", "cloudflare")
+                self.send_header("Content-Type", "text/html")
+                self.send_header("Content-Length", str(len(page)))
+                self.end_headers()
+                return self.wfile.write(page)
+            self.path = self.path[3:]
+            path = path[3:]
         if path in ("/control/offline", "/control/online"):
             OFFLINE["on"] = path.endswith("offline")
             return self.reply(b"ok", "text/plain")

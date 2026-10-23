@@ -10,5 +10,6 @@ struct RootView: View {
             SettingsScreen().tabItem { Label("Settings", systemImage: "gearshape") }
         }
         .tint(Palette.accent)
+        .overlay(alignment: .bottom) { BrowserCheckBanner() }
     }
 }

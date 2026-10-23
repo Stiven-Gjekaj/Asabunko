@@ -46,6 +46,7 @@ struct DiscoverScreen: View {
             .asaScreen()
             .toolbar(feed.rows.isEmpty ? .automatic : .hidden, for: .navigationBar)
             .refreshable { await feed.load(app, force: true) }
+            .onChange(of: BrowserChecks.shared.passes) { Task { await feed.load(app, force: true) } }
             .task(id: app.library.installed.map(\.id)) { await feed.load(app) }
         }
     }

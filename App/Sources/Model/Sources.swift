@@ -7,6 +7,7 @@ let appFetcher: Fetcher = { request in
     if request.value(forHTTPHeaderField: "User-Agent") == nil { request.setValue(Network.userAgent, forHTTPHeaderField: "User-Agent") }
     let (data, response) = try await Network.session.data(for: request)
     guard let http = response as? HTTPURLResponse else { throw URLError(.badServerResponse) }
+    BrowserChecks.inspect(http, data: data)
     return (data, http)
 }
 

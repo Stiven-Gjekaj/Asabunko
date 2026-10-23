@@ -267,6 +267,7 @@ struct OPDSFeedScreen: View {
         .modifier(SearchModifier(enabled: feed?.search != nil, query: $query, onSubmit: search, onClear: { results = nil }))
         .task { await load() }
         .refreshable { await load() }
+        .onChange(of: BrowserChecks.shared.passes) { if fault != nil { Task { await load() } } }
     }
 
     @ViewBuilder

@@ -39,6 +39,7 @@ struct SourceListScreen: View {
         .searchable(text: $filter, prompt: "Name or language")
         .task { await load() }
         .refreshable { await load() }
+        .onChange(of: BrowserChecks.shared.passes) { Task { await load() } }
     }
 
     private func row(_ info: SourceInfo) -> some View {
@@ -163,6 +164,7 @@ struct OnlineSourceScreen: View {
         .onSubmit(of: .search) { searching = query; Task { await loadPage(1) } }
         .onChange(of: query) { _, text in if text.isEmpty && !searching.isEmpty { searching = ""; Task { await loadPage(1) } } }
         .onChange(of: list) { Task { await loadPage(1) } }
+        .onChange(of: BrowserChecks.shared.passes) { if fault != nil { Task { await loadPage(1) } } }
         .toolbar {
             if !filters.isEmpty {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -344,6 +346,7 @@ struct OnlineSeriesScreen: View {
         .navigationBarTitleDisplayMode(.inline)
         .task { await load() }
         .refreshable { await load() }
+        .onChange(of: BrowserChecks.shared.passes) { Task { await load() } }
         .task(id: chosen) { await prepare() }
         .fullScreenCover(item: $reading) { book in
             switch book.format {

@@ -27,6 +27,7 @@ enum Network {
     static func data(for request: URLRequest) async throws -> Data {
         let (data, response) = try await session.data(for: request)
         if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
+            BrowserChecks.inspect(http, data: data)
             throw Failure.status(http.statusCode)
         }
         return data
