@@ -21,3 +21,22 @@ import Testing
         #expect(book.page == 1)
     }
 }
+
+@Suite struct OnlineNovelTests {
+    @Test func addsOnlyTheNewChaptersAndKeepsTheOldOnes() {
+        var novel = Novel(title: "Dawn", chapters: [])
+        #expect(novel.merge([OnlineChapter(id: "c/1", title: "One"), OnlineChapter(id: "c/2", title: "Two")]) == 2)
+        #expect(novel.chapters.map(\.path) == ["chapters/00001.html", "chapters/00002.html"])
+        // The source removed the first chapter and added a third.
+        #expect(novel.merge([OnlineChapter(id: "c/2", title: "Two"), OnlineChapter(id: "c/3", title: "Three")]) == 1)
+        #expect(novel.chapters.map(\.remote) == ["c/1", "c/2", "c/3"])
+        #expect(novel.chapters[2] == Novel.Chapter(title: "Three", path: "chapters/00003.html", remote: "c/3"))
+    }
+
+    @Test func findsTheBookOfASeries() {
+        let origin = BookOrigin(list: UUID(), source: "quiet", series: "novel/dawn")
+        let library = Library(books: [Book(title: "Dawn", format: .novel, fileName: "", pageCount: 2, origin: origin)])
+        #expect(library.book(from: origin)?.title == "Dawn")
+        #expect(library.book(from: BookOrigin(list: origin.list, source: "quiet", series: "other")) == nil)
+    }
+}

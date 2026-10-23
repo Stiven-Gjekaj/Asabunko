@@ -18,6 +18,36 @@ public enum BookFormat: String, Codable, Sendable {
     case novel
     /// The book is a PDF, which keeps its pages as they are.
     case pdf
+    /// The book is a series of an online source: chapters of pages that come from the network.
+    case series
+}
+
+/// The online source of a book, so that the app can get its new chapters.
+public struct BookOrigin: Codable, Sendable, Equatable, Hashable {
+    /// The line of the source list.
+    public var list: UUID
+    /// The source in that list, such as the ID of an LNReader plugin. Empty for an OPDS catalog or a server.
+    public var source: String
+    /// The series or the novel in the source.
+    public var series: String
+
+    public init(list: UUID, source: String, series: String) {
+        self.list = list
+        self.source = source
+        self.series = series
+    }
+}
+
+/// A source that the user installed from a list.
+public struct InstalledSource: Codable, Sendable, Equatable, Hashable, Identifiable {
+    public var list: UUID
+    public var info: SourceInfo
+    public var id: String { "\(list.uuidString)/\(info.id)" }
+
+    public init(list: UUID, info: SourceInfo) {
+        self.list = list
+        self.info = info
+    }
 }
 
 /// One book in the library.
@@ -39,11 +69,14 @@ public struct Book: Codable, Sendable, Identifiable, Equatable {
     public var finished: Bool
     /// The mode of this book. With nil, the book uses the mode of the library.
     public var mode: ReadingMode?
+    /// The online source of the book, or nil for a book from a file.
+    public var origin: BookOrigin?
 
     public init(
         id: UUID = UUID(), title: String, author: String? = nil, summary: String? = nil,
         format: BookFormat = .comic, fileName: String, pageCount: Int, added: Date = .now,
-        lastRead: Date? = nil, page: Int = 0, position: Double = 0, finished: Bool = false, mode: ReadingMode? = nil
+        lastRead: Date? = nil, page: Int = 0, position: Double = 0, finished: Bool = false, mode: ReadingMode? = nil,
+        origin: BookOrigin? = nil
     ) {
         self.id = id
         self.title = title
@@ -58,10 +91,11 @@ public struct Book: Codable, Sendable, Identifiable, Equatable {
         self.position = position
         self.finished = finished
         self.mode = mode
+        self.origin = origin
     }
 
     private enum CodingKeys: String, CodingKey {
-        case id, title, author, summary, format, fileName, pageCount, added, lastRead, page, position, finished, mode
+        case id, title, author, summary, format, fileName, pageCount, added, lastRead, page, position, finished, mode, origin
     }
 
     /// A field that an older version did not write gets its first value.
@@ -80,12 +114,13 @@ public struct Book: Codable, Sendable, Identifiable, Equatable {
         position = try c.decodeIfPresent(Double.self, forKey: .position) ?? 0
         finished = try c.decode(Bool.self, forKey: .finished)
         mode = try c.decodeIfPresent(ReadingMode.self, forKey: .mode)
+        origin = try c.decodeIfPresent(BookOrigin.self, forKey: .origin)
     }
 
     /// The part of the book that the user read, from 0 to 1.
     public var progress: Double {
         if finished { return 1 }
-        if format == .novel {
+        if format == .novel || format == .series {
             guard pageCount > 0 else { return 0 }
             return min((Double(min(max(page, 0), pageCount - 1)) + min(max(position, 0), 1)) / Double(pageCount), 1)
         }
@@ -118,15 +153,17 @@ public struct Library: Codable, Sendable, Equatable {
     public var books: [Book]
     public var defaultMode: ReadingMode
     public var sources: [SourceLink]
+    public var installed: [InstalledSource]
 
     public init(books: [Book] = [], defaultMode: ReadingMode = .rightToLeft, sources: [SourceLink] = []) {
         self.form = Self.currentForm
         self.books = books
         self.defaultMode = defaultMode
         self.sources = sources
+        self.installed = []
     }
 
-    private enum CodingKeys: String, CodingKey { case form, books, defaultMode, sources }
+    private enum CodingKeys: String, CodingKey { case form, books, defaultMode, sources, installed }
 
     /// A list that an older version did not write is empty.
     public init(from decoder: Decoder) throws {
@@ -135,6 +172,7 @@ public struct Library: Codable, Sendable, Equatable {
         books = try c.decode([Book].self, forKey: .books)
         defaultMode = try c.decode(ReadingMode.self, forKey: .defaultMode)
         sources = try c.decodeIfPresent([SourceLink].self, forKey: .sources) ?? []
+        installed = try c.decodeIfPresent([InstalledSource].self, forKey: .installed) ?? []
     }
 
     /// The mode that the reader uses for a book.
@@ -146,6 +184,11 @@ public struct Library: Codable, Sendable, Equatable {
     public var continueReading: [Book] {
         books.filter { $0.lastRead != nil && !$0.finished }
             .sorted { ($0.lastRead ?? .distantPast) > ($1.lastRead ?? .distantPast) }
+    }
+
+    /// The book of a series or a novel of a source, when the library has it.
+    public func book(from origin: BookOrigin) -> Book? {
+        books.first { $0.origin == origin }
     }
 
     /// All books, the newest first.

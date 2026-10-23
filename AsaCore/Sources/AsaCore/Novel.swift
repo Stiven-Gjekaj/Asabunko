@@ -1,6 +1,6 @@
 import Foundation
 
-/// The chapters of a novel in the folder of its book. Each importer of text writes it.
+/// The chapters of a novel or of an online series in the folder of its book. Each importer of text writes it.
 public struct Novel: Codable, Sendable, Equatable {
     public static let fileName = "novel.json"
 
@@ -9,10 +9,13 @@ public struct Novel: Codable, Sendable, Equatable {
         public var title: String?
         /// The path of the XHTML or HTML file, from the folder of the book.
         public var path: String
+        /// The ID of the chapter in its online source. Its file comes when the user opens it.
+        public var remote: String?
 
-        public init(title: String?, path: String) {
+        public init(title: String?, path: String, remote: String? = nil) {
             self.title = title
             self.path = path
+            self.remote = remote
         }
     }
 
@@ -114,5 +117,22 @@ public enum TextDecoding {
         let high = data.filter { $0 >= 0x80 }.count
         if high * 10 > data.count, let text = String(data: data, encoding: gb) { return text }
         return String(data: data, encoding: .windowsCP1252) ?? String(decoding: data, as: UTF8.self)
+    }
+}
+
+extension Novel {
+    /// Adds the chapters of the source that the novel does not have yet, in the order of the source.
+    /// A chapter that the source removed stays, so that its file and the place in it do not go.
+    /// - Returns: the number of new chapters.
+    @discardableResult
+    public mutating func merge(_ online: [OnlineChapter], fileExtension: String = "html") -> Int {
+        let known = Set(chapters.compactMap(\.remote))
+        var added = 0
+        for chapter in online where !known.contains(chapter.id) {
+            let name = String(format: "chapters/%05d.%@", chapters.count + 1, fileExtension)
+            chapters.append(Chapter(title: chapter.title, path: name, remote: chapter.id))
+            added += 1
+        }
+        return added
     }
 }
