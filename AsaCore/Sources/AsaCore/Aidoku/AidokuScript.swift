@@ -76,6 +76,12 @@ final class AidokuWebView: @unchecked Sendable {
         var value: T?
     }
 
+    /// A web view must go on the main thread. The source destroys its items on its own queue.
+    deinit {
+        let view = view, delegate = delegate
+        DispatchQueue.main.async { _ = (view, delegate) }
+    }
+
     private func start() {
         lock.withLock { loading = true }
     }
