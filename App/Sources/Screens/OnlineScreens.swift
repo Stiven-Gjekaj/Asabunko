@@ -477,6 +477,27 @@ struct OnlineSeriesScreen: View {
                 if isCurrent(index) { Image(systemName: "bookmark.fill").foregroundStyle(Palette.accent) }
                 downloadMark(index)
             }
+            .opacity(isRead(index) ? 0.55 : 1)
+        }
+        .contextMenu {
+            Button { Task { await markRead(upTo: index, details: details) } } label: {
+                Label("Mark as read up to here", systemImage: "checkmark.circle")
+            }
+        }
+    }
+
+    /// True for a chapter before the place of the user.
+    private func isRead(_ index: Int) -> Bool {
+        guard let book, book.lastRead != nil, let position = position(of: index, in: book) else { return false }
+        return book.finished || position < book.page
+    }
+
+    /// Puts the place of the user at the start of the next chapter, so that the chapters up to this one are read.
+    private func markRead(upTo index: Int, details: OnlineDetails) async {
+        guard let book = await add(details, listed: book?.listed ?? false) else { return }
+        let position = app.novel(of: book)?.chapters.firstIndex { $0.remote == details.chapters[index].id } ?? index
+        app.update(book.id) { book in
+            if position + 1 < book.pageCount { book.read(chapter: position + 1, position: 0) } else { book.read(chapter: position, position: 1) }
         }
     }
 
