@@ -69,8 +69,11 @@ final class AppModel {
 
     // MARK: Books
 
-    func folder(of book: Book) -> URL {
-        booksFolder.appendingPathComponent(book.id.uuidString, isDirectory: true)
+    func folder(of book: Book) -> URL { folder(of: book.id) }
+
+    /// The folder of a book, also of a book that is not in the library now.
+    func folder(of id: Book.ID) -> URL {
+        booksFolder.appendingPathComponent(id.uuidString, isDirectory: true)
     }
 
     func cover(of book: Book) -> URL {
@@ -137,7 +140,7 @@ final class AppModel {
     /// Removes the folder of a book that is not in the library.
     func removeFolder(of id: Book.ID) {
         guard book(id) == nil else { return }
-        try? FileManager.default.removeItem(at: folder(of: Book(id: id, title: "", fileName: "", pageCount: 0)))
+        try? FileManager.default.removeItem(at: folder(of: id))
     }
 
     // MARK: Import

@@ -216,7 +216,7 @@ extension AppModel {
     private func addNew(_ details: OnlineDetails, origin: BookOrigin, from installed: InstalledSource, listed: Bool) async throws -> Book {
         let source = try await load(installed)
         let id = UUID()
-        let folder = folder(of: Book(id: id, title: "", fileName: "", pageCount: 0))
+        let folder = folder(of: id)
         try FileManager.default.createDirectory(at: folder.appendingPathComponent("chapters"), withIntermediateDirectories: true)
         var novel = Novel(title: details.series.title, author: details.author, summary: details.summary, chapters: [])
         novel.merge(details.chapters)

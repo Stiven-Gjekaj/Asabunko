@@ -33,9 +33,9 @@ extension AppModel {
     /// The books to import again, and the sources that did not install, such as with no network.
     func restore(_ backup: Backup) async -> (skipped: [String], sources: [String]) {
         let manager = FileManager.default
-        let plan = backup.plan { manager.fileExists(atPath: folder(of: Book(id: $0, title: "", fileName: "", pageCount: 0)).path) }
+        let plan = backup.plan { manager.fileExists(atPath: folder(of: $0).path) }
         for (id, novel) in plan.chapters {
-            let folder = folder(of: Book(id: id, title: "", fileName: "", pageCount: 0))
+            let folder = folder(of: id)
             try? manager.createDirectory(at: folder.appendingPathComponent("chapters"), withIntermediateDirectories: true)
             if !manager.fileExists(atPath: folder.appendingPathComponent(Novel.fileName).path) { try? novel.save(to: folder) }
         }
