@@ -173,12 +173,14 @@
       native.fetch(id, request.url, request.method, request.headers.toObject(), body);
     });
   };
-  globalThis.__fetchDone = function (id, error, status, url, headers, body) {
+  globalThis.__fetchDone = function (id, error, status, url, headers, body, cookies) {
     const p = pending.get(id);
     pending.delete(id);
     if (!p) return;
-    if (error) p.reject(new TypeError(error));
-    else p.resolve(new Response(body, { status, url, headers }));
+    if (error) { p.reject(new TypeError(error)); return; }
+    const response = new Response(body, { status, url, headers });
+    response.setCookies = cookies || [];
+    p.resolve(response);
   };
 
   // Runs a function that can give a promise, and gives its result as JSON.

@@ -97,6 +97,19 @@ public final class JSRuntime: @unchecked Sendable {
         }
     }
 
+    /// Adds a native function to the object __native of the context, such as a function of a host of an ecosystem.
+    public func define(_ name: String, _ block: Any) {
+        queue.sync {
+            context.objectForKeyedSubscript("__native").setObject(block, forKeyedSubscript: name as NSString)
+        }
+    }
+
+    /// The bytes of a typed array or an ArrayBuffer, for a native function. The caller is on the queue of the context.
+    public func bytes(of value: JSValue) -> Data { data(of: value) }
+
+    /// A new ArrayBuffer, for the answer of a native function. The caller is on the queue of the context.
+    public func makeArrayBuffer(_ data: Data) -> JSValue? { arrayBuffer(data) }
+
     private func evaluateOnQueue(_ script: String, url: String) throws {
         lastError = nil
         context.evaluateScript(script, withSourceURL: URL(string: url))
@@ -157,8 +170,19 @@ public final class JSRuntime: @unchecked Sendable {
             done?.call(withArguments: [id, error.localizedDescription])
         case let .success((data, response)):
             var headers: [String: String] = [:]
-            for (key, value) in response.allHeaderFields { headers["\(key)".lowercased()] = "\(value)" }
-            done?.call(withArguments: [id, NSNull(), response.statusCode, response.url?.absoluteString ?? "", headers, arrayBuffer(data) as Any])
+            var fields: [String: String] = [:]
+            for (key, value) in response.allHeaderFields {
+                headers["\(key)".lowercased()] = "\(value)"
+                fields["\(key)"] = "\(value)"
+            }
+            // The cookies of the answer, read by Foundation, because a Set-Cookie header can hold commas.
+            let url = response.url ?? URL(string: "about:blank")!
+            let cookies: [[String: Any]] = HTTPCookie.cookies(withResponseHeaderFields: fields, for: url).map { cookie in
+                var item: [String: Any] = ["name": cookie.name, "value": cookie.value, "domain": cookie.domain, "path": cookie.path]
+                if let expires = cookie.expiresDate { item["expires"] = expires.timeIntervalSince1970 * 1000 }
+                return item
+            }
+            done?.call(withArguments: [id, NSNull(), response.statusCode, response.url?.absoluteString ?? "", headers, arrayBuffer(data) as Any, cookies])
         }
     }
 
