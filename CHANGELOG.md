@@ -11,6 +11,13 @@ the decisions.
 A tag such as `v0.1.0` builds the unsigned IPA and attaches it to a release on
 GitHub as `Asabunko.ipa`.
 
+## 1.0.1 (2026-10-23)
+
+- A new app icon: the mark of the logo of the banner. It fills the full
+  width of the icon, so no black bar shows at the sides.
+- The empty shelf shows the same mark.
+- The app builds with Xcode 26.6, the Xcode of the release builds on GitHub.
+
 ## 1.0.0 (2026-10-23)
 
 - The first full version. It has all functions of 0.1.0 to 0.8.0: comic
