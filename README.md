@@ -73,6 +73,8 @@ Asabunko has no sources in it. Your books stay on your device.
 - Paperback 0.9 extensions, with their interceptors and their state
 - Check all online books for new chapters
 - Back up and restore the library in one file
+- Keep the screen on, sort the read list, mark chapters as read, and move a
+  book to another source
 - Warm dark, paper, or the look of the device
 - The app tells you when a newer version is available
 

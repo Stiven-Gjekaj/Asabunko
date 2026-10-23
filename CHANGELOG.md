@@ -11,6 +11,63 @@ the decisions.
 A tag such as `v0.1.0` builds the unsigned IPA and attaches it to a release on
 GitHub as `Asabunko.ipa`.
 
+## 2.0.0 (2026-10-23)
+
+A release of fixes, speed, and small comforts, after a full review of the app.
+
+Safety of your data:
+
+- A library file that does not load stays as it is. Asabunko keeps a copy,
+  saves nothing over it, and lets you restore a backup or start a new
+  library in Settings.
+- A book with downloaded chapters stays in the library when you take it off
+  the read list. A delete stops the download of that book.
+- A downloaded chapter holds only real images. A page of HTML, such as a
+  check page, does not count as a page.
+- A restore tells you which sources did not install.
+- A backup has the local time in its name, so a new backup does not replace
+  an older one. The message after a restore shows again.
+
+Fixes:
+
+- The page turns of the reader keep working after quick taps, such as near
+  the end of a long comic.
+- A novel with no chapters opens with no crash.
+- A chapter that cannot open tells you why, such as when its source is not
+  installed.
+- Two quick taps add a series one time.
+- A failed download shows a mark, and the Downloads menu tries it again.
+- The faults of the app show on each tab.
+- Discover loads again when more sources install.
+- A late answer does not go into a newer search or a newer chapter.
+- The books of a source list line that you add again find their source.
+- Sources that use a web view, such as Comix and Toonkotsu, load with no
+  crash.
+- LNReader plugins that use gRPC, such as Wuxia World, load their chapters.
+
+Speed:
+
+- A page turn saves the library a short time later, off the main thread.
+- The chapters of each book stay in memory until their file changes.
+- Two screens that ask for one source get one load, and at most 24 sources
+  stay in memory.
+- Long webtoon strips are sharp, the page cache has a memory limit, and a
+  page downloads one time.
+- The check for new chapters asks four books at the same time.
+
+Comforts:
+
+- Keep the screen on while a book is open. Settings, Reader turns it off.
+- Sort the read list by date added, last read, title, or unread first. Each
+  online book shows its source.
+- Pull down in the library to check for new chapters.
+- Mark the chapters up to one chapter as read.
+- Move a book of the library to another source of its title. Your place
+  goes to the chapter with the same number.
+- Search the chapter list of a reader by title or number.
+- Turn the pages with the keyboard of an iPad.
+- Try a source again from its page, or pull down to load it again.
+
 ## 1.5.0 (2026-10-23)
 
 - Aidoku sources that draw their pages work: the canvas module draws with

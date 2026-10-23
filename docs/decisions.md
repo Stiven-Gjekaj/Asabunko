@@ -527,7 +527,29 @@ The choices:
   for. After the check, the cookies of the site go to the cookie store of
   the session, and the screens with a fault load again.
 - The checks on a real iPhone are now tests on the simulator: the RAR files
-  of the tests of libarchive, and a CBZ of 600 pages. The UI test of the
-  backup through the Files picker is not stable yet, so it stays in the
-  roadmap. The owner has no server, so the real server check left the list
+  of the tests of libarchive, a CBZ of 600 pages, and, in 2.0.0, a backup
+  through the Files picker. The owner has no server, so the real server check left the list
   before.
+
+## 2026-10-23: The review for 2.0.0
+
+- A second agent read the full app for faults, speed, and comforts, with no
+  knowledge of the choices of the first. It gave 30 findings. The owner asked
+  for the fixes and a test of each one before 2.0.0.
+- A library file that does not load locks the saves. Reason: one bad value
+  made the next save write an empty library over the books of the user.
+- The library saves 0.4 seconds after the last change, and at once when the
+  app goes to the background. The file has no spaces now.
+- A downloaded chapter needs pages that ImageIO can read.
+- A move to another source maps the place by the number of the chapter in
+  its title, and else by the same part of the list. The chapters of the old
+  source leave the device.
+- At most 24 sources stay loaded. A source that leaves the memory loads
+  again when a screen asks for it.
+- The search does not stop the calls of a source that are in progress. A
+  source runs on one queue, and a call in WebAssembly or JavaScript cannot
+  stop half way. This stays as it is.
+- protobufjs 7.4.0 is in the bundle of the JavaScript libraries, for the
+  gRPC calls of LNReader plugins.
+- A second agent tested the source lists again with the new code. The list
+  for the owner is in `private/`, which git does not keep.
