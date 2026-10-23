@@ -11,6 +11,35 @@ the decisions.
 A tag such as `v0.1.0` builds the unsigned IPA and attaches it to a release on
 GitHub as `Asabunko.ipa`.
 
+## 2.3.0 (2026-10-23)
+
+The gaps of the sources are closed.
+
+- Aidoku sources show their range filters, such as the release year of
+  MangaFire, as two number fields.
+- Aidoku sources show all their settings in one form: groups, pages, lists
+  of choices, lists that you edit, buttons, links, and steppers.
+- You can sign in to an Aidoku source with a user name and a password, in
+  a web page, or with OAuth. You can sign out again.
+- Paperback extensions can sign in with OAuth, such as MangaDex.
+- Paperback extensions that run a page in a web view work, such as
+  MangaFire.
+- Suwayomi sources show their filters and their settings. A change of a
+  setting goes to the server.
+- LNReader plugins with a filter for the words of a search, such as
+  WTR-LAB and NovelBuddy, search with the other filters too.
+
+Fixes:
+
+- The vertical reader does not jump when you scroll fast. Each strip has
+  its height before its image comes, and the next strips load before you
+  get to them.
+- Each save of the source list installs the English sources that are not on
+  the device, and removes the sources of the lines that you removed. The
+  other sources do not download again.
+- The filter sheet keeps the choices of a list of choices when the list
+  closes.
+
 ## 2.2.0 (2026-10-23)
 
 - Paperback extensions show their settings, such as the languages and the

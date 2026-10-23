@@ -8,15 +8,6 @@ Each task here is a choice of the owner. A task leaves this list when its
 release is out. The reason for each choice is in
 [docs/decisions.md](docs/decisions.md).
 
-## v2.3: Close the gaps of the sources
-
-- [#1](https://github.com/Stiven-Gjekaj/Asabunko/issues/1) Show the range filters of Aidoku sources
-- [#2](https://github.com/Stiven-Gjekaj/Asabunko/issues/2) Show the Aidoku settings that the app skips
-- [#3](https://github.com/Stiven-Gjekaj/Asabunko/issues/3) Give Suwayomi sources their filters and settings
-- [#4](https://github.com/Stiven-Gjekaj/Asabunko/issues/4) Run `executeInWebView` for Paperback extensions
-- [#5](https://github.com/Stiven-Gjekaj/Asabunko/issues/5) Sign in with OAuth in a settings form
-- [#6](https://github.com/Stiven-Gjekaj/Asabunko/issues/6) Search the LNReader plugins with their filters
-
 ## v2.4: Keep up with new chapters
 
 - [#7](https://github.com/Stiven-Gjekaj/Asabunko/issues/7) Check for new chapters in the background

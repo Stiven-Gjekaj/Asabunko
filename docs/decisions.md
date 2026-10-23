@@ -585,3 +585,42 @@ The choices:
 - A sign-in row with OAuth shows, but it does nothing. It needs a web view
   and a redirect, and no extension of the lists needs it to read.
 - The live test opens the 7 child forms of MangaDex, with 59 rows.
+
+## 2026-10-23: The gaps of the sources
+
+- An Aidoku range filter goes to the source as `FilterValue::Range` with the
+  tag 5. A bound that the user leaves empty is None. A range with no bound
+  does not go.
+- The settings of an Aidoku source are a form, as the settings of a
+  Paperback extension are. A group is a section. A page, a list of choices,
+  and an editable list are child forms. The settings of `get_settings` come
+  after the settings of settings.json.
+- A sign-in of Aidoku keeps the keys that the Aidoku app writes: the key of
+  the setting holds "logged_in" or the token, and the user name, the
+  password, and the cookies go in the keys with ".username", ".password",
+  ".keys", and ".values". A sign-in with PKCE keeps its verifier in
+  ".codeVerifier" until the sign-in ends.
+- A Paperback OAuth row gets a page with a state and, for PKCE, a challenge.
+  The token request goes to the token endpoint of the extension, and the
+  extension gets the refresh token and the access token.
+- `executeInWebView` of Paperback loads the page in a hidden web view with a
+  store of its own. The script runs as the body of an async function. An
+  empty result asks again for 15 seconds, because a page can set its value
+  after the load. 2 of the 68 Inkdex extensions call it: MangaFire and
+  AllManga.
+- Suwayomi gets each mutation with one input object, because the names of
+  the types of its parts come from a rule of graphql-kotlin and the app did
+  not test them on a real server. The filters and the preferences use the
+  position of each item, as the server does.
+- `searchNovels` of LNReader has no filters. A plugin with a text filter
+  named "search", "keyword", "keywords", or "query" gets the words in that
+  filter, and its list does the search.
+- The automatic install of a source list takes only English sources and
+  the sources of all languages. A save brings each list up to date: it
+  installs what is missing and removes what left the list. A source that the
+  user removed by hand comes back at the next save.
+- The vertical reader reads the size of each strip from the head of its file,
+  and loads three strips ahead. In the UI test of 20 fast swipes, the jumps
+  of the column went from 3 to 0. The late frames of the simulator change
+  with the load of the Mac, so that test does not check them.
+
