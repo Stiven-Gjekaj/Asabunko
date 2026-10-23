@@ -180,6 +180,22 @@
       const result = await paged('search:' + title, page, (metadata) => extension.getSearchResults({ title }, metadata, undefined));
       return { items: result.items.map(item), hasMore: result.hasMore };
     },
+    // The search filters of the extension, for the filter screen of the app.
+    async filters() {
+      if (typeof extension.getSearchFilters !== 'function') return [];
+      const list = (await extension.getSearchFilters()) || [];
+      return list.map((f) => ({ id: String(f.id), title: String(f.title || f.id), type: String(f.type), value: f.value === undefined ? null : f.value,
+        allowExclusion: !!f.allowExclusion, placeholder: f.placeholder || null,
+        options: (f.options || []).map((o) => ({ label: String(o.value), value: String(o.id) })) }));
+    },
+    // A search with the values of the filters: a text for an input, an option ID for a dropdown,
+    // and a map of option IDs to "included" or "excluded" for a multiselect.
+    async browse(title, json, page) {
+      const values = JSON.parse(json);
+      const filters = Object.keys(values).map((id) => ({ id, value: values[id] }));
+      const result = await paged('browse:' + title + json, page, (metadata) => extension.getSearchResults({ title, filters }, metadata, undefined));
+      return { items: result.items.map(item), hasMore: result.hasMore };
+    },
     async details(mangaId) {
       const manga = await extension.getMangaDetails(mangaId);
       series[mangaId] = manga;

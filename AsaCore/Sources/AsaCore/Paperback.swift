@@ -107,6 +107,50 @@ public final class PaperbackExtension: OnlineSource, @unchecked Sendable {
         try await page("__paperback.search", [query, number])
     }
 
+    public func filterOptions() async -> [SourceOption] {
+        guard let data = try? await runtime.invoke("__paperback.filters"),
+              let list = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]]
+        else { return [] }
+        return list.compactMap { filter in
+            guard let id = filter["id"] as? String, let type = filter["type"] as? String else { return nil }
+            let title = filter["title"] as? String ?? id
+            let choices = (filter["options"] as? [[String: Any]] ?? []).map { SourceOption.Choice(label: $0["label"] as? String ?? "", value: $0["value"] as? String ?? "") }
+            switch type {
+            case "input":
+                return SourceOption(id: id, title: title, kind: .text(placeholder: filter["placeholder"] as? String), initial: .text(filter["value"] as? String ?? ""), raw: type)
+            case "dropdown" where !choices.isEmpty:
+                return SourceOption(id: id, title: title, kind: .select(choices), initial: .select(filter["value"] as? String ?? choices[0].value), raw: type)
+            case "multiselect" where !choices.isEmpty:
+                let marks = filter["value"] as? [String: String] ?? [:]
+                return SourceOption(id: id, title: title, kind: .multi(choices, excludable: filter["allowExclusion"] as? Bool ?? false),
+                                    initial: .multi(included: marks.filter { $0.value == "included" }.map(\.key).sorted(),
+                                                    excluded: marks.filter { $0.value == "excluded" }.map(\.key).sorted()), raw: type)
+            default:
+                return nil
+            }
+        }
+    }
+
+    public func browse(page number: Int, query: String, filters: [String: OptionValue]) async throws -> OnlinePage {
+        guard !filters.isEmpty else { return query.isEmpty ? try await popular(page: number) : try await search(query, page: number) }
+        var values: [String: Any] = [:]
+        for (id, value) in filters {
+            switch value {
+            case let .text(text): values[id] = text
+            case let .select(choice): values[id] = choice
+            case let .multi(included, excluded):
+                var marks: [String: String] = [:]
+                for choice in included { marks[choice] = "included" }
+                for choice in excluded { marks[choice] = "excluded" }
+                values[id] = marks
+            case let .toggle(on): values[id] = on
+            case let .sort(index, _): values[id] = index
+            }
+        }
+        let json = String(decoding: try JSONSerialization.data(withJSONObject: values), as: UTF8.self)
+        return try await page("__paperback.browse", [query, json, number])
+    }
+
     private struct Details: Decodable {
         struct Chapter: Decodable {
             let id: String

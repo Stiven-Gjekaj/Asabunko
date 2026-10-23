@@ -26,7 +26,14 @@ var source = (function (e) {
       const list = JSON.parse(Application.arrayBufferToUTF8String(data));
       return { items: list.map((t) => ({ type: 'simpleCarouselItem', mangaId: t.id, title: t.title, imageUrl: 'https://quiet.test/c/' + t.id + '.jpg' })), metadata: list.length ? page + 1 : undefined };
     }
-    async getSearchResults(query, metadata) { return { items: [{ mangaId: 'm1', title: 'Found ' + query.title, imageUrl: '' }], metadata: undefined }; }
+    async getSearchFilters() {
+      return [{ type: 'dropdown', id: 'sort', title: 'Sort', options: [{ id: 'new', value: 'Newest' }, { id: 'top', value: 'Top' }], value: 'new' },
+              { type: 'multiselect', id: 'genre', title: 'Genre', options: [{ id: 'calm', value: 'Calm' }, { id: 'loud', value: 'Loud' }], value: {}, allowExclusion: true }];
+    }
+    async getSearchResults(query, metadata) {
+      const filters = (query.filters ?? []).map((f) => f.id + '=' + (typeof f.value === 'string' ? f.value : Object.keys(f.value).sort().map((k) => k + ':' + f.value[k]).join(','))).sort().join(';');
+      return { items: [{ mangaId: 'm1', title: 'Found ' + query.title + (filters ? ' with ' + filters : ''), imageUrl: '' }], metadata: undefined };
+    }
     async getMangaDetails(mangaId) {
       return { mangaId, mangaInfo: { primaryTitle: 'Morning Tea', thumbnailUrl: 'https://quiet.test/c/m1.jpg', synopsis: '<p>Warm.</p>', secondaryTitles: [],
         contentRating: 'SAFE', author: 'Mina', status: 'Ongoing', tagGroups: [{ id: 'g', title: 'Genres', tags: [{ id: 'a', title: 'Calm' }] }] } };
@@ -90,6 +97,17 @@ private func encrypted(_ text: String) -> String {
         let saved = try String(contentsOf: state, encoding: .utf8)
         #expect(saved.contains("session"))
         #expect(saved.contains("$date"))
+    }
+
+    @Test func searchesWithTheFiltersOfTheExtension() async throws {
+        let source = try await load(SeenRequests(), state: try temporaryFolder().appendingPathComponent("state.json"))
+        let filters = await source.filterOptions()
+        #expect(filters.map(\.id) == ["sort", "genre"])
+        #expect(filters[0].kind == .select([.init(label: "Newest", value: "new"), .init(label: "Top", value: "top")]))
+        #expect(filters[1].kind == .multi([.init(label: "Calm", value: "calm"), .init(label: "Loud", value: "loud")], excludable: true))
+        let page = try await source.browse(page: 1, query: "tea", filters: ["sort": .select("top"), "genre": .multi(included: ["calm"], excluded: ["loud"])])
+        #expect(page.items.first?.title == "Found tea with genre=calm:included,loud:excluded;sort=top")
+        #expect(try await source.browse(page: 1, query: "tea", filters: [:]).items.first?.title == "Found tea")
     }
 
     @Test func readsTheSeriesTheChaptersAndThePagesWithTheStateAndTheCrypto() async throws {
