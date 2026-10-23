@@ -254,3 +254,43 @@ The choices:
   certificate. The user chooses each server.
 - Reason: Komga, Kavita, Calibre-web, and Suwayomi give OPDS. It is the most
   common way to read a library of your own.
+
+## 2026-10-23: The JavaScript sources
+
+- LNReader plugins and Paperback extensions are JavaScript. They run in
+  JavaScriptCore, one context for each source, on its own queue.
+- The app gives the functions of a browser that the sources use: fetch,
+  Headers, Response, FormData, timers, TextDecoder in each encoding of iOS,
+  atob and btoa, URL, and URLSearchParams. URLSession makes the requests.
+- `js/libraries.js` bundles cheerio, htmlparser2, dayjs, the AES of
+  @noble/ciphers, and the URL functions of core-js. `scripts/build-js.sh`
+  makes the bundle with esbuild. The bundle is in the repository, so a build
+  of the app does not need Node.
+- A call into a source has a limit of 60 seconds.
+- Reason: JavaScriptCore is in iOS, and these libraries are what the plugins
+  ask for with require().
+
+## 2026-10-23: The LNReader plugins
+
+- A line with "plugins.min.json" is a list of LNReader plugins. The user
+  installs the plugins that they want. The app keeps the code of each one in
+  the folder of the library.
+- The app gives the modules of the LNReader app to a plugin: cheerio,
+  htmlparser2, dayjs, urlencode, and the @libs modules. fetchProto is not
+  there, so the few plugins that need protobuf do not work.
+- The storage of a plugin stays only while the app runs.
+- Reason: the plugins are under the MIT License and need only these
+  modules. The protobuf library is large, and only a few plugins use it.
+
+## 2026-10-23: An online book in the library
+
+- A novel or a series of a source goes into the library as a book with its
+  origin: the line of the source list, the source, and the series.
+- Its folder has `novel.json`, with each chapter of the source in order. A
+  chapter of a novel downloads into its file the first time it opens. The
+  reader then downloads the next chapter too.
+- The page of the series adds the new chapters. A chapter that the source
+  removes stays in the book.
+- To read a chapter adds the series to the library, so that the place stays.
+- Reason: one form of book lets the novels of the web use the reader of
+  novels, with no network after the download.

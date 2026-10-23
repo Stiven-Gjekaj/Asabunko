@@ -51,6 +51,8 @@ Asabunko has no sources in it. Your books stay on your device.
   kind of each source
 - OPDS catalogs, such as Komga, Kavita, and Calibre-web: browse, search,
   read a comic page by page from the server, or download a book
+- Web novels with LNReader plugins: install a plugin from a list, find a
+  novel, and read its chapters, which download as you read
 - Read from the right to the left, from the left to the right, or in one
   vertical column. Pinch or double tap to zoom
 - A tap at the edge turns the page. A tap in the middle shows the bars
@@ -95,7 +97,9 @@ App/Sources/
   Theme/        the warm colours and the font, from ZettaStream
 AsaCore/        the parts that do not need a screen, with their tests
   Sources/CArchive/   the declarations of the libarchive of the system
-  Sources/AsaCore/    the archives, the import, ComicInfo.xml, and the library
+  Sources/AsaCore/    the archives, the import, ComicInfo.xml, the library,
+                      OPDS, and the hosts of the online sources
+js/             the JavaScript libraries of the sources, which scripts/build-js.sh bundles
 UITests/        the checks in the simulator
 assets/brand/   the icon
 docs/           the reason behind each choice
@@ -127,15 +131,17 @@ swift test --package-path AsaCore
 xcodebuild -project Asabunko.xcodeproj -scheme Asabunko -destination 'platform=iOS Simulator,name=iPhone 17' test
 ```
 
-The UI test of the catalogs needs the small OPDS server of the scripts. Start
-it, and give its URL to the test:
+The UI tests of the sources need the small test server of the scripts. It
+serves an OPDS catalog and a list of LNReader plugins. Start it, and give its
+URL to the tests:
 
 ```
 python3 scripts/test-server.py 8765 &
-TEST_RUNNER_OPDS_URL=http://127.0.0.1:8765/opds/catalog xcodebuild -project Asabunko.xcodeproj -scheme Asabunko -destination 'platform=iOS Simulator,name=iPhone 17' test
+TEST_RUNNER_SERVER_URL=http://127.0.0.1:8765 TEST_RUNNER_OPDS_URL=http://127.0.0.1:8765/opds/catalog xcodebuild -project Asabunko.xcodeproj -scheme Asabunko -destination 'platform=iOS Simulator,name=iPhone 17' test
 ```
 
-With no URL, the test is skipped.
+With no URL, these tests are skipped. One unit test reads a real LNReader
+plugin from the web. It runs with `ASABUNKO_LIVE=1 swift test --package-path AsaCore`.
 
 The unit tests make their own ZIP, 7z, and TAR archives with libarchive. They
 cover the reader of the archives, the natural order of the pages,
@@ -154,4 +160,6 @@ and change the look.
 
 MIT. See [LICENSE](LICENSE). Karla is under the SIL Open Font License, in
 [licenses/](licenses/Karla-OFL.txt). The app links the libarchive of the
-system, under the BSD License.
+system, under the BSD License. The JavaScript bundle has cheerio,
+htmlparser2, dayjs, @noble/ciphers, and core-js, under the MIT License. Their
+license texts are at the end of `AsaCore/Sources/AsaCore/Resources/libraries.js`.

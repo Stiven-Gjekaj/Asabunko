@@ -10,7 +10,6 @@ release is out. The reason for each choice is in
 
 ## Next
 
-- 0.5.0: LNReader plugins for novels on the web, in JavaScriptCore.
 - 0.6.0: Aidoku sources, in a WebAssembly runtime.
 - 0.7.0: Paperback 0.9 extensions, in JavaScriptCore.
 - 0.8.0: Suwayomi servers, for the extensions of Mihon.

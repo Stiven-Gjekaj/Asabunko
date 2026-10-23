@@ -11,6 +11,21 @@ the decisions.
 A tag such as `v0.1.0` builds the unsigned IPA and attaches it to a release on
 GitHub as `Asabunko.ipa`.
 
+## 0.5.0 (2026-10-23)
+
+- Adds web novels with LNReader plugins. Paste the URL of a list of
+  plugins, such as the plugins.min.json of LNReader, into Sources.
+- Open the list, and install the plugins that you want. The plugins of each
+  language are together.
+- Each installed plugin shows its popular and latest novels, and you can
+  search it.
+- The page of a novel has its author, its summary, its genres, and its
+  chapters, from the oldest or from the newest.
+- Add a novel to the library, or open a chapter to add it and read it. A
+  chapter downloads the first time it opens, and the next chapter downloads
+  with it. A chapter that downloaded stays for reading with no network.
+- The page of a novel that is in the library adds its new chapters.
+
 ## 0.4.0 (2026-10-23)
 
 - Adds sources, with the paste box of ZettaStream. Open Browse, tap Sources,
