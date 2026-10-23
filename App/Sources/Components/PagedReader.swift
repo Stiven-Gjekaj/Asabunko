@@ -34,12 +34,28 @@ struct PagedReader: UIViewControllerRepresentable {
         guard shown != page || old.rightToLeft != rightToLeft, let next = coordinator.controller(at: page) else { return }
         let forward = page > (shown ?? 0)
         let direction: UIPageViewController.NavigationDirection = (forward != rightToLeft) ? .forward : .reverse
-        controller.setViewControllers([next], direction: direction, animated: shown != nil && old.rightToLeft == rightToLeft)
+        // A turn that comes while the last turn moves goes with no animation. Two animations at the same
+        // time leave UIPageViewController in a state where the next turns do nothing.
+        let animated = shown != nil && old.rightToLeft == rightToLeft && !coordinator.turning
+        guard animated else {
+            controller.setViewControllers([next], direction: direction, animated: false)
+            return
+        }
+        coordinator.turning = true
+        controller.setViewControllers([next], direction: direction, animated: true) { [weak controller] _ in
+            // A second set with no animation clears the pages that UIPageViewController keeps from the animation.
+            DispatchQueue.main.async {
+                controller?.setViewControllers([next], direction: direction, animated: false)
+                coordinator.turning = false
+            }
+        }
     }
 
     @MainActor
     final class Coordinator: NSObject, UIPageViewControllerDataSource, UIPageViewControllerDelegate {
         var parent: PagedReader
+        /// True while an animated turn moves.
+        var turning = false
 
         init(_ parent: PagedReader) { self.parent = parent }
 
