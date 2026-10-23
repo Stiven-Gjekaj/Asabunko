@@ -24,6 +24,17 @@ import Testing
         #expect(library.continueReading.map(\.title) == ["New", "Old"])
     }
 
+    @Test func sortsTheReadListInEachOrder() {
+        let a = Book(title: "Bay 10", fileName: "a", pageCount: 10, added: Date(timeIntervalSince1970: 300), lastRead: Date(timeIntervalSince1970: 100), page: 5)
+        let b = Book(title: "Bay 9", fileName: "b", pageCount: 10, added: Date(timeIntervalSince1970: 200), lastRead: Date(timeIntervalSince1970: 400), finished: true)
+        let c = Book(title: "Arch", fileName: "c", pageCount: 10, added: Date(timeIntervalSince1970: 100))
+        let library = Library(books: [a, b, c])
+        #expect(library.readList(by: .added).map(\.title) == ["Bay 10", "Bay 9", "Arch"])
+        #expect(library.readList(by: .lastRead).map(\.title) == ["Bay 9", "Bay 10", "Arch"])
+        #expect(library.readList(by: .title).map(\.title) == ["Arch", "Bay 9", "Bay 10"], "The numbers sort in natural order.")
+        #expect(library.readList(by: .unread).map(\.title) == ["Arch", "Bay 10", "Bay 9"])
+    }
+
     @Test func aBookFindsItsSourceWhenItsListComesBack() {
         let old = UUID(), new = UUID()
         let info = SourceInfo(id: "en.sea", name: "Sea", language: "en", version: "1", icon: nil, code: URL(string: "https://x.test/s.aix")!, novels: false)

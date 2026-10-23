@@ -149,6 +149,20 @@ public struct Book: Codable, Sendable, Identifiable, Equatable {
     }
 }
 
+/// The orders of the read list.
+public enum ReadListOrder: String, CaseIterable, Sendable {
+    case added, lastRead, title, unread
+
+    public var name: String {
+        switch self {
+        case .added: "Date added"
+        case .lastRead: "Last read"
+        case .title: "Title"
+        case .unread: "Unread first"
+        }
+    }
+}
+
 /// All data of the library, in one JSON file.
 public struct Library: Codable, Sendable, Equatable {
     /// The form of the data. A newer app can read an older form, but not the reverse.
@@ -216,6 +230,18 @@ public struct Library: Codable, Sendable, Equatable {
     /// The books of the read list, the newest first.
     public var readList: [Book] {
         recentlyAdded.filter(\.listed)
+    }
+
+    /// The books of the read list in an order that the user chooses.
+    public func readList(by order: ReadListOrder) -> [Book] {
+        let list = readList
+        switch order {
+        case .added: return list
+        case .lastRead: return list.sorted { ($0.lastRead ?? .distantPast) > ($1.lastRead ?? .distantPast) }
+        case .title: return list.sorted { $0.title.localizedStandardCompare($1.title) == .orderedAscending }
+        // The books that the user did not finish come first, the least read first.
+        case .unread: return list.sorted { ($0.finished ? 2 : $0.progress) < ($1.finished ? 2 : $1.progress) }
+        }
     }
 
     /// All books, the newest first.

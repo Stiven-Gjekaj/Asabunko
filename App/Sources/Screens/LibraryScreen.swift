@@ -8,6 +8,7 @@ struct LibraryScreen: View {
     @State private var reading: Book?
     @State private var deleting: Book?
     @State private var updating = false
+    @AppStorage("library.order") private var order = ReadListOrder.added
 
     private let columns = [GridItem(.adaptive(minimum: 104, maximum: 160), spacing: 16, alignment: .top)]
 
@@ -134,9 +135,21 @@ struct LibraryScreen: View {
 
     private var readList: some View {
         VStack(alignment: .leading, spacing: 12) {
-            sectionTitle("Read list")
+            HStack {
+                sectionTitle("Read list")
+                Spacer()
+                Menu {
+                    Picker("Order", selection: $order) {
+                        ForEach(ReadListOrder.allCases, id: \.self) { Text($0.name).tag($0) }
+                    }
+                } label: {
+                    Label(order.name, systemImage: "arrow.up.arrow.down").font(Karla.font(14, .bold))
+                }
+                .accessibilityLabel("Order of the read list")
+                .accessibilityValue(order.name)
+            }
             LazyVGrid(columns: columns, spacing: 22) {
-                ForEach(app.library.readList) { book in
+                ForEach(app.library.readList(by: order)) { book in
                     Button { reading = book } label: { BookTile(book: book, cover: app.cover(of: book)) }
                         .buttonStyle(.plain)
                         .contextMenu { menu(for: book) }
@@ -245,6 +258,10 @@ private struct BookTile: View {
                 .font(Karla.font(14, .bold))
                 .lineLimit(2)
                 .multilineTextAlignment(.leading)
+            // The file name of an online book is the name of its source.
+            if book.origin != nil {
+                Text(book.fileName).font(Karla.font(12)).foregroundStyle(Palette.textSecondary).lineLimit(1)
+            }
             if book.lastRead != nil && !book.finished {
                 ProgressLine(value: book.progress)
             }
