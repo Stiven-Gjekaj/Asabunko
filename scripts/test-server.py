@@ -280,16 +280,16 @@ class Handler(BaseHTTPRequestHandler):
         # check sets the cookie of a passed check and loads again. With the cookie, the path works.
         if path.startswith("/cf/"):
             if "cf_clearance=passed" not in (self.headers.get("Cookie") or ""):
-                page = (b"<!DOCTYPE html><html><head><title>Just a moment...</title></head><body>"
+                challenge = (b"<!DOCTYPE html><html><head><title>Just a moment...</title></head><body>"
                         b"<p>Checking your browser.</p><script src=\"/cdn-cgi/challenge-platform/h/b/orchestrate\"></script>"
                         b"<script>document.cookie = 'cf_clearance=passed; path=/'; setTimeout(function () { location.reload(); }, 300);</script>"
                         b"</body></html>")
                 self.send_response_only(503)
                 self.send_header("Server", "cloudflare")
                 self.send_header("Content-Type", "text/html")
-                self.send_header("Content-Length", str(len(page)))
+                self.send_header("Content-Length", str(len(challenge)))
                 self.end_headers()
-                return self.wfile.write(page)
+                return self.wfile.write(challenge)
             self.path = self.path[3:]
             path = path[3:]
         if path in ("/control/offline", "/control/online"):
