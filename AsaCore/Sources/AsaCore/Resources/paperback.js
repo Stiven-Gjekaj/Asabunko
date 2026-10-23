@@ -161,6 +161,51 @@
     return { items: (result && result.items) || [], hasMore: !!more };
   }
 
+  // The settings forms. The host keeps the ID of each form, and each call gives the form again after the change.
+  const forms = new Map();
+  let nextForm = 0;
+  function formId(form) {
+    let id = form.__asabunko_form;
+    if (!id || forms.get(id) !== form) {
+      id = 'form-' + (++nextForm);
+      Object.defineProperty(form, '__asabunko_form', { value: id, enumerable: false, configurable: true });
+      form.__underlying_formId = id;
+      forms.set(id, form);
+    }
+    return id;
+  }
+  const label = (value) => value === undefined || value === null || typeof value === 'object' ? null : String(value);
+  // A label row of a list of choices has a symbol as its value: a check for a choice that is in, a cross for a choice that is out.
+  function mark(value) {
+    if (!value || typeof value !== 'object' || !value.symbol) return null;
+    return /xmark|minus|nosign/.test(String(value.symbol)) ? 'excluded' : 'included';
+  }
+  function row(item) {
+    const base = { id: String(item.id), type: String(item.type), title: String(item.title || ''), subtitle: item.subtitle ? String(item.subtitle) : null };
+    switch (item.type) {
+      case 'labelRow': return { ...base, value: label(item.value), mark: mark(item.value), selectable: item.onSelect != null };
+      case 'inputRow': return { ...base, value: item.value === undefined || item.value === null ? '' : String(item.value) };
+      case 'toggleRow': return { ...base, on: !!item.value };
+      case 'navigationRow': return { ...base, value: label(item.value), form: item.form ? formId(item.form) : null };
+      default: return { ...base, selectable: item.onSelect != null };
+    }
+  }
+  async function renderForm(id) {
+    const form = forms.get(id);
+    if (!form) throw new Error('The form is not open.');
+    if (!form.__asabunko_seen) {
+      Object.defineProperty(form, '__asabunko_seen', { value: true, enumerable: false, configurable: true });
+      if (typeof form.formWillAppear === 'function') await form.formWillAppear();
+    }
+    const rows = new Map();
+    const sections = ((await form.getSections()) || []).filter((s) => s && !s.isHidden).map((s, k) => ({
+      id: String(s.id === undefined ? k : s.id), header: s.header ? String(s.header) : null, footer: s.footer ? String(s.footer) : null,
+      rows: (s.items || []).filter((i) => i && !i.isHidden).map((i) => { rows.set(String(i.id), i); return row(i); }),
+    }));
+    Object.defineProperty(form, '__asabunko_rows', { value: rows, enumerable: false, configurable: true });
+    return { id, submit: !!form.requiresExplicitSubmission, sections };
+  }
+
   globalThis.__paperback = {
     async start(id) {
       if (typeof source !== 'object' || !source || typeof source[id] !== 'object') throw new Error('The file is not a Paperback extension with the ID ' + id + '.');
@@ -224,5 +269,28 @@
       return { pages: requests };
     },
     async imageHeaders(url) { return headersOf(await intercept({ url, method: 'GET' })); },
+    hasForm: () => typeof extension.getSettingsForm === 'function',
+    // The root settings form, made again each time that the user opens the settings.
+    async settingsForm() {
+      if (typeof extension.getSettingsForm !== 'function') return null;
+      forms.clear();
+      return renderForm(formId(await extension.getSettingsForm()));
+    },
+    form: (id) => renderForm(id),
+    // An action of a row: a text for an input, a switch value for a toggle, and null for a tap.
+    async formAction(id, rowId, json) {
+      const form = forms.get(id);
+      const item = form && form.__asabunko_rows && form.__asabunko_rows.get(rowId);
+      if (!item) throw new Error('The row is not in the form.');
+      const value = JSON.parse(json);
+      const action = SelectorRegistry.selector(item.type === 'inputRow' || item.type === 'toggleRow' ? item.onValueChange : item.onSelect);
+      if (typeof action === 'function') await (value === null ? action() : action(value));
+      return renderForm(id);
+    },
+    async formSubmit(id) {
+      const form = forms.get(id);
+      if (form && typeof form.formDidSubmit === 'function') await form.formDidSubmit();
+      return true;
+    },
   };
 })();

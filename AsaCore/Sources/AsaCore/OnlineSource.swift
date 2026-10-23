@@ -135,9 +135,19 @@ public protocol OnlineSource: AnyObject, Sendable {
     func settingValues() async -> [String: OptionValue]
     /// Keeps a new value of a setting.
     func setSetting(_ id: String, _ value: OptionValue) async
+    /// True when the settings of the source are a form, and not a list of options.
+    func hasSettingsForm() async -> Bool
+    /// The root settings form, made again for each visit. Nil when the source has no form.
+    func settingsForm() async throws -> SourceForm?
+    /// A form that the source opened before, such as the form of a link row.
+    func form(_ id: String) async throws -> SourceForm
+    /// Does the action of a row, then gives the form again.
+    func formAction(_ form: String, row: String, input: FormInput) async throws -> SourceForm
+    /// Gives the changes of a form that the user must save to the source.
+    func submitForm(_ id: String) async throws
 }
 
-/// A source with no filters and no settings.
+/// A source with no filters, no settings, and no settings form.
 extension OnlineSource {
     public func filterOptions() async -> [SourceOption] { [] }
     public func browse(page: Int, query: String, filters: [String: OptionValue]) async throws -> OnlinePage {
@@ -146,6 +156,11 @@ extension OnlineSource {
     public func settingOptions() async -> [SourceOption] { [] }
     public func settingValues() async -> [String: OptionValue] { [:] }
     public func setSetting(_ id: String, _ value: OptionValue) async {}
+    public func hasSettingsForm() async -> Bool { false }
+    public func settingsForm() async throws -> SourceForm? { nil }
+    public func form(_ id: String) async throws -> SourceForm { throw SourceFormError.noForm }
+    public func formAction(_ form: String, row: String, input: FormInput) async throws -> SourceForm { throw SourceFormError.noForm }
+    public func submitForm(_ id: String) async throws { throw SourceFormError.noForm }
 }
 
 extension URL {

@@ -6,6 +6,36 @@ import Testing
 /// An extension in the form of the Paperback toolchain: an IIFE that sets the global source.
 private let bundle = #"""
 var source = (function (e) {
+  // The parts of the Form class of the toolchain that the forms of this extension use.
+  class Form { reloadForm() { const id = this.__underlying_formId; if (id) Application.formDidChange(id); } }
+  class LanguageForm extends Form {
+    constructor() { super(); this.requiresExplicitSubmission = true; this.chosen = Application.getState('languages') ?? ['en']; }
+    getSections() {
+      return [{ type: 'listSection', id: 'languages', header: 'Languages', items: ['en', 'ja'].map((code) => {
+        this['__closure_selector-' + code] = () => { this.chosen = this.chosen.includes(code) ? this.chosen.filter((c) => c !== code) : [...this.chosen, code]; };
+        return { type: 'labelRow', id: code, title: code.toUpperCase(), isHidden: false, isSelectable: true,
+                 value: this.chosen.includes(code) ? { symbol: 'checkmark', style: 'success' } : undefined, onSelect: Application.Selector(this, '__closure_selector-' + code) };
+      }) }];
+    }
+    async formDidSubmit() { Application.setState(this.chosen, 'languages'); }
+  }
+  class SettingsForm extends Form {
+    getSections() {
+      return [
+        { type: 'listSection', id: 'main', header: 'Main', footer: 'Changes go at once.', items: [
+          { type: 'toggleRow', id: 'adult', title: 'Adult titles', value: Application.getState('adult') ?? false, onValueChange: Application.Selector(this, 'setAdult') },
+          { type: 'inputRow', id: 'name', title: 'Name', value: Application.getState('name') ?? '', onValueChange: Application.Selector(this, 'setName') },
+          { type: 'navigationRow', id: 'languages', title: 'Languages', value: (Application.getState('languages') ?? ['en']).join(', '), form: new LanguageForm() },
+          { type: 'labelRow', id: 'secret', title: 'Secret', isHidden: true },
+          { type: 'oauthButtonRow', id: 'login', title: 'Sign in' },
+        ] },
+        { type: 'listSection', id: 'reset', items: [{ type: 'buttonRow', id: 'reset', title: 'Reset', onSelect: Application.Selector(this, 'reset') }] },
+      ];
+    }
+    async setAdult(value) { Application.setState(value, 'adult'); }
+    async setName(value) { Application.setState(value, 'name'); }
+    async reset() { Application.resetAllState(); this.reloadForm(); }
+  }
   class Quiet {
     constructor() { this.visits = Application.getState('visits') ?? 0; }
     async initialise() {
@@ -26,6 +56,7 @@ var source = (function (e) {
       const list = JSON.parse(Application.arrayBufferToUTF8String(data));
       return { items: list.map((t) => ({ type: 'simpleCarouselItem', mangaId: t.id, title: t.title, imageUrl: 'https://quiet.test/c/' + t.id + '.jpg' })), metadata: list.length ? page + 1 : undefined };
     }
+    async getSettingsForm() { return new SettingsForm(); }
     async getSearchFilters() {
       return [{ type: 'dropdown', id: 'sort', title: 'Sort', options: [{ id: 'new', value: 'Newest' }, { id: 'top', value: 'Top' }], value: 'new' },
               { type: 'multiselect', id: 'genre', title: 'Genre', options: [{ id: 'calm', value: 'Calm' }, { id: 'loud', value: 'Loud' }], value: {}, allowExclusion: true }];
@@ -110,6 +141,46 @@ private func encrypted(_ text: String) -> String {
         #expect(try await source.browse(page: 1, query: "tea", filters: [:]).items.first?.title == "Found tea")
     }
 
+    @Test func showsTheSettingsFormAndDoesTheActionsOfItsRows() async throws {
+        let state = try temporaryFolder().appendingPathComponent("state.json")
+        let source = try await load(SeenRequests(), state: state)
+        #expect(await source.hasSettingsForm())
+        let root = try #require(try await source.settingsForm())
+        #expect(root.submit == false)
+        #expect(root.sections.map(\.id) == ["main", "reset"])
+        #expect(root.sections[0].header == "Main")
+        #expect(root.sections[0].footer == "Changes go at once.")
+        // The hidden row does not show. The app cannot do the sign-in row.
+        #expect(root.sections[0].rows.map(\.id) == ["adult", "name", "languages", "login"])
+        #expect(root.sections[0].rows.map(\.kind) == [.toggle, .input, .link, .unsupported])
+        #expect(root.sections[0].rows[0].on == false)
+
+        var form = try await source.formAction(root.id, row: "adult", input: .toggle(true))
+        #expect(form.sections[0].rows[0].on == true)
+        form = try await source.formAction(root.id, row: "name", input: .text("Mina"))
+        #expect(form.sections[0].rows[1].value == "Mina")
+        #expect(try String(contentsOf: state, encoding: .utf8).contains("Mina"))
+
+        // A child form keeps its changes until the user saves it.
+        let link = try #require(form.sections[0].rows[2].form)
+        #expect(form.sections[0].rows[2].value == "en")
+        var child = try await source.form(link)
+        #expect(child.submit)
+        #expect(child.sections[0].rows.map(\.mark) == ["included", nil])
+        child = try await source.formAction(link, row: "ja", input: .tap)
+        child = try await source.formAction(link, row: "en", input: .tap)
+        #expect(child.sections[0].rows.map(\.mark) == [nil, "included"])
+        #expect(try await source.form(root.id).sections[0].rows[2].value == "en")
+        try await source.submitForm(link)
+        #expect(try await source.form(root.id).sections[0].rows[2].value == "ja")
+
+        // The reset button clears the state, and the form shows the values from the start.
+        form = try await source.formAction(root.id, row: "reset", input: .tap)
+        #expect(form.sections[0].rows[0].on == false)
+        #expect(form.sections[0].rows[1].value == "")
+        await #expect(throws: JSRuntimeError.self) { try await source.formAction(root.id, row: "secret", input: .tap) }
+    }
+
     @Test func readsTheSeriesTheChaptersAndThePagesWithTheStateAndTheCrypto() async throws {
         let seen = SeenRequests()
         let state = try temporaryFolder().appendingPathComponent("state.json")
@@ -155,6 +226,14 @@ private func encrypted(_ text: String) -> String {
         let details = try await source.details(of: popular.items[0])
         #expect(!details.chapters.isEmpty)
         guard case let .pages(pages) = try await source.content(of: details.chapters.last!, in: details.series) else { Issue.record("no pages"); return }
+        // Each form of the settings opens, one level down from the root.
+        if await source.hasSettingsForm() {
+            let root = try #require(try await source.settingsForm())
+            let links = root.sections.flatMap(\.rows).compactMap(\.form)
+            var rows = 0
+            for link in links { rows += try await source.form(link).sections.flatMap(\.rows).count }
+            print("LIVE", id, "settings:", root.sections.count, "sections,", links.count, "forms with", rows, "rows")
+        }
         print("LIVE", id, popular.items.count, "series;", details.series.title, details.chapters.count, "chapters,", pages.count, "pages; first", details.chapters.first?.title ?? "", "last", details.chapters.last?.title ?? "")
     }
 }

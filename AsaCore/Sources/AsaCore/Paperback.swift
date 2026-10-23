@@ -151,6 +151,33 @@ public final class PaperbackExtension: OnlineSource, @unchecked Sendable {
         return try await page("__paperback.browse", [query, json, number])
     }
 
+    public func hasSettingsForm() async -> Bool {
+        (try? await runtime.invoke(Bool.self, "__paperback.hasForm")) ?? false
+    }
+
+    public func settingsForm() async throws -> SourceForm? {
+        try await runtime.invoke(SourceForm?.self, "__paperback.settingsForm")
+    }
+
+    public func form(_ id: String) async throws -> SourceForm {
+        try await runtime.invoke(SourceForm.self, "__paperback.form", [id])
+    }
+
+    public func formAction(_ form: String, row: String, input: FormInput) async throws -> SourceForm {
+        let value: Any = switch input {
+        case .tap: NSNull()
+        case let .text(text): text
+        case let .toggle(on): on
+        }
+        // A fragment of JSON in an array, because JSONSerialization does not write a single value with no options.
+        let json = String(decoding: try JSONSerialization.data(withJSONObject: [value]), as: UTF8.self).dropFirst().dropLast()
+        return try await runtime.invoke(SourceForm.self, "__paperback.formAction", [form, row, String(json)])
+    }
+
+    public func submitForm(_ id: String) async throws {
+        _ = try await runtime.invoke("__paperback.formSubmit", [id])
+    }
+
     private struct Details: Decodable {
         struct Chapter: Decodable {
             let id: String
