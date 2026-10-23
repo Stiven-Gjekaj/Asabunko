@@ -265,7 +265,8 @@ extension AppModel {
         guard let installed = installed(for: book), let origin = book.origin else { return 0 }
         let source = try await load(installed)
         let details = try await source.details(of: OnlineSeries(id: origin.series, title: book.title))
-        var novel = try Novel.load(from: folder(of: book))
+        // The novel in memory saves a read of the file. The merge works on a copy.
+        guard var novel = novel(of: book) else { throw ChapterFault.missing }
         let added = novel.merge(details.chapters)
         if added > 0 {
             try novel.save(to: folder(of: book))
@@ -282,7 +283,8 @@ extension AppModel {
     /// The file of a chapter of an online novel. It downloads the chapter the first time.
     func chapterFile(of book: Book, index: Int) async throws -> URL {
         let folder = folder(of: book)
-        let novel = try Novel.load(from: folder)
+        // The novel in memory, so that the open of a chapter does not read the whole list of chapters again.
+        guard let novel = novel(of: book), novel.chapters.indices.contains(index) else { throw ChapterFault.missing }
         let chapter = novel.chapters[index]
         let file = folder.appendingPathComponent(chapter.path)
         if FileManager.default.fileExists(atPath: file.path) { return file }
