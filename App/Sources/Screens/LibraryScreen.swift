@@ -5,7 +5,6 @@ import SwiftUI
 struct LibraryScreen: View {
     @Environment(AppModel.self) private var app
     @State private var importing = false
-    @State private var settings = false
     @State private var reading: Book?
     @State private var deleting: Book?
 
@@ -28,10 +27,6 @@ struct LibraryScreen: View {
             }
             .asaScreen()
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button { settings = true } label: { Image(systemName: "gearshape") }
-                        .accessibilityLabel("Settings")
-                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { importing = true } label: { Image(systemName: "plus") }
                         .accessibilityLabel("Import")
@@ -42,7 +37,6 @@ struct LibraryScreen: View {
                 guard case let .success(urls) = result else { return }
                 Task { await app.importItems(urls) }
             }
-            .sheet(isPresented: $settings) { SettingsScreen() }
             .fullScreenCover(item: $reading) { book in
                 switch book.format {
                 case .comic, .pdf: ReaderScreen(bookID: book.id)

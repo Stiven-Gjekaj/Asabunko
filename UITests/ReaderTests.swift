@@ -69,16 +69,16 @@ final class ReaderTests: XCTestCase {
     }
 
     func testChangesTheAppearance() throws {
-        XCTAssertTrue(app.buttons["Settings"].waitForExistence(timeout: 10))
-        app.buttons["Settings"].tap()
+        XCTAssertTrue(app.tabBars.buttons["Settings"].waitForExistence(timeout: 10))
+        app.tabBars.buttons["Settings"].tap()
         app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Appearance'")).firstMatch.tap()
         app.buttons["Warm dark"].tap()
         sleep(1)
         shot("8 Settings, warm dark")
-        app.buttons["Done"].tap()
+        app.tabBars.buttons["Library"].tap()
         sleep(1)
         shot("9 Empty library, warm dark")
-        app.buttons["Settings"].tap()
+        app.tabBars.buttons["Settings"].tap()
         app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Appearance'")).firstMatch.tap()
         app.buttons["Same as the device"].tap()
     }

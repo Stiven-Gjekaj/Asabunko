@@ -13,7 +13,7 @@ struct AsabunkoApp: App {
 
     var body: some Scene {
         WindowGroup {
-            LibraryScreen()
+            RootView()
                 .environment(app)
                 // "Open in Asabunko" from Files or from another app gives a copy of the file.
                 .onOpenURL { url in

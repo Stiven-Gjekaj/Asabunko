@@ -4,7 +4,6 @@ import SwiftUI
 /// The look, the reader, and the facts about the app.
 struct SettingsScreen: View {
     @Environment(AppModel.self) private var app
-    @Environment(\.dismiss) private var dismiss
     @AppStorage(Appearance.key) private var appearance = Appearance.system
     @State private var showFontLicense = false
     @State private var newer: String?
@@ -62,13 +61,7 @@ struct SettingsScreen: View {
             .asaForm()
             .asaScreen()
             .navigationTitle("Settings")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }.font(Karla.font(16, .bold))
-                }
-            }
-            .task { newer = await UpdateCheck.newerVersion() }
+                        .task { newer = await UpdateCheck.newerVersion() }
         }
     }
 
