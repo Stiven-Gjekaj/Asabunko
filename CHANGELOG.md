@@ -11,6 +11,27 @@ the decisions.
 A tag such as `v0.1.0` builds the unsigned IPA and attaches it to a release on
 GitHub as `Asabunko.ipa`.
 
+## 1.2.0 (not released)
+
+- Search asks all your sources at the same time, as in ZettaStream. A title
+  that many sources have shows one time, with the number of its sources.
+  The search keeps your recent searches.
+- The page of a title compares its sources and shows the source with the
+  most chapters. The Source menu lists each source with its number of
+  chapters, so you can choose another one. A chapter that two groups
+  translated counts one time.
+- Show the chapters by volume. A series with more than 50 chapters shows
+  them in ranges, such as 1-50 and 51-100.
+- A new Discover tab, after the library: a banner of popular titles with
+  their art, and rows of popular comics, popular novels, and new chapters.
+- The library has Continue reading and the read list. Tap the bookmark on
+  the page of a title to put it in the read list. A title that you only open
+  shows in Continue reading.
+- The sources moved from the Browse tab to Settings, Sources. Save installs
+  the sources of each new list in the languages of the device. A removed
+  line removes its sources.
+- Empty screens show art: a fan of covers on a soft glow.
+
 ## 1.1.0 (2026-10-23)
 
 - Download the chapters of an online comic or novel, to read with no

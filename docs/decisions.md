@@ -446,3 +446,29 @@ The choices:
   does not use a server.
 - Reason: the owner asked for the roadmap tasks that need no work from the
   owner.
+
+## 2026-10-23: Search, Discover, and the read list
+
+- The app finds titles as ZettaStream does. Search asks all installed
+  sources, and Discover shows their popular titles. The Browse tab of the
+  sources is gone. The sources are in Settings, Sources.
+- Search joins the titles of many sources by a key: the letters and the
+  digits of the title in lowercase, with no accents. The same title comes
+  first, then the title that more sources have.
+- The page of a title asks each source of the title at the same time. The
+  source with the most different chapter numbers wins. A source that lists a
+  chapter once for each group gives a high count of chapters, but not more
+  chapters.
+- The source of a book in the library always wins, so that the place of the
+  user stays.
+- Save installs all sources of a list in the languages of the device, and
+  the sources for all languages. Adult sources stay out until the user turns
+  them on. Four sources install at the same time.
+- A book has a `listed` mark. The read list holds the listed books. A title
+  that the user only opens is in the library to keep the place, but not in
+  the read list. A book of an older version is listed.
+- The volume of a chapter comes from its title, such as "Vol. 2 Ch. 10".
+  Aidoku and Paperback put the volume number in the title.
+- Discover asks at most 10 sources, so that it opens fast.
+- Reason: the owner asked for search, Discover, and the read list as in
+  ZettaStream, with no install button, and with volumes and ranges.

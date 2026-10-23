@@ -51,9 +51,17 @@ Asabunko has no sources in it. Your books stay on your device.
   or in one vertical column, with zoom
 - A reader of novels with your font, size, spacing, and margins, and a list
   of the chapters
-- Continue reading: the books that you read now, with the page and the
-  progress
+- A library of two parts: Continue reading, with the page and the progress,
+  and the read list of the titles that you bookmark
+- Discover: a banner and rows of the popular and the latest titles of your
+  sources
+- Search: one search in all your sources at the same time. A title that many
+  sources have shows one time
+- The page of a title compares its sources and shows the source with the
+  most chapters. You can choose another source
+- Chapters by volume, or in ranges of 50 for a long series
 - Sources: paste one URL on each line. The app finds the kind of each source
+  and installs the sources of each list
 - OPDS catalogs, such as Komga, Kavita, and Calibre-web: browse, search,
   read a comic page by page from the server, or download a book
 - Web novels with LNReader plugins, which download each chapter as you read
@@ -69,7 +77,7 @@ See [TODO.md](TODO.md) for the next functions.
 
 ## Add sources
 
-1. Open Browse, and tap the Sources button.
+1. Open Settings, Sources, and tap Add sources.
 2. Paste the URLs, one on each line, and tap Save. Some examples:
 
 ```
@@ -82,8 +90,9 @@ http://192.168.1.20:4567
 
 3. For a server with an account, write `https://user:password@host/...`. The
    password goes to the Keychain. The list shows only the user name.
-4. Open a list, and install the sources that you want. They show under
-   Installed.
+4. Asabunko installs the sources of each list in the languages of the
+   device. Adult sources stay out until you turn them on. Swipe a source to
+   remove it, or open a list to add a source in another language.
 
 You choose your sources, and you are responsible for them and for what you
 read.
