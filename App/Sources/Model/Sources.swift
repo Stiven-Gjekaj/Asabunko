@@ -11,6 +11,21 @@ let appFetcher: Fetcher = { request in
     return (data, http)
 }
 
+/// Why a chapter of a novel cannot open.
+enum ChapterFault: LocalizedError {
+    case missing
+    case sourceGone
+    case notText
+
+    var errorDescription: String? {
+        switch self {
+        case .missing: "The file of the chapter is not on this device."
+        case .sourceGone: "The source of this book is not installed. Add its list again in Settings, Sources."
+        case .notText: "The source gave images for this chapter, not text."
+        }
+    }
+}
+
 /// The sources that the app has loaded in this session, by the ID of their installation.
 @MainActor
 final class LoadedSources {
@@ -197,12 +212,13 @@ extension AppModel {
         let chapter = novel.chapters[index]
         let file = folder.appendingPathComponent(chapter.path)
         if FileManager.default.fileExists(atPath: file.path) { return file }
-        guard let remote = chapter.remote, let installed = installed(for: book), let origin = book.origin else { return file }
+        guard let remote = chapter.remote, let origin = book.origin else { throw ChapterFault.missing }
+        guard let installed = installed(for: book) else { throw ChapterFault.sourceGone }
         let source = try await load(installed)
         let content = try await source.content(
             of: OnlineChapter(id: remote, title: chapter.title ?? ""), in: OnlineSeries(id: origin.series, title: book.title)
         )
-        guard case let .html(html) = content else { return file }
+        guard case let .html(html) = content else { throw ChapterFault.notText }
         let heading = chapter.title.map { "<h2>\(XHTML.escape($0))</h2>\n" } ?? ""
         let page = "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>\(XHTML.escape(chapter.title ?? ""))</title></head><body>\n\(heading)\(html)\n</body></html>"
         try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
