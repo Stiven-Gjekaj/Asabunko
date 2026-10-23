@@ -7,7 +7,6 @@ struct SettingsScreen: View {
     @AppStorage(Appearance.key) private var appearance = Appearance.system
     @State private var showFontLicense = false
     @State private var newer: String?
-    @AppStorage("browse.adult") private var adult = false
     @State private var exporting: BackupFile?
     @State private var restoring = false
     @State private var pending: Backup?
@@ -16,6 +15,17 @@ struct SettingsScreen: View {
     var body: some View {
         NavigationStack {
             Form {
+                Section {
+                    NavigationLink { SourcesHomeScreen() } label: {
+                        LabeledContent {
+                            Text("\(app.library.installed.count) installed")
+                        } label: {
+                            Label("Sources", systemImage: "square.stack.3d.up")
+                        }
+                    }
+                } footer: {
+                    Text("Your catalogs and source lists, and the sources that Search and Discover use.")
+                }
                 Section("Look") {
                     Picker("Appearance", selection: $appearance) {
                         ForEach(Appearance.allCases) { Text($0.name).tag($0) }
@@ -39,13 +49,6 @@ struct SettingsScreen: View {
                     Text("Backup")
                 } footer: {
                     Text("The backup is one file with your books, your places, your sources, and the chapters of your online books. It does not hold the files of your books or the passwords of your sources. Keep it in Files or in iCloud Drive.")
-                }
-                Section {
-                    Toggle("Show sources for adults", isOn: $adult)
-                } header: {
-                    Text("Sources")
-                } footer: {
-                    Text("A list marks some sources for adults. Asabunko hides them until you turn this on.")
                 }
                 Section {
                     if let newer {

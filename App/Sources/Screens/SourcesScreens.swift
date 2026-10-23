@@ -1,60 +1,68 @@
 import AsaCore
 import SwiftUI
 
-/// The places to find books: the sources of the user, by kind.
-struct BrowseScreen: View {
+/// The sources of the user, in Settings: the source list, the installed sources, and the lists by kind.
+struct SourcesHomeScreen: View {
     @Environment(AppModel.self) private var app
+    @AppStorage("browse.adult") private var adult = false
 
     var body: some View {
-        NavigationStack {
-            List {
-                if app.library.sources.isEmpty {
-                    Section {
-                        VStack(alignment: .leading, spacing: 10) {
-                            Text("No sources yet").font(Karla.font(18, .bold))
-                            Text("Asabunko comes with no sources. Paste the URLs of your catalogs and source lists, one on each line.")
-                                .font(Karla.font(15)).foregroundStyle(Palette.textSecondary)
-                        }
-                        .padding(.vertical, 8)
-                        NavigationLink { SourcesScreen() } label: {
-                            Label("Add sources", systemImage: "plus.circle").foregroundStyle(Palette.accent)
-                        }
-                    }
+        List {
+            Section {
+                NavigationLink { SourcesScreen() } label: {
+                    Label(app.library.sources.isEmpty ? "Add sources" : "Edit the source list", systemImage: "plus.circle")
+                        .foregroundStyle(Palette.accent)
                 }
-                if !app.library.installed.isEmpty {
-                    Section("Installed") {
-                        ForEach(app.library.installed) { installed in
-                            NavigationLink { OnlineSourceScreen(installed: installed) } label: {
-                                HStack(spacing: 12) {
-                                    SourceIcon(url: installed.info.icon)
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text(installed.info.name).font(Karla.font(16, .bold))
-                                        Text(installed.info.language + (installed.info.novels ? " · Novels" : " · Comics"))
-                                            .font(Karla.font(12)).foregroundStyle(Palette.textSecondary)
-                                    }
+                if let setup = app.sourceSetup {
+                    HStack(spacing: 10) {
+                        ProgressView()
+                        Text("Installing \(setup.done) of \(setup.total) sources").font(Karla.font(15))
+                    }
+                    .accessibilityElement(children: .combine)
+                }
+            } footer: {
+                Text("Paste the URLs of your catalogs and source lists. Asabunko installs the sources of each list in the languages of this device. Search and Discover use all installed sources.")
+            }
+            if !app.library.installed.isEmpty {
+                Section {
+                    ForEach(app.library.installed) { installed in
+                        NavigationLink { OnlineSourceScreen(installed: installed) } label: {
+                            HStack(spacing: 12) {
+                                SourceIcon(url: installed.info.icon)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(installed.info.name).font(Karla.font(16, .bold))
+                                    Text(installed.info.language + (installed.info.novels ? " · Novels" : " · Comics"))
+                                        .font(Karla.font(12)).foregroundStyle(Palette.textSecondary)
                                 }
                             }
                         }
-                    }
-                }
-                ForEach(groups, id: \.title) { group in
-                    Section(group.title) {
-                        ForEach(group.links) { link in
-                            NavigationLink { destination(link) } label: { SourceRow(link: link) }
+                        .swipeActions {
+                            Button("Remove", role: .destructive) { app.uninstall(installed) }
                         }
                     }
+                } header: {
+                    Text("Installed (\(app.library.installed.count))")
+                } footer: {
+                    Text("Swipe a source to remove it. Open a list below to add a source in another language.")
                 }
             }
-            .asaForm()
-            .asaScreen()
-            .navigationTitle("Browse")
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    NavigationLink { SourcesScreen() } label: { Image(systemName: "list.bullet.rectangle") }
-                        .accessibilityLabel("Sources")
+            ForEach(groups, id: \.title) { group in
+                Section(group.title) {
+                    ForEach(group.links) { link in
+                        NavigationLink { destination(link) } label: { SourceRow(link: link) }
+                    }
                 }
+            }
+            Section {
+                Toggle("Show sources for adults", isOn: $adult)
+            } footer: {
+                Text("A list marks some sources for adults. Asabunko does not install them and hides them until you turn this on.")
             }
         }
+        .asaForm()
+        .asaScreen()
+        .navigationTitle("Sources")
+        .navigationBarTitleDisplayMode(.inline)
     }
 
     private var groups: [(title: String, links: [SourceLink])] {
@@ -161,7 +169,7 @@ struct SourcesScreen: View {
                     .background(Palette.surface, in: RoundedRectangle(cornerRadius: corner, style: .continuous))
                     .overlay(RoundedRectangle(cornerRadius: corner, style: .continuous).stroke(editing ? Palette.accent : Palette.outline))
                     .accessibilityLabel("Source list")
-                Text("The new list replaces the old list. To remove a source, remove its line. For a server with an account, write https://user:password@host/... The password goes to the Keychain, and the list shows only the user name.")
+                Text("Save installs the sources of each new list. The new list replaces the old list. To remove a list and its sources, remove its line. For a server with an account, write https://user:password@host/... The password goes to the Keychain, and the list shows only the user name.")
                     .font(Karla.font(13)).foregroundStyle(Palette.textSecondary)
                 HStack(spacing: 10) {
                     Button("Save", action: save).buttonStyle(PillButtonStyle())
