@@ -50,7 +50,7 @@ struct UpdatesScreen: View {
             if let opened = app.book(book.id) { onRead(opened) }
         } label: {
             HStack(spacing: 12) {
-                RemoteCoverThumb(url: app.cover(of: book))
+                CoverThumb(url: app.cover(of: book))
                 VStack(alignment: .leading, spacing: 2) {
                     Text(book.title).font(Karla.font(15, .bold)).foregroundStyle(Palette.textPrimary).lineLimit(1)
                     Text(update.title ?? "Chapter \(update.chapter + 1)").font(Karla.font(13)).foregroundStyle(Palette.textSecondary).lineLimit(1)
@@ -65,7 +65,7 @@ struct UpdatesScreen: View {
 }
 
 /// A small cover of a book in a list.
-private struct RemoteCoverThumb: View {
+private struct CoverThumb: View {
     let url: URL
     var body: some View {
         AsyncImage(url: url) { image in image.resizable().scaledToFill() } placeholder: { Palette.surfaceHigh }

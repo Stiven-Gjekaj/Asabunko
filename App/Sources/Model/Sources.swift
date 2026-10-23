@@ -133,7 +133,7 @@ extension AppModel {
         library.sources.first { $0.id == installed.list }?.kind
     }
 
-    /// The source, loaded one time in each session.
+    /// The source. The app keeps the last loaded sources in memory, so a source loads again only after many others.
     func load(_ installed: InstalledSource) async throws -> OnlineSource {
         let loaded = LoadedSources.shared
         if let source = loaded.get(installed.id) { return source }
