@@ -49,7 +49,7 @@ import Testing
     @Test func skipsAFileThatTheAppCannotImport() throws {
         let xml = """
         <feed xmlns="http://www.w3.org/2005/Atom"><title>x</title><entry><title>A</title><id>a</id>
-        <link rel="http://opds-spec.org/acquisition" type="application/x-mobipocket-ebook" href="a.mobi"/>
+        <link rel="http://opds-spec.org/acquisition" type="application/x-ms-reader" href="a.lit"/>
         <link rel="http://opds-spec.org/acquisition" type="application/pdf" href="a.pdf"/></entry></feed>
         """
         let book = try #require(try OPDS.parse(Data(xml.utf8), base: base).publications.first)
