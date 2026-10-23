@@ -71,8 +71,8 @@ public struct SuwayomiServer: Sendable {
         let reply = try await query(Sources.self, "query { sources { nodes { id name displayName lang iconUrl isNsfw supportsLatest } } }")
         return reply.sources.nodes.filter { $0.id != "0" }.map { node in
             SourceInfo(
-                id: node.id, name: node.displayName ?? node.name, language: node.lang, version: node.supportsLatest == false ? "popular" : "latest",
-                icon: absolute(node.iconUrl), code: base, novels: false, adult: node.isNsfw ?? false
+                id: node.id, name: node.displayName ?? node.name, language: node.lang, version: "",
+                icon: absolute(node.iconUrl), code: base, novels: false, adult: node.isNsfw ?? false, hasLatest: node.supportsLatest ?? true
             )
         }
     }
@@ -90,7 +90,7 @@ public final class SuwayomiSource: OnlineSource, @unchecked Sendable {
         self.authorize = authorize
     }
 
-    public var canShowLatest: Bool { info.version != "popular" }
+    public var canShowLatest: Bool { info.hasLatest }
 
     private struct Fetched: Decodable {
         struct Payload: Decodable { let hasNextPage: Bool; let mangas: [Manga] }

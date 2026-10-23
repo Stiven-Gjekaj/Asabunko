@@ -25,7 +25,7 @@ private func graphQL(_ answers: [String: String], seen: SeenRequests) -> Fetcher
         ], seen: seen))
     }
 
-    private let info = SourceInfo(id: "2499283573021220255", name: "MangaDex (EN)", language: "en", version: "latest", icon: nil, code: URL(string: "http://pc.local:4567")!, novels: false)
+    private let info = SourceInfo(id: "2499283573021220255", name: "MangaDex (EN)", language: "en", version: "", icon: nil, code: URL(string: "http://pc.local:4567")!, novels: false)
 
     @Test func listsTheSourcesOfTheServerButNotItsLocalSource() async throws {
         let sources = try await server().sources()

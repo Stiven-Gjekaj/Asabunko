@@ -80,8 +80,10 @@ public struct SourceInfo: Codable, Sendable, Hashable, Identifiable {
     public var novels: Bool
     /// True when the source can show adult content.
     public var adult: Bool
+    /// True when the source has a list of the latest updates.
+    public var hasLatest: Bool
 
-    public init(id: String, name: String, language: String, version: String, icon: URL?, code: URL, novels: Bool, adult: Bool = false) {
+    public init(id: String, name: String, language: String, version: String, icon: URL?, code: URL, novels: Bool, adult: Bool = false, hasLatest: Bool = true) {
         self.id = id
         self.name = name
         self.language = language
@@ -90,6 +92,22 @@ public struct SourceInfo: Codable, Sendable, Hashable, Identifiable {
         self.code = code
         self.novels = novels
         self.adult = adult
+        self.hasLatest = hasLatest
+    }
+
+    private enum CodingKeys: String, CodingKey { case id, name, language, version, icon, code, novels, adult, hasLatest }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        name = try c.decode(String.self, forKey: .name)
+        language = try c.decode(String.self, forKey: .language)
+        version = try c.decode(String.self, forKey: .version)
+        icon = try c.decodeIfPresent(URL.self, forKey: .icon)
+        code = try c.decode(URL.self, forKey: .code)
+        novels = try c.decode(Bool.self, forKey: .novels)
+        adult = try c.decodeIfPresent(Bool.self, forKey: .adult) ?? false
+        hasLatest = try c.decodeIfPresent(Bool.self, forKey: .hasLatest) ?? true
     }
 }
 
