@@ -177,7 +177,11 @@ var source = (function (e) {
       const list = JSON.parse(Application.arrayBufferToUTF8String(data));
       return { items: list.map((t) => ({ type: 'simpleCarouselItem', mangaId: t.id, title: titled(t.title), imageUrl: 'BASE/paperback/page/1' })), metadata: undefined };
     }
-    async getSearchResults(query) { return { items: [], metadata: undefined }; }
+    // A search for "sunrise" finds a title that the Aidoku source has too, for the test of the move of books.
+    async getSearchResults(query) {
+      const items = /sunrise/i.test(query.title || '') ? [{ mangaId: 'sun', title: 'Aidoku Sunrise', imageUrl: 'BASE/paperback/page/1' }] : [];
+      return { items, metadata: undefined };
+    }
     async getMangaDetails(mangaId) {
       return { mangaId, mangaInfo: { primaryTitle: 'Paper Moon', thumbnailUrl: 'BASE/paperback/page/1', synopsis: 'A comic from JavaScript.',
         secondaryTitles: [], contentRating: 'SAFE', author: 'Script Artist' } };

@@ -99,6 +99,53 @@ final class LibraryToolsTests: XCTestCase {
         shot("2 History")
     }
 
+    func testMovesABookAndRemovesItsDownloads() throws {
+        guard !server.isEmpty else { throw XCTSkip("SERVER_URL is not set.") }
+        app.saveSourceLine(server + "/aidoku/index.min.json\n" + server + "/paperback/versioning.json")
+        app.waitForInstalled(2)
+        app.search("sunrise")
+        let series = app.button(containing: "Aidoku Sunrise")
+        XCTAssertTrue(series.waitForExistence(timeout: 15))
+        series.tap()
+        XCTAssertTrue(app.buttons["Add to the read list"].waitForExistence(timeout: 10))
+        app.buttons["Add to the read list"].tap()
+        app.buttons["Downloads"].tap()
+        app.buttons["Download all chapters"].tap()
+        XCTAssertTrue(app.images["Downloaded"].waitForExistence(timeout: 20))
+
+        // The storage shows the download, and removes it.
+        app.tabBars.buttons["Settings"].tap()
+        // The Settings tab still shows the Sources page from the start of the test.
+        if app.navigationBars["Sources"].exists { app.navigationBars.buttons.element(boundBy: 0).tap() }
+        app.tapAfterScroll(app.buttons["Storage"], opens: app.staticTexts["1 chapters on the device"])
+        XCTAssertTrue(app.staticTexts["1 chapters on the device"].waitForExistence(timeout: 10), "The storage shows the book with its download.")
+        shot("3 Storage")
+        app.buttons["Remove all downloads"].tap()
+        app.buttons["Remove all"].firstMatch.tap()
+        XCTAssertTrue(app.staticTexts["No downloads"].waitForExistence(timeout: 5))
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+
+        // The book moves to the Paperback source, which has the same title.
+        app.tapAfterScroll(app.buttons["Move books to another source"], opens: app.button(containing: "Aidoku Sunrise"))
+        app.button(containing: "Aidoku Sunrise").tap()
+        // The label of a picker holds its value too.
+        app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Source'")).firstMatch.tap()
+        app.buttons["Quiet Paper"].tap()
+        // A tap while the menu closes does nothing, so the test waits for the value of the picker.
+        let picked = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Source' AND label CONTAINS 'Quiet Paper'")).firstMatch
+        XCTAssertTrue(picked.waitForExistence(timeout: 5))
+        let find = app.buttons["Find the titles"]
+        find.tap()
+        if !app.buttons["Move 1 book"].waitForExistence(timeout: 5) { find.tap() }
+        let move = app.buttons["Move 1 book"]
+        XCTAssertTrue(move.waitForExistence(timeout: 15), "The new source has the title.")
+        shot("4 Matches")
+        move.tap()
+        XCTAssertTrue(app.staticTexts["1 book moved."].waitForExistence(timeout: 10))
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+        app.tapAfterScroll(app.buttons["Move books to another source"], opens: app.button(containing: "Aidoku Sunrise"))
+        XCTAssertTrue(app.button(containing: "Quiet Paper").waitForExistence(timeout: 5), "The book reads from the new source.")
+    }
 
     private static func page(_ number: Int) -> Data {
         let size = CGSize(width: 600, height: 900)
