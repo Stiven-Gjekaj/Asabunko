@@ -182,7 +182,11 @@ var source = (function (e) {
       return { mangaId, mangaInfo: { primaryTitle: 'Paper Moon', thumbnailUrl: 'BASE/paperback/page/1', synopsis: 'A comic from JavaScript.',
         secondaryTitles: [], contentRating: 'SAFE', author: 'Script Artist' } };
     }
-    async getChapters(manga) { return [{ chapterId: 'p1', sourceManga: manga, langCode: 'en', chapNum: 1, title: 'Lanterns' }]; }
+    async getChapters(manga) {
+      // The server can add a chapter, for the tests of the checks for new chapters.
+      const [, data] = await Application.scheduleRequest({ url: 'BASE/paperback/api/chapters', method: 'GET' });
+      return JSON.parse(Application.arrayBufferToUTF8String(data)).map((c) => ({ chapterId: c.id, sourceManga: manga, langCode: 'en', chapNum: c.number, title: c.title }));
+    }
     async getChapterDetails(chapter) {
       return { id: chapter.chapterId, mangaId: chapter.sourceManga.mangaId, pages: ['BASE/paperback/page/2', 'BASE/paperback/page/3'] };
     }
@@ -326,6 +330,8 @@ def suwayomi(query, variables=None):
 
 # The number of downloads of the Aidoku package, for the test of the source list.
 DOWNLOADS = {"aix": 0}
+# The number of chapters of the Paperback title. A test adds the second chapter.
+CHAPTERS = {"count": 1}
 OFFLINE = {"on": False}
 
 
@@ -399,6 +405,15 @@ class Handler(BaseHTTPRequestHandler):
             return self.reply(PAPERBACK.replace("BASE", f"http://{host}").encode(), "application/javascript")
         if path == "/paperback/Quiet/static/icon.png":
             return self.reply(page(1), "image/png")
+        if path == "/paperback/api/chapters":
+            chapters = [{"id": "p1", "number": 1, "title": "Lanterns"}, {"id": "p2", "number": 2, "title": "Lamps"}][:CHAPTERS["count"]]
+            return self.reply(json.dumps(chapters).encode(), "application/json")
+        if path == "/control/more-chapters":
+            CHAPTERS["count"] = 2
+            return self.reply(b"ok", "text/plain")
+        if path == "/control/fewer-chapters":
+            CHAPTERS["count"] = 1
+            return self.reply(b"ok", "text/plain")
         if path == "/paperback/api/popular":
             return self.reply(b'[{"id": "moon", "title": "Paper Moon"}]', "application/json")
         if path.startswith("/paperback/page/"):

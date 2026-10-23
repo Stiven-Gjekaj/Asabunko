@@ -85,4 +85,9 @@ extension AppModel {
         await ChapterChecks.notify(result.found)
         ChapterChecks.schedule()
     }
+
+    /// False when the user allows downloads only on Wi-Fi and the device is on another network.
+    var mayDownloadNow: Bool {
+        !UserDefaults.standard.bool(forKey: ChapterChecks.wifiKey) || NetworkKind.shared.isWiFi
+    }
 }

@@ -271,8 +271,10 @@ extension AppModel {
             try novel.save(to: folder(of: book))
             update(book.id) { $0.pageCount = novel.chapters.count; if added > 0 { $0.finished = false } }
             // The new chapters are at the end of the book. They go into the updates.
+            let first = novel.chapters.count - added
             let new = novel.chapters.indices.suffix(added).map { (index: $0, title: novel.chapters[$0].title) }
             changeLibrary { $0.record(new, of: book.id) }
+            if self.book(book.id)?.autoDownload == true, mayDownloadNow { downloadChapters(book.id, from: first) }
         }
         return added
     }

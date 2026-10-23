@@ -14,6 +14,7 @@ struct SettingsScreen: View {
     @State private var startingOver = false
     @AppStorage(ReaderSettings.keepAwakeKey) private var keepAwake = true
     @AppStorage(ChapterChecks.enabledKey) private var checks = false
+    @AppStorage(ChapterChecks.wifiKey) private var wifiOnly = false
 
     var body: some View {
         NavigationStack {
@@ -44,10 +45,11 @@ struct SettingsScreen: View {
                         ChapterChecks.schedule()
                         if on { Task { if !(await ChapterChecks.askForNotifications()) { message = "Turn on the notifications of Asabunko in the Settings app to know about new chapters." } } }
                     }))
+                    Toggle("Download only on Wi-Fi", isOn: $wifiOnly)
                 } header: {
                     Text("New chapters")
                 } footer: {
-                    Text("The books of your read list check for new chapters some times each day, when iOS lets the app run. A notification tells you about new chapters.")
+                    Text("The books of your read list check for new chapters some times each day, when iOS lets the app run. A notification tells you about new chapters. A book with \"Download new chapters\" on downloads them after the check.")
                 }
                 Section("Look") {
                     Picker("Appearance", selection: $appearance) {

@@ -348,6 +348,9 @@ struct OnlineSeriesScreen: View {
                             Menu {
                                 Button { app.downloadChapters(book.id) } label: { Label("Download all chapters", systemImage: "arrow.down.circle") }
                                 Button { app.downloadChapters(book.id, from: book.page) } label: { Label("Download from this chapter", systemImage: "arrow.down.to.line") }
+                                Toggle(isOn: Binding(get: { app.book(book.id)?.autoDownload ?? false }, set: { on in app.update(book.id) { $0.autoDownload = on } })) {
+                                    Label("Download new chapters", systemImage: "arrow.down.app")
+                                }
                                 if app.downloads.failedCount(book.id) > 0 {
                                     Button { app.downloads.retry(book.id, app: app) } label: {
                                         Label("Try the failed downloads again (\(app.downloads.failedCount(book.id)))", systemImage: "arrow.clockwise")
