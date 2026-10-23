@@ -18,7 +18,8 @@ struct CoverFan: View {
 
     var body: some View {
         ZStack {
-            AccentGlow().frame(width: 320, height: 240)
+            // The glow can be narrower than 320 points, so that a narrow card keeps its margins.
+            AccentGlow().frame(maxWidth: 320).frame(height: 240)
             if covers.count >= 3 {
                 ForEach(0..<3, id: \.self) { index in
                     let turn = Double(index - 1)
