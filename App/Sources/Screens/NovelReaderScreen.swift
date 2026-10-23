@@ -18,6 +18,7 @@ struct NovelReaderScreen: View {
     @State private var position = 0.0
     @State private var bars = true
     @State private var showChapters = false
+    @State private var chapterQuery = ""
     @State private var showStyle = false
     /// The file of the chapter that shows. A chapter of an online novel downloads first.
     @State private var file: URL?
@@ -166,10 +167,20 @@ struct NovelReaderScreen: View {
         }
     }
 
+    /// The chapters of the list, or the chapters whose title or number has the text of the search.
+    private var shownChapters: [(offset: Int, element: Novel.Chapter)] {
+        let all = Array((novel?.chapters ?? []).enumerated())
+        let query = chapterQuery.trimmingCharacters(in: .whitespaces)
+        guard !query.isEmpty else { return all }
+        return all.filter { index, item in
+            String(index + 1) == query || (item.title ?? "").localizedCaseInsensitiveContains(query)
+        }
+    }
+
     private var chapterList: some View {
         NavigationStack {
             ScrollViewReader { proxy in
-                List(Array((novel?.chapters ?? []).enumerated()), id: \.offset) { index, _ in
+                List(shownChapters, id: \.offset) { index, _ in
                     Button {
                         go(to: index)
                         showChapters = false
@@ -188,6 +199,7 @@ struct NovelReaderScreen: View {
             }
             .navigationTitle("Chapters")
             .navigationBarTitleDisplayMode(.inline)
+            .searchable(text: $chapterQuery, placement: .navigationBarDrawer(displayMode: .always), prompt: "Title or number")
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) { Button("Done") { showChapters = false } }
             }
