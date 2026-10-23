@@ -5,7 +5,7 @@ import PackageDescription
 // with `swift test`, so a test does not need a simulator.
 let package = Package(
     name: "AsaCore",
-    platforms: [.iOS(.v17), .macOS(.v14)],
+    platforms: [.iOS(.v18), .macOS(.v15)],
     products: [.library(name: "AsaCore", targets: ["AsaCore"])],
     targets: [
         // libarchive is in the SDK of iOS and of macOS, with no headers.

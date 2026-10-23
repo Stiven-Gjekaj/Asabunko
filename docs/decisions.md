@@ -294,3 +294,11 @@ The choices:
 - To read a chapter adds the series to the library, so that the place stays.
 - Reason: one form of book lets the novels of the web use the reader of
   novels, with no network after the download.
+
+## 2026-10-23: iOS 18
+
+- The lowest version is iOS 18. This replaces iOS 17 of "A universal reader
+  for iOS".
+- Reason: WasmKit, the WebAssembly runtime of the Aidoku sources, needs iOS
+  18 from version 0.3.0. iOS 18 runs on the same iPhones and iPads as iOS 17,
+  from the iPhone XS, so no device is lost.

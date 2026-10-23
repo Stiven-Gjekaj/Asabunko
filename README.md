@@ -7,7 +7,7 @@
 _Your files and the sources of the community, in one warm app_
 
 <p align="center">
-  <img src="https://img.shields.io/badge/iOS-17%2B-17130F?style=for-the-badge&logo=apple&logoColor=white" alt="iOS 17 or newer"/>
+  <img src="https://img.shields.io/badge/iOS-18%2B-17130F?style=for-the-badge&logo=apple&logoColor=white" alt="iOS 18 or newer"/>
   <img src="https://img.shields.io/badge/Swift-SwiftUI-17130F?style=for-the-badge&logo=swift&logoColor=white" alt="Swift and SwiftUI"/>
 </p>
 
