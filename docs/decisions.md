@@ -657,3 +657,25 @@ The choices:
 - The move of many books uses the same match as the page of a title: a
   title of the new source must start with the title of the book. The user
   sees the matches and can turn off each one before the move.
+
+## 2026-10-23: The reader
+
+- Two pages show side by side when the screen is wider than it is tall. The
+  first page stays alone, because it is the cover. A page that is wider than
+  it is tall stays alone, because it is a spread already. "Move the pairs by
+  one page" puts the first page into a pair too.
+- A turn goes by one spread. The page of a spread that the app keeps is its
+  first page, so a book opens at the same spread in each orientation.
+- The crop finds the rows and the columns at each edge that are near the
+  colour of the corner, in a small copy of the page. It keeps a margin of
+  one pixel of the copy. A crop that keeps more than 97% of the page is no
+  crop, so a page with no plain border stays as it is.
+- The settings of the page layout are the same for all books, because they
+  belong to the screen and to the hand of the user, not to one book.
+- Reading aloud uses AVSpeechSynthesizer with the first language of the device. The
+  chapter goes in sentences, so the reader can show and follow the sentence.
+- The search of a novel reads the text of each chapter file on the device.
+  A chapter of a web novel that is not downloaded is not in the search, and
+  the result says how many chapters it did not read.
+- A bookmark keeps the chapter and the place in it. A highlight also keeps
+  its words. Both go into the library file and into a backup.

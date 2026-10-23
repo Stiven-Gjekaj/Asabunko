@@ -48,9 +48,10 @@ Asabunko has no sources in it. Your books stay on your device.
   from the book, or from the headings of a TXT file
 - PDF, page by page or in one column
 - A reader of pages from the right to the left, from the left to the right,
-  or in one vertical column, with zoom
-- A reader of novels with your font, size, spacing, and margins, and a list
-  of the chapters
+  or in one vertical column, with zoom, two pages on a wide screen, the fit
+  of the page, the crop of its borders, and your choice of the tap zones
+- A reader of novels with your font, size, spacing, and margins, a list of
+  the chapters, a search, bookmarks, highlights, and reading aloud
 - A library of two parts: Continue reading, with the page and the progress,
   and the read list of the titles that you bookmark
 - Categories, a search, and filters for the read list, and a history of

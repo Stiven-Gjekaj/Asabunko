@@ -11,6 +11,24 @@ the decisions.
 A tag such as `v0.1.0` builds the unsigned IPA and attaches it to a release on
 GitHub as `Asabunko.ipa`.
 
+## 2.6.0 (2026-10-23)
+
+The reader does more.
+
+- On a wide screen, such as an iPad or a phone in landscape, a comic shows
+  two pages side by side. The cover stays alone. "Move the pairs by one
+  page" fixes a book whose pairs are wrong. A wide page stays alone.
+- The new Page layout menu of the reader chooses the fit of a page: the
+  screen, the width, or the height. "Crop the borders" removes the plain
+  borders of each page.
+- The same menu chooses the taps at the edges: left and right, forward at
+  each edge, or no turns.
+- A novel can read itself aloud, one sentence at a time, with the voice of
+  the device.
+- Search the words of a novel, in all of its chapters.
+- Keep bookmarks in a novel, and keep highlights: select words, then choose
+  Highlight. The Marks list opens each one at its place.
+
 ## 2.5.0 (2026-10-23)
 
 The library has more tools.
