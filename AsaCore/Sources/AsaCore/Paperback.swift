@@ -188,7 +188,8 @@ public final class PaperbackExtension: OnlineSource, @unchecked Sendable {
 
     public func imageRequest(_ url: URL) -> URLRequest {
         var request = URLRequest(url: url)
-        for (key, value) in lock.withLock({ coverHeaders }) ?? [:] where key != "cookie" { request.setValue(value, forHTTPHeaderField: key) }
+        let headers: [String: String] = lock.withLock { coverHeaders } ?? [:]
+        for (key, value) in headers where key != "cookie" { request.setValue(value, forHTTPHeaderField: key) }
         return request
     }
 
