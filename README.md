@@ -70,7 +70,8 @@ Asabunko has no sources in it. Your books stay on your device.
 - Web novels with LNReader plugins, which download each chapter as you read
 - Suwayomi servers, which run the extensions of Mihon
 - Aidoku sources, which run as WebAssembly on the device
-- Paperback 0.9 extensions, with their interceptors and their state
+- Paperback 0.9 extensions, with their interceptors, their state, and their
+  settings
 - Check all online books for new chapters
 - Back up and restore the library in one file
 - Keep the screen on, sort the read list, mark chapters as read, and move a

@@ -506,7 +506,7 @@ The choices:
   A search of LNReader has no filters.
 - Paperback: the filters come from `getSearchFilters`, and the search gets
   them in its query. The settings of Paperback are forms with their own
-  layout, so they do not show.
+  layout. See "The settings forms of Paperback".
 - Suwayomi gives no filters or settings yet.
 
 ## 2026-10-23: Canvas, js, and the browser check
@@ -568,3 +568,20 @@ The choices:
   lists work. This is a fault of that source or its site, not of the filters.
 - 10 of the 140 sources of Aidoku Community export `get_filters`. The live
   test reads the filters of Kagane and searches with one of them.
+
+## 2026-10-23: The settings forms of Paperback
+
+- The settings of a Paperback extension are a form from `getSettingsForm`.
+  A form has sections of rows, and a row can open a child form.
+- `paperback.js` keeps each open form under an ID. It sends the host the
+  sections and the rows as JSON, with no hidden rows and no functions.
+- An action of the user calls the selector of the row. Then the form goes to
+  the host again, because the extension can change the rows after each action.
+  So `reloadForm` needs no work of its own.
+- A form with `requiresExplicitSubmission` shows a Save button. Save calls
+  `formDidSubmit`, and the screen closes.
+- The root form is made again each time that the user opens the settings.
+  The screen of a form loads the form again when a child form closes.
+- A sign-in row with OAuth shows, but it does nothing. It needs a web view
+  and a redirect, and no extension of the lists needs it to read.
+- The live test opens the 7 child forms of MangaDex, with 59 rows.

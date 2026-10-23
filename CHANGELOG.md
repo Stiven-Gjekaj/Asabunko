@@ -11,6 +11,15 @@ the decisions.
 A tag such as `v0.1.0` builds the unsigned IPA and attaches it to a release on
 GitHub as `Asabunko.ipa`.
 
+## 2.2.0 (2026-10-23)
+
+- Paperback extensions show their settings, such as the languages and the
+  content filters of MangaDex. The gear on the screen of the source opens
+  the form of the extension, with its sections, switches, text fields,
+  buttons, and lists of choices. A form that has a Save button keeps its
+  changes only when you tap Save.
+- A sign-in with OAuth shows in the form, but Asabunko cannot do it yet.
+
 ## 2.1.0 (2026-10-23)
 
 - Aidoku sources that make their filters in code show them too, after the

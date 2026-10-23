@@ -10,4 +10,4 @@ release is out. The reason for each choice is in
 
 ## Next
 
-- The settings of Paperback extensions, which are forms.
+- No task is open. Add the next choice here.
