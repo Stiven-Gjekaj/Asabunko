@@ -146,6 +146,7 @@ public final class AidokuSource: OnlineSource, @unchecked Sendable {
     private let filterList: [SourceOption]
     private let fetcher: Fetcher
     private let settingList: [SourceOption]
+    private let settingsForm: AidokuSettings
     /// The full data of each series and chapter that the source gave, because a source can need more than the key.
     private var known: [String: Aidoku.Manga] = [:]
     private var chapters: [String: Aidoku.Chapter] = [:]
@@ -173,6 +174,10 @@ public final class AidokuSource: OnlineSource, @unchecked Sendable {
         }
         filterList = filters
         settingList = AidokuOptions.settings(package.settings)
+        let dynamic = host.exports.contains("get_settings") ? try? host.queue.sync(execute: { try host.call("get_settings", []) }) : nil
+        let languages = package.manifest.info.languages ?? []
+        settingsForm = AidokuSettings(json: package.settings, dynamic: dynamic, defaults: host.defaults, languages: languages,
+                                      multiLanguage: package.manifest.config?.languageSelectType == "multi")
     }
 
     public func filterOptions() async -> [SourceOption] { filterList }
@@ -195,6 +200,28 @@ public final class AidokuSource: OnlineSource, @unchecked Sendable {
         guard let setting = settingList.first(where: { $0.id == id }) else { return }
         host.defaults[id] = AidokuOptions.encodeSetting(value, of: setting)
     }
+
+    public func hasSettingsForm() async -> Bool { !settingsForm.isEmpty }
+
+    public func settingsForm() async throws -> SourceForm? {
+        settingsForm.isEmpty ? nil : try settingsForm.form("root")
+    }
+
+    public func form(_ id: String) async throws -> SourceForm { try settingsForm.form(id) }
+
+    public func formAction(_ form: String, row: String, input: FormInput) async throws -> SourceForm {
+        // An OAuth sign-in with PKCE changes its code into a token before the source gets it.
+        var token: String?
+        if case let .callback(url) = input, let request = settingsForm.tokenRequest(row: row, callback: url) {
+            let (data, response) = try await fetcher(request)
+            guard (200..<300).contains(response.statusCode) else { throw SourceFormError.refused }
+            token = String(decoding: data, as: UTF8.self)
+        }
+        try await run { [settingsForm, host, token] in try settingsForm.act(form: form, row: row, input: input, token: token, host: host) }
+        return try settingsForm.form(form)
+    }
+
+    public func submitForm(_ id: String) async throws {}
 
     /// The listing for popular series, and the listing for the latest ones, by their names.
     private func listing(_ words: [String]) -> Aidoku.Listing? {

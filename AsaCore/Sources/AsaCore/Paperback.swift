@@ -169,6 +169,8 @@ public final class PaperbackExtension: OnlineSource, @unchecked Sendable {
         case .tap: NSNull()
         case let .text(text): text
         case let .toggle(on): on
+        case let .number(number): number
+        case .login, .web, .callback, .logout: throw SourceFormError.unknownRow
         }
         // A fragment of JSON in an array, because JSONSerialization does not write a single value with no options.
         let json = String(decoding: try JSONSerialization.data(withJSONObject: [value]), as: UTF8.self).dropFirst().dropLast()

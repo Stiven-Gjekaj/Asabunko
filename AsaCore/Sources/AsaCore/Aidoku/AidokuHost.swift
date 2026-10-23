@@ -198,10 +198,9 @@ final class AidokuHost: @unchecked Sendable {
 
     /// Calls an export that gives a result buffer, and gives the postcard payload.
     /// Each argument that is Data goes into the store of the host for the call, and is destroyed after it.
-    func call(_ name: String, _ arguments: [Any]) throws -> Data {
-        var made: [Int32] = []
-        defer { for rid in made { destroy(rid) } }
-        let values: [Value] = arguments.map { argument in
+    /// The values of the arguments of a call. Data goes in as a resource, which `made` keeps until the call ends.
+    private func values(_ arguments: [Any], made: inout [Int32]) -> [Value] {
+        arguments.map { argument in
             switch argument {
             case let data as Data:
                 let rid = add(.bytes(data))
@@ -213,6 +212,19 @@ final class AidokuHost: @unchecked Sendable {
             default: return .i32(UInt32(bitPattern: -1))
             }
         }
+    }
+
+    /// Calls a function that gives no result, such as `handle_notification`.
+    func callWithNoResult(_ name: String, _ arguments: [Any]) throws {
+        var made: [Int32] = []
+        defer { for rid in made { destroy(rid) } }
+        _ = try invoke(name, values(arguments, made: &made))
+    }
+
+    func call(_ name: String, _ arguments: [Any]) throws -> Data {
+        var made: [Int32] = []
+        defer { for rid in made { destroy(rid) } }
+        let values = values(arguments, made: &made)
         let pointer = Self.i32(try invoke(name, values).first ?? .i32(0))
         if pointer < 0 { throw Failure.code(pointer) }
         let mark = int32(at: pointer)

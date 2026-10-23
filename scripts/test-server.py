@@ -262,6 +262,16 @@ def aidoku_package(host):
         archive.writestr("Payload/source.json", json.dumps({"info": {"id": "en.test", "name": "Test Aidoku", "version": 1,
                                                                     "url": f"http://{host}", "languages": ["en"]}}))
         archive.writestr("Payload/filters.json", json.dumps([{"type": "range", "id": "year", "title": "Year", "min": 1990, "max": 2030}]))
+        archive.writestr("Payload/settings.json", json.dumps([
+            {"type": "group", "title": "Account", "items": [
+                {"type": "login", "key": "login", "title": "Sign in", "logoutTitle": "Sign out", "method": "basic", "useEmail": True},
+                {"type": "link", "title": "Account page", "url": f"http://{host}/", "requires": "login"}]},
+            {"type": "group", "title": "Reading", "footer": "The source reads these values.", "items": [
+                {"type": "select", "key": "server", "title": "Server", "values": ["a", "b"], "titles": ["Alpha", "Beta"], "default": "a"},
+                {"type": "stepper", "key": "count", "title": "Pages at a time", "minimumValue": 1, "maximumValue": 4, "default": 2}]},
+            {"type": "page", "key": "filters", "title": "Content filters", "items": [
+                {"type": "group", "items": [{"type": "editable-list", "key": "blocked", "title": "Blocked tags", "placeholder": "Tag"}]},
+                {"type": "button", "key": "reset", "title": "Reset filters", "confirmText": "Remove all filters?", "destructive": True}]}]))
     return buffer.getvalue()
 
 

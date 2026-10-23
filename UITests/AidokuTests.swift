@@ -37,6 +37,65 @@ final class AidokuTests: XCTestCase {
         app.buttons["Close"].tap()
     }
 
+    func testChangesTheSettingsOfTheSource() throws {
+        app.saveSourceLine(server + "/aidoku/index.min.json")
+        app.waitForInstalled(1)
+        app.button(containing: "Test Aidoku").tap()
+        XCTAssertTrue(app.button(containing: "Aidoku Sunrise").waitForExistence(timeout: 10))
+        app.buttons["Source settings"].tap()
+
+        // The sign-in with a user name and a password. The link needs the sign-in.
+        let signIn = app.button(containing: "Sign in")
+        XCTAssertTrue(signIn.waitForExistence(timeout: 5), "The settings of settings.json show as a form.")
+        XCTAssertFalse(app.button(containing: "Account page").exists)
+        XCTAssertTrue(app.staticTexts["The source reads these values."].exists)
+        signIn.tap()
+        let email = app.alerts.textFields["Email"]
+        XCTAssertTrue(email.waitForExistence(timeout: 5))
+        email.typeText("mina@site.test")
+        app.alerts.secureTextFields["Password"].tap()
+        app.alerts.secureTextFields["Password"].typeText("tea")
+        app.alerts.buttons["Sign in"].tap()
+        // iOS can offer to keep the password. That dialog is not part of the app.
+        let notNow = app.buttons["Not Now"]
+        if notNow.waitForExistence(timeout: 3) { notNow.tap() }
+        XCTAssertTrue(app.button(containing: "Sign out").waitForExistence(timeout: 5), "The row signs out after the sign-in.")
+        XCTAssertTrue(app.button(containing: "Account page").exists, "The link shows after the sign-in.")
+        XCTAssertTrue(app.staticTexts["mina@site.test"].exists)
+
+        // A choice, and a stepper in its range.
+        app.button(containing: "Server").tap()
+        XCTAssertTrue(app.button(containing: "Beta").waitForExistence(timeout: 5), "The choices of the setting show.")
+        app.button(containing: "Beta").tap()
+        XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS 'Beta' AND label CONTAINS 'Selected'")).firstMatch.waitForExistence(timeout: 5))
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+        XCTAssertTrue(app.button(containing: "Beta").waitForExistence(timeout: 5), "The form shows the new choice.")
+        let increment = app.buttons["Increment"]
+        for value in ["3", "4", "4"] {
+            increment.tap()
+            let shown = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", value), object: increment)
+            XCTAssertEqual(XCTWaiter.wait(for: [shown], timeout: 5), .completed, "The stepper shows \(value), and it stops at its maximum.")
+        }
+        shot("5 Aidoku settings")
+
+        // A list in a page, and a button that asks first.
+        app.button(containing: "Content filters").tap()
+        XCTAssertTrue(app.button(containing: "Blocked tags").waitForExistence(timeout: 5))
+        app.button(containing: "Blocked tags").tap()
+        let add = app.textFields["Tag"]
+        XCTAssertTrue(add.waitForExistence(timeout: 5))
+        add.tap()
+        add.typeText("gore\n")
+        XCTAssertTrue(app.buttons["gore"].waitForExistence(timeout: 5), "The entry goes in the list.")
+        app.buttons["gore"].tap()
+        XCTAssertFalse(app.buttons["gore"].waitForExistence(timeout: 2), "A tap removes the entry.")
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+        XCTAssertTrue(app.buttons["Reset filters"].waitForExistence(timeout: 5))
+        app.buttons["Reset filters"].tap()
+        XCTAssertTrue(app.staticTexts["Remove all filters?"].waitForExistence(timeout: 5), "The button asks before its action.")
+        shot("6 Aidoku page with a button")
+    }
+
     func testFiltersTheSourceWithARange() throws {
         app.saveSourceLine(server + "/aidoku/index.min.json")
         app.waitForInstalled(1)

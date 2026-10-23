@@ -123,6 +123,8 @@ struct OnlineSourceScreen: View {
     @State private var showFilters = false
     @State private var hasSettings = false
     @State private var settingsForm = false
+    /// A change of a setting can change the list of the source, so the list loads again when the settings close.
+    @State private var settingsChanged = false
     @State private var generation = 0
 
     enum Listing: String, CaseIterable { case popular = "Popular", latest = "Latest" }
@@ -185,7 +187,7 @@ struct OnlineSourceScreen: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     NavigationLink {
                         if settingsForm {
-                            SourceFormScreen(source: source, title: installed.info.name)
+                            SourceFormScreen(source: source, title: installed.info.name) { settingsChanged = true }
                         } else {
                             SourceSettingsScreen(source: source, name: installed.info.name)
                         }
@@ -199,6 +201,11 @@ struct OnlineSourceScreen: View {
                 applied = values
                 Task { await loadPage(1) }
             }
+        }
+        .onAppear {
+            guard settingsChanged else { return }
+            settingsChanged = false
+            Task { await loadPage(1) }
         }
         .task {
             guard source == nil else { return }
