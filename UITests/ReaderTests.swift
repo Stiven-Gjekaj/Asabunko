@@ -80,7 +80,7 @@ final class ReaderTests: XCTestCase {
         shot("9 Empty library, warm dark")
         app.tabBars.buttons["Settings"].tap()
         app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Appearance'")).firstMatch.tap()
-        app.buttons["Same as the device"].tap()
+        app.buttons["Device"].tap()
     }
 
     private func tapAt(x: CGFloat) {
