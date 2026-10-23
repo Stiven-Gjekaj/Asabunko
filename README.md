@@ -55,6 +55,8 @@ Asabunko has no sources in it. Your books stay on your device.
   novel, and read its chapters, which download as you read
 - Suwayomi servers, which run the extensions of Mihon: show a source of the
   server, find a series, and read it page by page from the server
+- Aidoku sources: install a WebAssembly source from a list and read its
+  series
 - Read from the right to the left, from the left to the right, or in one
   vertical column. Pinch or double tap to zoom
 - A tap at the edge turns the page. A tap in the middle shows the bars
@@ -162,6 +164,7 @@ and change the look.
 
 MIT. See [LICENSE](LICENSE). Karla is under the SIL Open Font License, in
 [licenses/](licenses/Karla-OFL.txt). The app links the libarchive of the
-system, under the BSD License. The JavaScript bundle has cheerio,
+system, under the BSD License. The Aidoku sources run in WasmKit, under the
+Apache License 2.0, with SwiftSoup, under the MIT License. The JavaScript bundle has cheerio,
 htmlparser2, dayjs, @noble/ciphers, and core-js, under the MIT License. Their
 license texts are at the end of `AsaCore/Sources/AsaCore/Resources/libraries.js`.

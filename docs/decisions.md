@@ -330,3 +330,30 @@ The choices:
 - A list can mark a source for adults. The app hides these sources until the
   user turns on "Show sources for adults" in Settings.
 - Reason: a calm default. The user decides.
+
+## 2026-10-23: The Aidoku sources
+
+- A line with "index.min.json" or "aidoku" is a list of Aidoku sources. Each
+  source is an .aix package: a ZIP with Payload/main.wasm and
+  Payload/source.json. The app keeps the package of each source that the user
+  installs.
+- The sources run in WasmKit, a WebAssembly interpreter in Swift, one
+  instance for each source, on its own queue. The imports of the network
+  wait for the answer on that queue.
+- The host follows the new interface of aidoku-rs, under the MIT License:
+  the env, std, net, html, and defaults imports, the postcard data, and the
+  result buffers of the exports. The html imports use SwiftSoup, which has
+  the behaviour of jsoup that the sources expect.
+- The app reads the imports of each module. An import that the host does not
+  have, such as js or canvas, gets a stub of the same type that gives an
+  error. So a source that needs a web view or that draws its pages again
+  fails with a message, and the other sources load.
+- The app does not use AidokuRunner, the host of the Aidoku app, because it
+  is not open source.
+- The popular list is a listing with a name such as "popular" or "hot". The
+  latest list is a listing with a name such as "latest" or "update". With no
+  such listing, the popular list is a search with no words.
+- A source with "novel" in its name is a source of novels. Its text, in
+  Markdown, becomes the HTML of a chapter.
+- Reason: Aidoku Community has about 140 sources for iOS, and the interface
+  of aidoku-rs is published under the MIT License.

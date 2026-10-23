@@ -11,6 +11,21 @@ the decisions.
 A tag such as `v0.1.0` builds the unsigned IPA and attaches it to a release on
 GitHub as `Asabunko.ipa`.
 
+## 0.7.0 (2026-10-23)
+
+- Adds Aidoku sources. Paste the URL of a list of Aidoku sources, such as
+  https://aidoku-community.github.io/sources/index.min.json, into Sources.
+- Open the list, and install the sources that you want. Each source is a
+  WebAssembly module that runs on the device.
+- Each source shows its popular and latest series, when it has those lists,
+  and you can search it.
+- Add a series to the library, or open a chapter to read it. The pages come
+  from the site of the source, with the headers that the source asks for.
+- The Aidoku sources of novels give their chapters as text, which opens in
+  the reader of novels.
+- A source that needs a web view or that draws its pages again does not
+  work yet.
+
 ## 0.6.0 (2026-10-23)
 
 - Adds Suwayomi servers, which run the extensions of Mihon on a computer.
