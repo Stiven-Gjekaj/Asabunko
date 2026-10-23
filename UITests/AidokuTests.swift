@@ -57,8 +57,16 @@ final class AidokuTests: XCTestCase {
         app.alerts.secureTextFields["Password"].typeText("tea")
         app.alerts.buttons["Sign in"].tap()
         // iOS can offer to keep the password. That dialog is not part of the app.
-        let notNow = app.buttons["Not Now"]
-        if notNow.waitForExistence(timeout: 3) { notNow.tap() }
+        // The dialog can come some seconds after the sign-in.
+        let save = app.sheets["Save Password?"]
+        if save.waitForExistence(timeout: 10) {
+            for _ in 0..<3 where save.exists {
+                save.buttons["Not Now"].tap()
+                let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: save)
+                _ = XCTWaiter.wait(for: [gone], timeout: 5)
+            }
+        }
+        XCTAssertFalse(save.exists, "The dialog of iOS closed.")
         XCTAssertTrue(app.button(containing: "Sign out").waitForExistence(timeout: 5), "The row signs out after the sign-in.")
         XCTAssertTrue(app.button(containing: "Account page").exists, "The link shows after the sign-in.")
         XCTAssertTrue(app.staticTexts["mina@site.test"].exists)

@@ -26,6 +26,15 @@ final class SourceSyncTests: XCTestCase {
         XCTAssertFalse(app.button(containing: "Japanese Test").exists, "A Japanese source does not install.")
         XCTAssertEqual(try downloads() - start, 1)
 
+        // The rest of the test edits the text of the list, and the edit menu of iOS has the language of the device.
+        // So the app starts again in English, with the same library.
+        app.terminate()
+        app.launchArguments = []
+        app.launch()
+        app.tabBars.buttons["Settings"].tap()
+        app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Sources'")).firstMatch.tap()
+        app.waitForInstalled(1)
+
         // A second line installs its sources. The source of the first line does not download again.
         save(aidoku + "\n" + paperback)
         app.waitForInstalled(2)
@@ -53,10 +62,14 @@ final class SourceSyncTests: XCTestCase {
         app.buttons["Edit the source list"].tap()
         let box = app.textViews["Source list"]
         XCTAssertTrue(box.waitForExistence(timeout: 5))
+        // Select All of the edit menu selects the old text, and the new text takes its place.
         box.tap()
-        box.typeKey("a", modifierFlags: .command)
-        box.typeText(XCUIKeyboardKey.delete.rawValue)
+        box.press(forDuration: 1.2)
+        let all = app.menuItems["Select All"]
+        XCTAssertTrue(all.waitForExistence(timeout: 5), "The edit menu shows.")
+        all.tap()
         box.typeText(text)
+        XCTAssertEqual(box.value as? String, text, "The box has only the new list.")
         app.buttons["Save"].tap()
         app.navigationBars.buttons.element(boundBy: 0).tap()
     }
