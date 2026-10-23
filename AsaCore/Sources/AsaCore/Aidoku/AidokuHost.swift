@@ -1,3 +1,5 @@
+import CoreGraphics
+import CoreText
 import Foundation
 import SwiftSoup
 import WasmKit
@@ -27,8 +29,8 @@ final class AidokuDefaults: @unchecked Sendable {
     }
 }
 
-/// One Aidoku source in WasmKit, with the imports of aidoku-rs: env, std, net, html, and defaults.
-/// js and canvas are stubs, so a source that needs a web view or the drawing of images fails cleanly.
+/// One Aidoku source in WasmKit, with the imports of aidoku-rs: env, std, net, html, defaults, and canvas.
+/// canvas draws with CoreGraphics. js is a stub, so a source that needs a web view fails cleanly.
 /// All calls go through one queue, because the imports block while they wait for the network.
 final class AidokuHost: @unchecked Sendable {
     enum Item {
@@ -39,6 +41,9 @@ final class AidokuHost: @unchecked Sendable {
         case elements(Elements)
         case node(Node)
         case nodes([Node])
+        case canvas(AidokuCanvas)
+        case image(AidokuPicture)
+        case font(CTFont)
     }
 
     final class Request {
@@ -307,6 +312,7 @@ final class AidokuHost: @unchecked Sendable {
 
         installNet(define: define)
         installHTML(define: define)
+        installCanvas(define: define)
     }
 
     private func installNet(define: (String, String, [ValueType], [ValueType], @escaping ([Value]) throws -> [Value]) -> Void) {
