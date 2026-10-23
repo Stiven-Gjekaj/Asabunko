@@ -41,6 +41,7 @@ struct LibraryScreen: View {
                 switch book.format {
                 case .comic, .pdf: ReaderScreen(bookID: book.id)
                 case .novel: NovelReaderScreen(bookID: book.id)
+                case .series: SeriesReaderScreen(bookID: book.id)
                 }
             }
             .confirmationDialog(
@@ -189,7 +190,7 @@ private struct ContinueCard: View {
                 Text(book.title)
                     .font(Karla.font(15, .bold))
                     .lineLimit(3)
-                Text(book.format == .novel ? "Chapter \(book.page + 1) of \(book.pageCount)" : "Page \(book.page + 1) of \(book.pageCount)")
+                Text(book.format == .comic || book.format == .pdf ? "Page \(book.page + 1) of \(book.pageCount)" : "Chapter \(book.page + 1) of \(book.pageCount)")
                     .font(Karla.font(13))
                     .foregroundStyle(Palette.textSecondary)
                 Spacer(minLength: 0)

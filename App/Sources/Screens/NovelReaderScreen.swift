@@ -19,6 +19,9 @@ struct NovelReaderScreen: View {
     @State private var bars = true
     @State private var showChapters = false
     @State private var showStyle = false
+    /// The file of the chapter that shows. A chapter of an online novel downloads first.
+    @State private var file: URL?
+    @State private var fault: String?
 
     private var book: Book? { app.book(bookID) }
     private var folder: URL? { book.map(app.folder(of:)) }
@@ -27,9 +30,14 @@ struct NovelReaderScreen: View {
     var body: some View {
         ZStack {
             Palette.background.ignoresSafeArea()
-            if let novel, let folder, novel.chapters.indices.contains(chapter) {
+            if let fault {
+                VStack(spacing: 14) {
+                    ContentUnavailableView("The chapter did not load", systemImage: "wifi.exclamationmark", description: Text(fault))
+                    Button("Try again") { Task { await loadChapter() } }.buttonStyle(PillButtonStyle())
+                }
+            } else if let novel, let folder, let file, novel.chapters.indices.contains(chapter) {
                 ChapterView(
-                    file: folder.appendingPathComponent(novel.chapters[chapter].path),
+                    file: file,
                     folder: folder,
                     css: style.css(dark: colorScheme == .dark),
                     start: start,
@@ -43,7 +51,7 @@ struct NovelReaderScreen: View {
                 )
                 .ignoresSafeArea()
                 .id(chapter)
-            } else if novel == nil {
+            } else {
                 ProgressView()
             }
             if bars { chrome.transition(.opacity) }
@@ -57,9 +65,27 @@ struct NovelReaderScreen: View {
             chapter = min(book.page, max((novel?.chapters.count ?? 1) - 1, 0))
             start = book.position
             position = book.position
+            await loadChapter()
         }
+        .onChange(of: chapter) { Task { await loadChapter() } }
         .sheet(isPresented: $showChapters) { chapterList }
         .sheet(isPresented: $showStyle) { styleSheet.presentationDetents([.medium]) }
+    }
+
+    /// Finds the file of the chapter, and downloads it when the novel comes from a source.
+    /// It also downloads the next chapter, so that it opens with no wait.
+    private func loadChapter() async {
+        guard let book, let novel, novel.chapters.indices.contains(chapter) else { return }
+        fault = nil
+        file = nil
+        let index = chapter
+        do {
+            let url = try await app.chapterFile(of: book, index: index)
+            if index == chapter { file = url }
+            if novel.chapters.indices.contains(index + 1) { _ = try? await app.chapterFile(of: book, index: index + 1) }
+        } catch {
+            if index == chapter { fault = error.localizedDescription }
+        }
     }
 
     private func go(to index: Int, at place: Double = 0) {

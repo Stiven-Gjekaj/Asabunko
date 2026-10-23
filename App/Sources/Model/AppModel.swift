@@ -182,6 +182,12 @@ final class AppModel {
         }
     }
 
+    /// Changes the library and saves it.
+    func changeLibrary(_ change: (inout Library) -> Void) {
+        change(&library)
+        save()
+    }
+
     // MARK: Store
 
     private func save() {

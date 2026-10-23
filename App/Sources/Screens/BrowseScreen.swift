@@ -20,6 +20,22 @@ struct BrowseScreen: View {
                         .padding(.vertical, 8)
                     }
                 }
+                if !app.library.installed.isEmpty {
+                    Section("Installed") {
+                        ForEach(app.library.installed) { installed in
+                            NavigationLink { OnlineSourceScreen(installed: installed) } label: {
+                                HStack(spacing: 12) {
+                                    SourceIcon(url: installed.info.icon)
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(installed.info.name).font(Karla.font(16, .bold))
+                                        Text(installed.info.language + (installed.info.novels ? " · Novels" : " · Comics"))
+                                            .font(Karla.font(12)).foregroundStyle(Palette.textSecondary)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
                 ForEach(groups, id: \.title) { group in
                     Section(group.title) {
                         ForEach(group.links) { link in
@@ -51,6 +67,7 @@ struct BrowseScreen: View {
     private func destination(_ link: SourceLink) -> some View {
         switch link.kind {
         case .opds: OPDSFeedScreen(source: link, url: link.url, title: link.name ?? link.url.host ?? "Catalog")
+        case .lnreader: SourceListScreen(link: link)
         case nil: DetectScreen(link: link)
         case let .some(kind): ContentUnavailableView(
             "Not in this version", systemImage: "clock",
