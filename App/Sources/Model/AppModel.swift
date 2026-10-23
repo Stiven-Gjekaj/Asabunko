@@ -11,6 +11,8 @@ final class AppModel {
     var fault: String?
     /// The files that wait for import, and the number that the app imported.
     private(set) var importing: (done: Int, total: Int)?
+    /// The downloads of the chapters of online series.
+    let downloads = Downloads()
 
     private let root: URL
     private var libraryFile: URL { root.appendingPathComponent("library.json") }
