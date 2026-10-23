@@ -114,7 +114,7 @@ struct LibraryScreen: View {
         EmptyArt(
             covers: app.discover.covers.dropFirst(3).map { $0 },
             title: "Your shelf is empty",
-            text: "Find a title in Discover or Search, and bookmark it. Or import an EPUB, a PDF, a comic archive such as CBZ or CBR, a TXT or FB2 file, or a folder of images, from Files."
+            text: "Find a title in Discover or Search, and bookmark it. Or import an EPUB, a PDF, a comic archive such as CBZ or CBR, a TXT, FB2, MOBI, or AZW3 file, or a folder of images, from Files."
         ) {
             Button("Import a book") { importing = true }.buttonStyle(PillButtonStyle())
         }

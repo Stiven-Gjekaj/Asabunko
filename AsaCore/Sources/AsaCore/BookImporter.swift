@@ -14,7 +14,7 @@ public struct ImportedBook: Sendable, Equatable {
 
 /// Chooses the importer from the kind of the file.
 public enum BookImporter {
-    public static let novelExtensions: Set<String> = ["epub", "txt", "text", "fb2", "html", "htm", "xhtml"]
+    public static let novelExtensions: Set<String> = ["epub", "txt", "text", "fb2", "html", "htm", "xhtml", "mobi", "prc", "azw", "azw3", "kf8"]
 
     public static var supportedExtensions: Set<String> {
         ComicImporter.archiveExtensions.union(novelExtensions).union(["pdf"])
@@ -37,6 +37,8 @@ public enum BookImporter {
                 return novel(try TextImporter.importHTML(from: url, into: folder))
             case "fb2":
                 return novel(try FB2Importer.importBook(from: url, into: folder))
+            case "mobi", "prc", "azw", "azw3", "kf8":
+                return novel(try MOBIImporter.importBook(from: url, into: folder))
             case "pdf":
                 let pdf = try PDFImporter.importBook(from: url, into: folder)
                 return ImportedBook(format: .pdf, title: pdf.title, author: pdf.author, summary: nil, pageCount: pdf.pageCount, mode: .leftToRight)

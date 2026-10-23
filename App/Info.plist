@@ -38,6 +38,8 @@
 				<string>io.github.stivengjekaj.asabunko.rar</string>
 				<string>io.github.stivengjekaj.asabunko.7z</string>
 				<string>io.github.stivengjekaj.asabunko.fb2</string>
+				<string>io.github.stivengjekaj.asabunko.mobi</string>
+				<string>io.github.stivengjekaj.asabunko.azw3</string>
 				<string>public.zip-archive</string>
 				<string>public.tar-archive</string>
 				<string>org.idpf.epub-container</string>
@@ -171,6 +173,43 @@
 				<key>public.filename-extension</key>
 				<array>
 					<string>fb2</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>io.github.stivengjekaj.asabunko.mobi</string>
+			<key>UTTypeDescription</key>
+			<string>Mobipocket book</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>mobi</string>
+					<string>prc</string>
+					<string>azw</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>io.github.stivengjekaj.asabunko.azw3</string>
+			<key>UTTypeDescription</key>
+			<string>Kindle book</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>azw3</string>
+					<string>kf8</string>
 				</array>
 			</dict>
 		</dict>
