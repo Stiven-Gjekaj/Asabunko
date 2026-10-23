@@ -388,6 +388,12 @@ class Handler(BaseHTTPRequestHandler):
                 return self.wfile.write(challenge)
             self.path = self.path[3:]
             path = path[3:]
+        # A test starts with the state of the server from the start.
+        if path == "/control/reset":
+            OFFLINE["on"] = False
+            CHAPTERS["count"] = 1
+            SUWAYOMI["stars"] = False
+            return self.reply(b"ok", "text/plain")
         if path in ("/control/offline", "/control/online"):
             OFFLINE["on"] = path.endswith("offline")
             return self.reply(b"ok", "text/plain")

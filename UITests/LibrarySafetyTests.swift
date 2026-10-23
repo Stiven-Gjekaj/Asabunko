@@ -20,13 +20,16 @@ final class LibrarySafetyTests: XCTestCase {
         // A change of the reading mode saves the library in a normal case.
         app.tabBars.buttons["Settings"].tap()
         XCTAssertTrue(app.buttons["Start a new library"].waitForExistence(timeout: 5))
-        app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Reading mode'")).firstMatch.tap()
+        let mode = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Reading mode'")).firstMatch
+        app.reveal(mode)
+        mode.tap()
         app.buttons["Vertical scroll"].tap()
         sleep(2)
         XCTAssertEqual(try Data(contentsOf: file), broken, "The file stays as it was.")
         let copies = try FileManager.default.contentsOfDirectory(atPath: folder.path).filter { $0.hasPrefix("library.broken-") }
         XCTAssertEqual(copies.count, 1, "A copy of the file is next to it.")
 
+        app.reveal(app.buttons["Start a new library"])
         app.buttons["Start a new library"].tap()
         app.buttons.matching(NSPredicate(format: "label == 'Start a new library'")).element(boundBy: 1).tap()
         sleep(2)

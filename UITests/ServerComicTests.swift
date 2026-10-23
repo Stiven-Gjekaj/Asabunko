@@ -10,6 +10,9 @@ final class ServerComicTests: XCTestCase {
         continueAfterFailure = false
         guard let url = ProcessInfo.processInfo.environment["SERVER_URL"], !url.isEmpty else { throw XCTSkip("SERVER_URL is not set.") }
         server = url
+        let done = expectation(description: "reset")
+        URLSession.shared.dataTask(with: URL(string: server + "/control/reset")!) { _, _, _ in done.fulfill() }.resume()
+        wait(for: [done], timeout: 10)
         app = XCUIApplication()
         app.launchEnvironment["ASABUNKO_ROOT"] = FileManager.default.temporaryDirectory.appendingPathComponent("asabunko-ui-\(UUID().uuidString)").path
         app.launch()

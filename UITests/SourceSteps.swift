@@ -32,6 +32,25 @@ extension XCUIApplication {
         field.typeText(text + "\n")
     }
 
+    /// Scrolls until the element is on the screen. A list loads its rows only when they come near the screen.
+    func reveal(_ element: XCUIElement, file: StaticString = #filePath, line: UInt = #line) {
+        for up in [true, false] {
+            for _ in 0..<8 where !(element.exists && element.isHittable) {
+                if up { swipeUp() } else { swipeDown() }
+            }
+        }
+        XCTAssertTrue(element.exists && element.isHittable, "The element is on the screen.", file: file, line: line)
+    }
+
+    /// Taps a row of a list after a scroll. A tap while the list still moves only stops the list, so the
+    /// tap goes again when the next screen did not open.
+    func tapAfterScroll(_ element: XCUIElement, opens next: XCUIElement) {
+        reveal(element)
+        element.tap()
+        if !next.waitForExistence(timeout: 3) { element.tap() }
+        XCTAssertTrue(next.waitForExistence(timeout: 5), "The row opens its screen.")
+    }
+
     /// A button with a label that holds the text.
     func button(containing text: String) -> XCUIElement {
         buttons.matching(NSPredicate(format: "label CONTAINS %@", text)).firstMatch

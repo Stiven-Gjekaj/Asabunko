@@ -26,6 +26,7 @@ final class BackupTests: XCTestCase {
         formatter.dateFormat = "yyyy-MM-dd HH-mm"
         let saved = Date()
         let names = [saved, saved.addingTimeInterval(60)].map { "Asabunko " + formatter.string(from: $0) }
+        app.reveal(app.buttons["Save a backup"])
         app.buttons["Save a backup"].tap()
         let save = app.buttons["Save"]
         XCTAssertTrue(save.waitForExistence(timeout: 10), "The Files picker opens.")
@@ -37,8 +38,8 @@ final class BackupTests: XCTestCase {
         XCTAssertTrue(app.buttons["Save a backup"].waitForExistence(timeout: 10))
 
         // The list is empty now.
-        app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Sources'")).firstMatch.tap()
-        XCTAssertTrue(app.buttons["Edit the source list"].waitForExistence(timeout: 10))
+        let sources = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Sources'")).firstMatch
+        app.tapAfterScroll(sources, opens: app.buttons["Edit the source list"])
         app.buttons["Edit the source list"].tap()
         let box = app.textViews["Source list"]
         XCTAssertTrue(box.waitForExistence(timeout: 5))
@@ -51,6 +52,7 @@ final class BackupTests: XCTestCase {
         XCTAssertFalse(row.exists, "The line is gone.")
         app.navigationBars.buttons.element(boundBy: 0).tap()
 
+        app.reveal(app.buttons["Restore a backup"])
         app.buttons["Restore a backup"].tap()
         // The name of a backup has the date and the time. A cell named only "Asabunko" is the folder of the app.
         let files = app.cells.matching(NSPredicate(format: "label BEGINSWITH %@ OR label BEGINSWITH %@", names[0], names[1]))
@@ -73,7 +75,7 @@ final class BackupTests: XCTestCase {
         XCTAssertTrue(app.staticTexts["The backup is restored."].waitForExistence(timeout: 10))
         app.buttons["OK"].tap()
 
-        app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Sources'")).firstMatch.tap()
+        app.tapAfterScroll(sources, opens: app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Edit the source list' OR label BEGINSWITH 'Add sources'")).firstMatch)
         XCTAssertTrue(row.waitForExistence(timeout: 5), "The line of the backup is back.")
         shot("3 Restored source list")
     }

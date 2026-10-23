@@ -42,14 +42,14 @@ final class UpdatesTests: XCTestCase {
         app.buttons["Downloads"].tap()
         app.buttons["Download new chapters"].tap()
 
-        // The checks need the notifications. iOS asks for them one time.
+        // The checks need the notifications. iOS asks for them only one time on a simulator, so a later run
+        // of the test gets no question.
         app.tabBars.buttons["Settings"].tap()
         let checks = app.switches["Check in the background"]
         XCTAssertTrue(checks.waitForExistence(timeout: 5))
         checks.switches.firstMatch.tap()
         let allow = XCUIApplication(bundleIdentifier: "com.apple.springboard").buttons["Allow"]
-        XCTAssertTrue(allow.waitForExistence(timeout: 10), "iOS asks for the notifications.")
-        allow.tap()
+        if allow.waitForExistence(timeout: 10) { allow.tap() }
         XCTAssertEqual(checks.value as? String, "1")
 
         // The source gets a new chapter. The app starts again and runs the check of the background.
