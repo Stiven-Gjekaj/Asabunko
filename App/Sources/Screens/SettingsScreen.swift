@@ -127,6 +127,8 @@ struct SettingsScreen: View {
                     pending = nil
                     Task {
                         let result = await app.restore(backup)
+                        // An alert that comes while the dialog closes does not show, so it waits for the dialog.
+                        try? await Task.sleep(for: .milliseconds(600))
                         var text = "The backup is restored."
                         if !result.skipped.isEmpty {
                             text += "\n\nImport these books again, because their files are not on this device:\n" + result.skipped.joined(separator: "\n")
