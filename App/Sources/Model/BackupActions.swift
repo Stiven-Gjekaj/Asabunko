@@ -51,11 +51,25 @@ extension AppModel {
     }
 
     /// Asks the source of each online book for new chapters. It gives the number of new chapters.
+    /// Four books ask their sources at the same time, so a large library does not take minutes.
     func refreshAll() async -> (added: Int, failed: Int) {
         var added = 0, failed = 0
-        for book in library.books where book.origin != nil {
-            do { added += try await refresh(book) } catch { failed += 1 }
+        let books = library.books.filter { $0.origin != nil }
+        for start in stride(from: 0, to: books.count, by: 4) {
+            await withTaskGroup(of: Int?.self) { group in
+                for book in books[start..<min(start + 4, books.count)] {
+                    group.addTask { await self.refreshCounted(book) }
+                }
+                for await result in group {
+                    if let result { added += result } else { failed += 1 }
+                }
+            }
         }
         return (added, failed)
+    }
+
+    /// The number of new chapters of a book, or nil when its source did not answer.
+    private func refreshCounted(_ book: Book) async -> Int? {
+        do { return try await refresh(book) } catch { return nil }
     }
 }
