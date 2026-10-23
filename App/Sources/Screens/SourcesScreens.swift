@@ -453,9 +453,24 @@ struct PublicationScreen: View {
         }
         .asaScreen()
         .navigationBarTitleDisplayMode(.inline)
-        .onAppear { mode = app.library.defaultMode }
+        .onAppear {
+            mode = app.library.defaultMode
+            // The stream opens at the last page that the server keeps for the user.
+            if let stream = publication.stream { page = stream.startPage }
+        }
         .fullScreenCover(isPresented: $reading) {
             PageReader(title: publication.title, content: streamContent, page: $page, mode: $mode)
+        }
+        // A short time after the last turn, a Komga server gets the page. Kavita keeps it by itself.
+        .task(id: page) {
+            guard reading, let base = publication.stream?.komgaProgress(page: page), let url = base.url else { return }
+            try? await Task.sleep(for: .seconds(1))
+            guard !Task.isCancelled else { return }
+            var request = AppModel.request(url, source: source)
+            request.httpMethod = base.httpMethod
+            request.httpBody = base.httpBody
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            _ = try? await Network.data(for: request)
         }
     }
 

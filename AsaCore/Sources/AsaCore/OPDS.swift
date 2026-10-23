@@ -52,10 +52,40 @@ public struct OPDSPublication: Sendable, Equatable, Identifiable {
         /// The URL with {pageNumber}, from 0, and maybe {maxWidth}.
         public var template: String
         public var count: Int
+        /// The last page that the user read on the server, from 0. Komga and Kavita give it.
+        public var lastRead: Int?
+
+        public init(template: String, count: Int, lastRead: Int? = nil) {
+            self.template = template; self.count = count; self.lastRead = lastRead
+        }
 
         public func url(page: Int, maxWidth: Int = 1600) -> URL? {
             URL(string: template.replacingOccurrences(of: "{pageNumber}", with: String(page))
                 .replacingOccurrences(of: "{maxWidth}", with: String(maxWidth)))
+        }
+
+        /// The page to open: the last page that the user read, or the first page.
+        public var startPage: Int { min(max(lastRead ?? 0, 0), max(count - 1, 0)) }
+
+        /// The call that keeps the progress of a Komga book: a PATCH of its read progress, with the page from 1.
+        /// A stream of Komga has "/books/{id}/pages/{pageNumber}" in its path. Kavita keeps the progress
+        /// when it serves a page, so it needs no call.
+        public func komgaProgress(page: Int) -> URLRequest? {
+            guard let parts = URLComponents(string: template.replacingOccurrences(of: "{pageNumber}", with: "0")
+                .replacingOccurrences(of: "{maxWidth}", with: "0")) else { return nil }
+            let path = parts.path.split(separator: "/", omittingEmptySubsequences: false).map(String.init)
+            guard let books = path.lastIndex(of: "books"), books + 2 < path.count, path[books + 2] == "pages",
+                  let api = path.firstIndex(where: { $0 == "api" || $0 == "opds" }), api < books else { return nil }
+            var target = parts
+            target.query = nil
+            target.path = (path[..<api] + ["api", "v1", "books", path[books + 1], "read-progress"]).joined(separator: "/")
+            guard let url = target.url else { return nil }
+            var request = URLRequest(url: url)
+            request.httpMethod = "PATCH"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            let number = min(max(page, 0), max(count - 1, 0)) + 1
+            request.httpBody = Data(#"{"page":\#(number),"completed":\#(number >= count)}"#.utf8)
+            return request
         }
     }
 
@@ -182,7 +212,8 @@ public enum OPDS {
                 } else if rel == "http://opds-spec.org/image/thumbnail" {
                     thumbnail = resolve(link["href"])
                 } else if rel == streamRel, let href = link["href"] {
-                    stream = .init(template: absolute(href, base: base), count: Int(link["count"] ?? link["pse:count"] ?? "") ?? 0)
+                    stream = .init(template: absolute(href, base: base), count: Int(link["count"] ?? link["pse:count"] ?? "") ?? 0,
+                                   lastRead: Int(link["lastRead"] ?? link["pse:lastRead"] ?? ""))
                 } else if type.contains("application/atom+xml") || type.contains("opds-catalog") {
                     navigation = navigation ?? resolve(link["href"])
                 }

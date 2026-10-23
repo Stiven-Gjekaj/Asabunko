@@ -46,6 +46,29 @@ import Testing
         #expect(book.stream?.url(page: 3, maxWidth: 800) == URL(string: "https://komga.local:25600/api/v1/books/1/pages/3?zero_based=true&width=800"))
     }
 
+    @Test func opensAStreamAtTheLastPageThatTheServerKeeps() throws {
+        let xml = """
+        <feed xmlns="http://www.w3.org/2005/Atom" xmlns:pse="http://vaemendis.net/opds-pse/ns"><title>x</title>
+          <entry><title>A</title><id>a</id>
+            <link rel="http://vaemendis.net/opds-pse/stream" type="image/jpeg" pse:count="20" pse:lastRead="7"
+                  href="/komga/opds/v1.2/books/0B1/pages/{pageNumber}?zero_based=true&amp;width={maxWidth}"/></entry>
+          <entry><title>B</title><id>b</id>
+            <link rel="http://vaemendis.net/opds-pse/stream" type="image/jpeg" pse:count="3" pse:lastRead="9"
+                  href="/api/opds/key/series/1/volume/2/chapter/3/image?pageNumber={pageNumber}"/></entry>
+        </feed>
+        """
+        let list = try OPDS.parse(Data(xml.utf8), base: base).publications
+        let komga = try #require(list.first?.stream), kavita = try #require(list.last?.stream)
+        #expect(komga.startPage == 7)
+        #expect(kavita.startPage == 2, "A last page after the end opens the last page.")
+        let request = try #require(komga.komgaProgress(page: 7))
+        #expect(request.httpMethod == "PATCH")
+        #expect(request.url == URL(string: "https://komga.local:25600/komga/api/v1/books/0B1/read-progress"), "The base path of the server stays.")
+        #expect(String(decoding: request.httpBody ?? Data(), as: UTF8.self) == #"{"page":8,"completed":false}"#)
+        #expect(String(decoding: komga.komgaProgress(page: 19)?.httpBody ?? Data(), as: UTF8.self) == #"{"page":20,"completed":true}"#)
+        #expect(kavita.komgaProgress(page: 1) == nil, "Kavita keeps the progress by itself.")
+    }
+
     @Test func skipsAFileThatTheAppCannotImport() throws {
         let xml = """
         <feed xmlns="http://www.w3.org/2005/Atom"><title>x</title><entry><title>A</title><id>a</id>

@@ -25,6 +25,8 @@ behind Cloudflare. The page of the check sets the cookie of a passed check.
 Under /trackers/, it acts as AniList and MyAnimeList. A sign-in goes back to
 the app at once, and /trackers/state shows the progress that they got.
 
+Under /komga/, it acts as a Komga server with one book of four pages. The
+feed gives the last page that the user read, and a PATCH keeps a new one.
 
 /control/offline makes the server refuse the pages, and /control/online
 gives them again.
@@ -95,6 +97,20 @@ def books(title):
 </feed>"""
 
 
+# The read progress of the Komga book, with the page from 1. Zero is a book that the user did not open.
+KOMGA = {"page": 0, "completed": False}
+
+
+def komga_feed():
+    last = f' pse:lastRead="{KOMGA["page"] - 1}"' if KOMGA["page"] > 0 else ""
+    return f"""<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:pse="http://vaemendis.net/opds-pse/ns">
+  <id>komga</id><title>Komga Library</title>
+  <entry><id>kd1</id><title>Komga Dawn</title>
+    <link rel="http://vaemendis.net/opds-pse/stream" type="image/png" pse:count="4"{last}
+          href="/komga/opds/v1.2/books/kd1/pages/{{pageNumber}}?zero_based=true&amp;width={{maxWidth}}"/>
+  </entry>
+</feed>"""
 
 
 SEARCH = """<?xml version="1.0"?><OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/">
@@ -356,9 +372,17 @@ class Handler(BaseHTTPRequestHandler):
     def form(self):
         return {k: v[0] for k, v in urllib.parse.parse_qs(self.rfile.read(int(self.headers.get("Content-Length", "0"))).decode()).items()}
 
-    # MyAnimeList takes the progress in a PATCH of the list status of the title.
+    # MyAnimeList takes the progress in a PATCH of the list status of the title, and Komga in a PATCH of the read progress.
     def do_PATCH(self):
         path = self.path.split("?")[0]
+        if path == "/komga/api/v1/books/kd1/read-progress":
+            if self.headers.get("Authorization") != AUTH:
+                return self.reply(b"", "text/plain", 401)
+            body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", "0"))) or b"{}")
+            KOMGA["page"], KOMGA["completed"] = body.get("page", 0), body.get("completed", False)
+            self.send_response(204)
+            self.end_headers()
+            return
         if path.startswith("/trackers/myanimelist/manga/") and path.endswith("/my_list_status"):
             if self.headers.get("Authorization") != "Bearer mal-token":
                 return self.reply(b'{"error": "invalid_token"}', "application/json", 401)
@@ -462,7 +486,14 @@ class Handler(BaseHTTPRequestHandler):
             CHAPTERS["count"] = 1
             SUWAYOMI["stars"] = False
             TRACKED.clear()
+            KOMGA.update(page=0, completed=False)
             return self.reply(b"ok", "text/plain")
+        # /control/komga?page=3 keeps a read progress on the Komga book, and /komga/state shows it.
+        if path == "/control/komga":
+            KOMGA["page"] = int(urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get("page", ["0"])[0])
+            return self.reply(b"ok", "text/plain")
+        if path == "/komga/state":
+            return self.reply(json.dumps(KOMGA).encode(), "application/json")
         if path in ("/control/offline", "/control/online"):
             OFFLINE["on"] = path.endswith("offline")
             return self.reply(b"ok", "text/plain")
@@ -539,6 +570,10 @@ class Handler(BaseHTTPRequestHandler):
             self.reply(SEARCH.replace("/opds/find", f"http://{host}/opds/find").encode(), "application/opensearchdescription+xml")
         elif path == "/opds/find":
             self.reply(books("Results").encode(), ATOM)
+        elif path == "/komga/opds/v1.2/catalog":
+            self.reply(komga_feed().encode(), ATOM)
+        elif path.startswith("/komga/opds/v1.2/books/kd1/pages/"):
+            self.reply(page(int(path.rsplit("/", 1)[1])), "image/png")
         elif path == "/files/sunrise.cbz":
             self.reply(cbz(), "application/vnd.comicbook+zip")
         else:
