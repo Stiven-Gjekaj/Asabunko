@@ -47,6 +47,10 @@ Asabunko has no sources in it. Your books stay on your device.
 - Read a novel one chapter at a time, with your font, size, spacing, and
   margins
 - Import a PDF and read it page by page or in one column
+- Sources: paste one URL on each line, as in ZettaStream. The app finds the
+  kind of each source
+- OPDS catalogs, such as Komga, Kavita, and Calibre-web: browse, search,
+  read a comic page by page from the server, or download a book
 - Read from the right to the left, from the left to the right, or in one
   vertical column. Pinch or double tap to zoom
 - A tap at the edge turns the page. A tap in the middle shows the bars
@@ -122,6 +126,16 @@ release.
 swift test --package-path AsaCore
 xcodebuild -project Asabunko.xcodeproj -scheme Asabunko -destination 'platform=iOS Simulator,name=iPhone 17' test
 ```
+
+The UI test of the catalogs needs the small OPDS server of the scripts. Start
+it, and give its URL to the test:
+
+```
+python3 scripts/opds-test-server.py 8765 &
+TEST_RUNNER_OPDS_URL=http://127.0.0.1:8765/opds/catalog xcodebuild -project Asabunko.xcodeproj -scheme Asabunko -destination 'platform=iOS Simulator,name=iPhone 17' test
+```
+
+With no URL, the test is skipped.
 
 The unit tests make their own ZIP, 7z, and TAR archives with libarchive. They
 cover the reader of the archives, the natural order of the pages,

@@ -223,3 +223,34 @@ The choices:
   `#B8303F` on paper. This replaces the reds of "The logo of the owner".
 - Reason: the owner gave a square logo for the icon and asked for a softer
   red.
+
+## 2026-10-23: The source list is a paste box
+
+- The source list is text, one URL on each line, as in ZettaStream. Save
+  replaces the full list. The Paste button of the system reads the
+  clipboard with no prompt.
+- Asabunko finds the kind of each line from its URL: "/opds" is a catalog,
+  "plugins.min.json" is LNReader, "index.min.json" is Aidoku,
+  "versioning.json" is Paperback, and the port 4567 is Suwayomi. When the URL
+  does not tell, the app reads the URL and finds the kind from its content.
+- "https://user:password@host/..." gives a user name and a password. The
+  password goes to the Keychain of the device. The list shows the user name
+  and no password. A line with the same URL and user name keeps its
+  password.
+- The app sends the password only to the host of its source.
+- Reason: the owner asked for the paste box of ZettaStream. The form with a
+  password field also made iOS ask to save the password.
+
+## 2026-10-23: The OPDS catalogs
+
+- The app reads OPDS 1.2, in Atom, and OPDS 2.0, in JSON. It follows the
+  navigation links, the groups, the next pages, and the search of OpenSearch
+  or of a URL template.
+- A book can stream with the Page Streaming Extension, page by page, or
+  download into the library. The download takes the first file that the app
+  can import.
+- A page from the network stays in the caches folder of the app.
+- The app can open http:// servers, because a server at home often has no
+  certificate. The user chooses each server.
+- Reason: Komga, Kavita, Calibre-web, and Suwayomi give OPDS. It is the most
+  common way to read a library of your own.

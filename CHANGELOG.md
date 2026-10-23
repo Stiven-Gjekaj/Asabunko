@@ -11,6 +11,21 @@ the decisions.
 A tag such as `v0.1.0` builds the unsigned IPA and attaches it to a release on
 GitHub as `Asabunko.ipa`.
 
+## 0.4.0 (2026-10-23)
+
+- Adds sources, with the paste box of ZettaStream. Open Browse, tap Sources,
+  and paste one URL on each line. Save replaces the list.
+- Asabunko finds the kind of each source from its URL, or from what it gives.
+- Adds OPDS catalogs: Komga, Kavita, Calibre-web, Suwayomi, and other
+  servers, in OPDS 1.2 and OPDS 2.0.
+- For a server with an account, write https://user:password@host/... The
+  password goes to the Keychain, and the list shows only the user name and
+  the host.
+- Browse the catalog, search it, and load more books.
+- Read a comic now, page by page from the server, or download a book into
+  the library.
+- The app has three tabs: Library, Browse, and Settings.
+
 ## 0.3.0 (2026-10-23)
 
 - Adds PDF. Import a PDF from Files or with "Open in Asabunko". The title and

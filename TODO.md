@@ -10,8 +10,6 @@ release is out. The reason for each choice is in
 
 ## Next
 
-- 0.4.0: OPDS 1.2 and 2.0 servers, such as Komga, Kavita, and Calibre-web,
-  with the streaming of pages.
 - 0.5.0: LNReader plugins for novels on the web, in JavaScriptCore.
 - 0.6.0: Aidoku sources, in a WebAssembly runtime.
 - 0.7.0: Paperback 0.9 extensions, in JavaScriptCore.
