@@ -16,6 +16,7 @@ struct NovelReaderScreen: View {
     @State private var chapter = 0
     @State private var start = 0.0
     @State private var position = 0.0
+    @State private var ends = 0
     @State private var bars = true
     @State private var showChapters = false
     @State private var chapterQuery = ""
@@ -57,6 +58,8 @@ struct NovelReaderScreen: View {
                     css: style.css(dark: colorScheme == .dark),
                     start: start,
                     onPosition: { value in
+                        // The end of a chapter gives a light tap of the device, one time.
+                        if value >= 0.995, position < 0.995 { ends += 1 }
                         position = value
                         app.update(bookID) { $0.read(chapter: chapter, position: value) }
                         if value >= 0.995, !bars { withAnimation { bars = true } }
@@ -67,6 +70,7 @@ struct NovelReaderScreen: View {
                     onReady: { Task { await ready() } }
                 )
                 .ignoresSafeArea()
+                .sensoryFeedback(.impact(weight: .light), trigger: ends)
                 .id(chapter)
             } else {
                 ProgressView()

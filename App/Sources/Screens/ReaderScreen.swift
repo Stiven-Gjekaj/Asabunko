@@ -59,6 +59,7 @@ struct PageReader: View {
     @Environment(\.dismiss) private var dismiss
     @State private var bars = true
     @State private var wide = false
+    @State private var stops = 0
     @AppStorage(PageLayout.fitKey) private var fit = PageFit.screen
     @AppStorage(PageLayout.cropKey) private var crop = false
     @AppStorage(PageLayout.spreadsKey) private var twoPages = true
@@ -98,6 +99,7 @@ struct PageReader: View {
         }
         // Two pages show side by side when the screen is wider than it is tall.
         .onGeometryChange(for: Bool.self) { $0.size.width > $0.size.height } action: { wide = $0 }
+        .sensoryFeedback(.impact(weight: .light), trigger: stops)
         .statusBarHidden(!bars)
         .readerAwake()
         .persistentSystemOverlays(bars ? .automatic : .hidden)
@@ -122,7 +124,11 @@ struct PageReader: View {
     private func turn(by delta: Int) {
         let spreads = spreads
         let next = Spreads.index(of: page, in: spreads) + delta
-        guard spreads.indices.contains(next) else { return }
+        guard spreads.indices.contains(next) else {
+            // A turn past the last page stops there, with a light tap of the device.
+            if delta > 0 { stops += 1 }
+            return
+        }
         page = representative(of: next, in: spreads)
     }
 
