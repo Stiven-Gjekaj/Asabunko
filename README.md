@@ -72,7 +72,8 @@ Asabunko has no sources in it. Your books stay on your device.
 - Aidoku sources, which run as WebAssembly on the device
 - Paperback 0.9 extensions, with their interceptors, their state, and their
   settings
-- Check all online books for new chapters
+- Check all online books for new chapters, also in the background with a
+  notification, and download the new chapters by themselves
 - Back up and restore the library in one file
 - Keep the screen on, sort the read list, mark chapters as read, and move a
   book to another source

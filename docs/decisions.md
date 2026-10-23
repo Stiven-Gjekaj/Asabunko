@@ -624,3 +624,18 @@ The choices:
   of the column went from 3 to 0. The late frames of the simulator change
   with the load of the Mac, so that test does not check them.
 
+## 2026-10-23: New chapters
+
+- A check in the background is a BGAppRefreshTask. iOS chooses the time.
+  The app asks for one hour after the last check at the earliest. The check
+  is off until the user turns it on, and the switch asks for notifications.
+- A check in the background asks only the books of the read list. The
+  manual check asks all online books, as before.
+- The new chapters of each check go into the library file, at most 300,
+  the newest first. A chapter that is in the list already does not come two
+  times.
+- The simulator has no background tasks. So the UI test starts the app with
+  ASABUNKO_CHECK_NOW=1, which runs the same function as the task of iOS.
+- "Download only on Wi-Fi" uses the path of NWPathMonitor. A network that
+  is expensive is not Wi-Fi.
+

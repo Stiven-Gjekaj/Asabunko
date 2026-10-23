@@ -11,6 +11,21 @@ the decisions.
 A tag such as `v0.1.0` builds the unsigned IPA and attaches it to a release on
 GitHub as `Asabunko.ipa`.
 
+## 2.4.0 (2026-10-23)
+
+New chapters come to you.
+
+- The books of your read list can check for new chapters in the
+  background. Turn on "Check in the background" in Settings. iOS chooses the
+  time of each check.
+- A notification tells you about the new chapters of a book. A tap on it
+  opens the book.
+- The Library has an Updates list with the new chapters of all books, the
+  newest first.
+- A book with "Download new chapters" on downloads each new chapter after
+  a check. "Download only on Wi-Fi" in Settings keeps the downloads off
+  other networks.
+
 ## 2.3.0 (2026-10-23)
 
 The gaps of the sources are closed.

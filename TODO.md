@@ -8,13 +8,6 @@ Each task here is a choice of the owner. A task leaves this list when its
 release is out. The reason for each choice is in
 [docs/decisions.md](docs/decisions.md).
 
-## v2.4: Keep up with new chapters
-
-- [#7](https://github.com/Stiven-Gjekaj/Asabunko/issues/7) Check for new chapters in the background
-- [#8](https://github.com/Stiven-Gjekaj/Asabunko/issues/8) Tell the user about new chapters
-- [#9](https://github.com/Stiven-Gjekaj/Asabunko/issues/9) Show an Updates list
-- [#10](https://github.com/Stiven-Gjekaj/Asabunko/issues/10) Download new chapters automatically
-
 ## v2.5: The library
 
 - [#11](https://github.com/Stiven-Gjekaj/Asabunko/issues/11) Put books in categories
