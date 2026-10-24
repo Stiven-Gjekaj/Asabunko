@@ -11,16 +11,19 @@ device=${DEVICE:-iPhone 17}
 port=${PORT:-8766}
 log=build/ui-tests.log
 mkdir -p build
+: > build/test-server.log
 
-# The test server gives the sources, the catalogs, the trackers, and Komga to the tests.
-python3 scripts/test-server.py "$port" > build/test-server.log 2>&1 &
-server=$!
-trap 'kill $server 2>/dev/null' EXIT
-sleep 2
-if ! kill -0 $server 2>/dev/null; then
-  echo "The test server did not start. Another program can use the port $port. Choose another PORT." >&2
+if lsof -nP -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1; then
+  echo "Another program uses the port $port. Choose another PORT." >&2
   exit 1
 fi
+# The test server gives the sources, the catalogs, the trackers, and Komga to the tests.
+# Another program can stop it, so it starts again each time that it stops.
+# "|| true" keeps the loop alive under "set -e" when the server stops with an error.
+(while :; do python3 scripts/test-server.py "$port" >> build/test-server.log 2>&1 || true; sleep 1; done) &
+server=$!
+trap 'kill $server 2>/dev/null; pkill -f "scripts/test-server.py $port" 2>/dev/null' EXIT
+sleep 2
 
 only=""
 for test in "$@"; do only="$only -only-testing:AsabunkoUITests/$test"; done
@@ -45,6 +48,8 @@ while kill -0 $run 2>/dev/null; do
 done
 wait $run 2>/dev/null || true
 
+starts=$(grep -c "opds/catalog" build/test-server.log || true)
+if [ "$starts" -gt 1 ]; then echo "The test server stopped and started again $((starts - 1)) times. Read the result with care."; fi
 passed=$(grep -c "Test Case .* passed" "$log" || true)
 failed=$(grep -c "Test Case .* failed" "$log" || true)
 grep -E "error:|Test Case .* failed" "$log" | cut -c1-300 || true
