@@ -737,3 +737,32 @@ The choices:
   reader in landscape. The reader kept a spread at its old place after a
   turn of the device. Now a spread that fits the screen goes back to the
   middle after each new size.
+
+## 2026-10-24: Quality
+
+- Each release runs the full UI suite on its release commit with
+  scripts/test-ui.sh before the tag. The CHANGELOG gives the number of tests
+  that passed. v2.2.0 went out with only the Paperback UI tests, and this
+  step stops that.
+- scripts/test-ui.sh starts the test server on its own port and starts it
+  again each time that it stops. Another program on the same Mac stopped the
+  server during a run, and each test after that failed. The script tells
+  when the server started again, so that the result is read with care.
+- A UI test sets each setting that it needs, at its start. The simulator
+  keeps the settings of an app between tests, and an older test left
+  "Private reading", the checks in the background, and the tap zones changed.
+  The tests of the reader give the page layout in their launch arguments.
+- The accessibility audit of Xcode runs on the four tabs, on Storage,
+  Trackers, and the move of books in Settings, and on the readers of a comic
+  and of a novel. It finds no fault. Its notes are the dim colour of a button
+  that is off, a long title that the bar of a reader shortens, a section
+  title of the system, and the search field of the system.
+- LargeTextTests reads each tab at the largest text size. A fault is text
+  past the edge of the screen. The test found that the empty Library lost its
+  margins: the glow of the empty art had a fixed width of 320 points, so the
+  card was wider than an iPhone. The glow now can be narrower.
+- The tidy-up of v3.0: the count of downloads reads each book one time, not
+  once for each chapter, and a menu asks only if a download exists. The
+  Storage page measures away from the main thread. A chapter opens with the
+  list of chapters in memory. The widget compares its shelf in memory and
+  makes its covers with ImageIO. Code that nothing called is gone.

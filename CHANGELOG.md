@@ -11,6 +11,22 @@ the decisions.
 A tag such as `v0.1.0` builds the unsigned IPA and attaches it to a release on
 GitHub as `Asabunko.ipa`.
 
+## 3.0.0 (2026-10-24)
+
+Quality. The full UI suite passes on this release: 46 of 46 tests.
+
+- The empty Library keeps its margins on each iPhone. Before, the art of the
+  empty shelf was wider than a narrow screen.
+- The empty screens and the greeting are in Japanese too.
+- The menus of the Library and the Storage page are faster for a series with
+  many chapters. The Storage page measures the downloads away from the main
+  thread. A chapter of a web novel opens faster.
+- The widget makes its covers with less memory.
+- A test reads each tab at the largest text size, and the accessibility
+  audit covers the pages of Settings and the readers.
+- scripts/test-ui.sh runs the full UI suite with the test server. Each
+  release runs it before the tag.
+
 ## 2.8.0 (2026-10-24)
 
 Asabunko fits into iOS.

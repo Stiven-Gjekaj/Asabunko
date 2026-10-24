@@ -6,8 +6,8 @@ options:
   createIntermediateGroups: true
 settings:
   base:
-    MARKETING_VERSION: "2.8.0"
-    CURRENT_PROJECT_VERSION: 24
+    MARKETING_VERSION: "3.0.0"
+    CURRENT_PROJECT_VERSION: 25
     SWIFT_VERSION: "6.0"
     SWIFT_EMIT_LOC_STRINGS: "YES"
     DEVELOPMENT_TEAM: ""

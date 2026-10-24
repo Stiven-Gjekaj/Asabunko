@@ -182,16 +182,18 @@ swift test --package-path AsaCore
 xcodebuild -project Asabunko.xcodeproj -scheme Asabunko -destination 'platform=iOS Simulator,name=iPhone 17' test
 ```
 
-The UI tests of the sources need the small test server of the scripts. It
-serves an OPDS catalog and a list of LNReader plugins. Start it, and give its
-URL to the tests:
+Many UI tests need the small test server of the scripts. It acts as the
+sources, an OPDS catalog, AniList, MyAnimeList, and Komga. This script starts
+the server, runs the UI tests, and writes the result to build/ui-tests.log:
 
 ```
-python3 scripts/test-server.py 8765 &
-TEST_RUNNER_SERVER_URL=http://127.0.0.1:8765 TEST_RUNNER_OPDS_URL=http://127.0.0.1:8765/opds/catalog xcodebuild -project Asabunko.xcodeproj -scheme Asabunko -destination 'platform=iOS Simulator,name=iPhone 17' test
+scripts/test-ui.sh
+scripts/test-ui.sh ReaderTests LibraryToolsTests
 ```
 
-With no URL, these tests are skipped. One unit test reads a real LNReader
+`DEVICE` chooses the simulator, and `PORT` chooses the port of the server.
+Run the full suite on the release commit before each tag. With no server, the
+tests that need it are skipped. One unit test reads a real LNReader
 plugin from the web. It runs with `ASABUNKO_LIVE=1 swift test --package-path AsaCore`.
 
 The unit tests make their own ZIP, 7z, and TAR archives with libarchive. They
